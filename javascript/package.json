@@ -1,0 +1,25 @@
+{
+    "name": "quorum-middleware",
+    "version": "0.4.0",
+    "description": "Middleware between FPT Platform and Quorum Blockchain",
+    "private": true,
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/FPT-Blockchain-Lab/quorum-middleware.git"
+    },
+    "author": "FPT Blockchain Lab <bot@fpt-blockchain-lab.com>",
+    "license": "UNLICENSED",
+    "bugs": {
+        "url": "https://github.com/FPT-Blockchain-Lab/quorum-middleware/issues"
+    },
+    "dependencies": {
+        "events": "^3.3.0",
+        "web3-core": "^1.8.1",
+        "web3-eth-abi": "^1.8.1",
+        "web3-eth-contract": "^1.8.1",
+        "web3-utils": "^1.8.1"
+    },
+    "scripts": {
+        "build": "tsc && tsc -p tsconfig.browser.json"
+    }
+}
