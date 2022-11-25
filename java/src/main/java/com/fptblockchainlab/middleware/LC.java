@@ -41,7 +41,7 @@ public class LC {
         }
     }
 
-    public static Bytes32 generateAcknowledgeMessageHash(Bytes32[] contentHash, BigInteger numOfDocuments) {
+    public static Bytes32 generateAcknowledgeMessageHashBytes(Bytes32[] contentHash, BigInteger numOfDocuments) {
         int length = numOfDocuments.intValue() + 1;
         return new Bytes32(
             Numeric.hexStringToByteArray(
@@ -56,6 +56,19 @@ public class LC {
                 )
             )
         );
+    }
+
+    public static String generateAcknowledgeMessageHash(Bytes32[] contentHash, BigInteger numOfDocuments) {
+        int length = numOfDocuments.intValue() + 1;
+        return Hash.sha3(
+            "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
+                Numeric.toHexStringNoPrefixZeroPadded(numOfDocuments, 64) + // length of encoded array
+                FunctionEncoder.encodeConstructor(
+                    Arrays.asList(
+                            Arrays.copyOfRange(contentHash, 1, length)
+                        )
+                    )
+            );
     }
 
     public static String generateAcknowledgeMessageHash(String[] contentHash, BigInteger numOfDocuments) {
