@@ -20,7 +20,7 @@ public class LCTest
         String rootHash = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
         String prevHash = "0xe1838364f6cf77352589929efdd58f32e7cb2422bab08fcfe74da159a012f7d7";
         BigInteger signedTime = new BigInteger("1668072205");
-        BigInteger numOfDocuments = new BigInteger("3");
+        int numOfDocuments = 3;
 
         String[] contentHashStr = {
             "0xb4d0ada81a05d1b9d1647929f59495053ce478189fc2af55d72e74a1f06b94a9",
@@ -43,7 +43,7 @@ public class LCTest
         String rootHash = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
         String prevHash = "0xe1838364f6cf77352589929efdd58f32e7cb2422bab08fcfe74da159a012f7d7";
         BigInteger signedTime = new BigInteger("1668072205");
-        BigInteger numOfDocuments = new BigInteger("3");
+        int numOfDocuments = 3;
 
         String[] contentHashStr = {
             "0xb4d0ada81a05d1b9d1647929f59495053ce478189fc2af55d72e74a1f06b94a9",
@@ -66,7 +66,7 @@ public class LCTest
         String rootHash = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
         String prevHash = "0xe1838364f6cf77352589929efdd58f32e7cb2422bab08fcfe74da159a012f7d7";
         BigInteger signedTime = new BigInteger("1668072205");
-        BigInteger numOfDocuments = new BigInteger("3");
+        int numOfDocuments = 3;
         Bytes32[] contentHash = {
             new Bytes32(Numeric.hexStringToByteArray("0xb4d0ada81a05d1b9d1647929f59495053ce478189fc2af55d72e74a1f06b94a9")),
             new Bytes32(Numeric.hexStringToByteArray("0x87a769378d095d70a264efcac7df27ed2179d6905bab7e608fdd2a973b89a208")),
@@ -89,7 +89,7 @@ public class LCTest
         String rootHash = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
         String prevHash = "0xe1838364f6cf77352589929efdd58f32e7cb2422bab08fcfe74da159a012f7d7";
         BigInteger signedTime = new BigInteger("1668072205");
-        BigInteger numOfDocuments = new BigInteger("3");
+        int numOfDocuments = 3;
 
         String[] contentHashStr = {
             "0xb4d0ada81a05d1b9d1647929f59495053ce478189fc2af55d72e74a1f06b94a9",

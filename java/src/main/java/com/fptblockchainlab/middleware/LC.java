@@ -19,7 +19,7 @@ public class LC {
 
         public String prevHash;
 
-        public BigInteger numOfDocuments;
+        public int numOfDocuments;
 
         public String[] contentHash;
 
@@ -29,7 +29,7 @@ public class LC {
 
         public String signature;
 
-        public Content(String rootHash, BigInteger signedTime, String prevHash, BigInteger numOfDocuments, String[] contentHash, String url, String acknowledge, String signature) {
+        public Content(String rootHash, BigInteger signedTime, String prevHash, int numOfDocuments, String[] contentHash, String url, String acknowledge, String signature) {
             this.rootHash = rootHash;
             this.signedTime = signedTime;
             this.prevHash = prevHash;
@@ -41,16 +41,16 @@ public class LC {
         }
     }
 
-    public static Bytes32 generateAcknowledgeMessageHashBytes(Bytes32[] contentHash, BigInteger numOfDocuments) {
-        int length = numOfDocuments.intValue() + 1;
+    public static Bytes32 generateAcknowledgeMessageHashBytes(Bytes32[] contentHash, int numOfDocuments) {
+        int lastIndex = numOfDocuments + 1;
         return new Bytes32(
             Numeric.hexStringToByteArray(
                 Hash.sha3(
                     "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
-                        Numeric.toHexStringNoPrefixZeroPadded(numOfDocuments, 64) + // length of encoded array
+                        Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(numOfDocuments), 64) + // length of encoded array
                         FunctionEncoder.encodeConstructor(
                             Arrays.asList(
-                                Arrays.copyOfRange(contentHash, 1, length)
+                                Arrays.copyOfRange(contentHash, 1, lastIndex)
                             )
                         )
                 )
@@ -58,28 +58,28 @@ public class LC {
         );
     }
 
-    public static String generateAcknowledgeMessageHash(Bytes32[] contentHash, BigInteger numOfDocuments) {
-        int length = numOfDocuments.intValue() + 1;
+    public static String generateAcknowledgeMessageHash(Bytes32[] contentHash, int numOfDocuments) {
+        int lastIndex = numOfDocuments + 1;
         return Hash.sha3(
             "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
-                Numeric.toHexStringNoPrefixZeroPadded(numOfDocuments, 64) + // length of encoded array
+                Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(numOfDocuments), 64) + // length of encoded array
                 FunctionEncoder.encodeConstructor(
                     Arrays.asList(
-                            Arrays.copyOfRange(contentHash, 1, length)
+                            Arrays.copyOfRange(contentHash, 1, lastIndex)
                         )
                     )
             );
     }
 
-    public static String generateAcknowledgeMessageHash(String[] contentHash, BigInteger numOfDocuments) {
-        int length = numOfDocuments.intValue() + 1;
+    public static String generateAcknowledgeMessageHash(String[] contentHash, int numOfDocuments) {
+        int lastIndex = numOfDocuments + 1;
         return Hash.sha3(
             "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
-                Numeric.toHexStringNoPrefixZeroPadded(numOfDocuments, 64) + // length of encoded array
+                Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(numOfDocuments), 64) + // length of encoded array
                 FunctionEncoder.encodeConstructor(
                     Arrays.asList(
                         Arrays.stream(
-                                Arrays.copyOfRange(contentHash, 1, length)
+                                Arrays.copyOfRange(contentHash, 1, lastIndex)
                             )
                             .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
                             .toArray(Bytes32[]::new)
