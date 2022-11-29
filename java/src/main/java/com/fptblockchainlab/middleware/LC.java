@@ -89,13 +89,15 @@ public class LC {
     }
 
     public static String generateApprovalMessageHash(LC.Content stageContent) {
+
+
         int contentHashLength = stageContent.contentHash.length;
         List urlList = new ArrayList<Utf8String>();
         urlList.add(new Utf8String(stageContent.url));
         String urlEncoded = FunctionEncoder.encodeConstructor(urlList);
         List acknowledgeList = new ArrayList<String>();
         acknowledgeList.add(Numeric.toHexStringNoPrefix(Numeric.hexStringToByteArray(stageContent.acknowledge)));
-        String acknowledgeNoPrefix = stageContent.acknowledge.substring(2, stageContent.acknowledge.length());
+        String acknowledgeNoPrefix = stageContent.acknowledge.substring(2, stageContent.acknowledge.length()).trim();
         return
             Hash.sha3(
                 FunctionEncoder.encodeConstructor(Arrays.asList(
@@ -103,9 +105,9 @@ public class LC {
                     new Bytes32(Numeric.hexStringToByteArray(stageContent.prevHash))
                 )) +
                     "00000000000000000000000000000000000000000000000000000000000000c0" + // offset in bytes to the start of contentHash
-                    "0000000000000000000000000000000000000000000000000000000000000180" + // offset in bytes to the start of url
+                    Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf((contentHashLength + 7) * 32)), 64) + // offset in bytes to the start of url
                     Numeric.toHexStringNoPrefixZeroPadded(stageContent.signedTime, 64) +
-                    "0000000000000000000000000000000000000000000000000000000000000220" + // offset in bytes to the start of acknowledge
+                    Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((6 + contentHashLength + urlEncoded.length() / 64) * 32L), 64) + // offset in bytes to the start of acknowledge
                     Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf(contentHashLength)), 64) +
                     FunctionEncoder.encodeConstructor(
                         Arrays.asList(
@@ -116,7 +118,7 @@ public class LC {
                     ) +
                     urlEncoded.substring(64, urlEncoded.length()) + // remove offset
                     "0000000000000000000000000000000000000000000000000000000000000041" + // length of acknowledge byte
-                    acknowledgeNoPrefix + "00000000000000000000000000000000000000000000000000000000000000" // signature 65 bytes -> 96 bytes
+                    acknowledgeNoPrefix + "00000000000000000000000000000000000000000000000000000000000000" // signature 65 bytes -> 96 bytes);
             );
     }
 }
