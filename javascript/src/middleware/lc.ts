@@ -1,7 +1,8 @@
 import Web3 from "web3";
-import { keccak256 } from "web3-utils";
+import { keccak256, encodePacked, Mixed } from "web3-utils";
 import ethAbiEncoder from "web3-eth-abi";
 import { LCContractABIs } from "../abi";
+import BN from "bn.js";
 import { LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory } from "../bindings/lc";
 
 const Contract = require("web3-eth-contract");
@@ -20,8 +21,16 @@ export interface StageContent {
     prevHash: string;
     contentHash: string[];
     URL: string;
-    signedTime: string;
+    signedTime: BN;
+    numOfDocuments: BN;
     acknowledgeSignature: string;
+    approvalSignature: string;
+}
+
+export interface AmendStage {
+    stage: BN;
+    subStage: BN;
+    content: StageContent;
 }
 
 export const LCContractAddresses = {
@@ -56,12 +65,62 @@ export class LC {
     }
 
     /**TODO use StageContent in here */
-    static generateApprovalMessageHash({ rootHash, prevHash, contentHash, URL, signedTime, acknowledgeSignature }: StageContent): string {
+    static generateApprovalMessageHash({
+        rootHash,
+        prevHash,
+        contentHash,
+        URL,
+        signedTime,
+        acknowledgeSignature,
+    }: Omit<StageContent, "approvalSignature" | "numOfDocuments">): string {
         return keccak256(
             ethAbiEncoder.encodeParameters(
                 ["bytes32", "bytes32", "bytes32[]", "string", "uint256", "bytes"],
                 [rootHash, prevHash, contentHash, URL, signedTime, acknowledgeSignature]
             )
         );
+    }
+
+    static generateAmendMessageHash(migratingStages: string[], { stage, subStage, content }: AmendStage): string {
+        let message = keccak256(
+            ethAbiEncoder.encodeParameters(
+                ["uint256", "uint256", "bytes32", "bytes32", "bytes32[]", "string", "uint256", "bytes", "bytes"],
+                [
+                    stage,
+                    subStage,
+                    content.rootHash,
+                    content.prevHash,
+                    content.contentHash,
+                    content.URL,
+                    content.signedTime,
+                    content.acknowledgeSignature,
+                    content.approvalSignature,
+                ]
+            )
+        );
+
+        return keccak256(ethAbiEncoder.encodeParameters(["bytes32[]", "bytes32"], [migratingStages, message]));
+    }
+
+    static generateStageMessageHash({
+        rootHash,
+        prevHash,
+        contentHash,
+        URL,
+        signedTime,
+        acknowledgeSignature,
+        approvalSignature,
+    }: Omit<StageContent, "numOfDocuments">): string {
+        let content: Mixed[] = [
+            { v: rootHash, t: "bytes32" },
+            { v: prevHash, t: "bytes32" },
+            ...contentHash.map((hash) => ({ v: hash, t: "bytes32" })),
+            { v: URL, t: "string" },
+            { v: signedTime, t: "uint256" },
+            { v: approvalSignature, t: "bytes" },
+            { v: acknowledgeSignature, t: "bytes" },
+        ];
+
+        return keccak256(encodePacked(...content) ?? "");
     }
 }

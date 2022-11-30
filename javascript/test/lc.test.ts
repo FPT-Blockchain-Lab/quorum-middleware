@@ -1,6 +1,7 @@
 import { asciiToHex, keccak256 } from "web3-utils";
 import { expect } from "chai";
 import Web3 from "web3";
+import BN from "bn.js";
 
 import { LC } from "../src/middleware";
 
@@ -30,7 +31,7 @@ describe("Hash message testing", () => {
             prevHash: documentId,
             contentHash,
             URL: "https://fpt.com.vn/LCPlatform/",
-            signedTime: "1669261586",
+            signedTime: new BN("1669261586"),
             acknowledgeSignature,
         });
 
