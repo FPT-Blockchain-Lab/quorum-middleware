@@ -1,11 +1,9 @@
 import Web3 from "web3";
-import { keccak256, encodePacked, Mixed } from "web3-utils";
+import { keccak256, encodePacked, Mixed, AbiItem } from "web3-utils";
 import ethAbiEncoder from "web3-eth-abi";
 import { LCContractABIs } from "../abi";
 import BN from "bn.js";
 import { LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory } from "../bindings/lc";
-
-const Contract = require("web3-eth-contract");
 
 export interface LCContracts {
     LCManagement?: LCManagement;
@@ -15,7 +13,6 @@ export interface LCContracts {
     UPASLCFactory?: UPASLCFactory;
 }
 
-/**TODO write definitions */
 export interface StageContent {
     rootHash: string;
     prevHash: string;
@@ -43,13 +40,11 @@ export const LCContractAddresses = {
 
 export class LC {
     static loadContract(web3: Web3): LCContracts {
-        Contract.setProvider(web3);
-
-        const LCManagement = new Contract(LCContractABIs.LCManagement, LCContractAddresses.LCManagement) as any as LCManagement;
-        const Mode = new Contract(LCContractABIs.Mode, LCContractAddresses.Mode) as any as Mode;
-        const RouterService = new Contract(LCContractABIs.RouterService, LCContractAddresses.RouterService) as any as RouterService;
-        const StandardLCFactory = new Contract(LCContractABIs.StandardLCFactory, LCContractAddresses.StandardLCFactory) as any as StandardLCFactory;
-        const UPASLCFactory = new Contract(LCContractABIs.UPASLCFactory, LCContractAddresses.UPASLCFactory) as any as UPASLCFactory;
+        const LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
+        const Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], LCContractAddresses.Mode) as any as Mode;
+        const RouterService = new web3.eth.Contract(LCContractABIs.RouterService as any as AbiItem[], LCContractAddresses.RouterService) as any as RouterService;
+        const StandardLCFactory = new web3.eth.Contract(LCContractABIs.StandardLCFactory as any as AbiItem[], LCContractAddresses.StandardLCFactory) as any as StandardLCFactory;
+        const UPASLCFactory = new web3.eth.Contract(LCContractABIs.UPASLCFactory as any as AbiItem[], LCContractAddresses.UPASLCFactory) as any as UPASLCFactory;
 
         return {
             LCManagement,
