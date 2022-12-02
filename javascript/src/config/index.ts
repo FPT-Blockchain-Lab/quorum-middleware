@@ -1,0 +1,7 @@
+export const LCContractAddresses = {
+    LCManagement: "0x3179C0dDF36a95A9BaEe917fF2D4dbFa08B51462",
+    Mode: "0xAF3b2ebdcc22513339DBa236AEd1660e917B699c",
+    RouterService: "0xEdD3C07B254995c2520C28F0D4a0f6082006eFDe",
+    StandardLCFactory: "0xfB1691a1BF872d4cc823563cC3d78bf740225C36",
+    UPASLCFactory: "0xDf8c56d1c4ff6C2f34835513Cd700D4D6A258036",
+};

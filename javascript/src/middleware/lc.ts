@@ -4,6 +4,7 @@ import ethAbiEncoder from "web3-eth-abi";
 import { LCContractABIs } from "../abi";
 import BN from "bn.js";
 import { LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory } from "../bindings/lc";
+import { LCContractAddresses } from "../config"
 
 export interface LCContracts {
     LCManagement?: LCManagement;
@@ -30,14 +31,6 @@ export interface AmendStage {
     content: StageContent;
 }
 
-export const LCContractAddresses = {
-    LCManagement: "0x3179C0dDF36a95A9BaEe917fF2D4dbFa08B51462",
-    Mode: "0xAF3b2ebdcc22513339DBa236AEd1660e917B699c",
-    RouterService: "0xEdD3C07B254995c2520C28F0D4a0f6082006eFDe",
-    StandardLCFactory: "0xfB1691a1BF872d4cc823563cC3d78bf740225C36",
-    UPASLCFactory: "0xDf8c56d1c4ff6C2f34835513Cd700D4D6A258036",
-};
-
 export class LC {
     static loadContract(web3: Web3): LCContracts {
         const LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
@@ -59,7 +52,6 @@ export class LC {
         return keccak256(ethAbiEncoder.encodeParameters(["bytes32[]"], [contentHash]));
     }
 
-    /**TODO use StageContent in here */
     static generateApprovalMessageHash({
         rootHash,
         prevHash,
@@ -97,7 +89,7 @@ export class LC {
         return keccak256(ethAbiEncoder.encodeParameters(["bytes32[]", "bytes32"], [migratingStages, message]));
     }
 
-    static generateStageMessageHash({
+    static generateStageHash({
         rootHash,
         prevHash,
         contentHash,
@@ -114,6 +106,15 @@ export class LC {
             { v: signedTime, t: "uint256" },
             { v: approvalSignature, t: "bytes" },
             { v: acknowledgeSignature, t: "bytes" },
+        ];
+
+        return keccak256(encodePacked(...content) ?? "");
+    }
+
+    static generateRequestId(proposer: string, nonce: BN): string {
+        let content: Mixed[] = [
+            { v: proposer, t: "address" },
+            { v: nonce, t: "uint256" },
         ];
 
         return keccak256(encodePacked(...content) ?? "");

@@ -38,6 +38,15 @@ describe("Hash message testing", () => {
         expect(messageHash).to.deep.eq("0x751dc41c674b71ca1336861eca08f040134ed68fe144c2417e440422d956b1eb");
     });
 
+    it("Generate request id", () => {
+        const proposer = "0x0FDa058408bD342DA277A1bEb0DFa9F9145C3cfE";
+        const nonce = new BN(3333);
+
+        const requestId = LC.generateRequestId(proposer, nonce);
+
+        expect(requestId).to.deep.eq("0x79dadfe586c911bb0de0c07736fd5c0478e69de542b867ad0a4dc240d68ae8e6");
+    });
+
     it("Get standard lc contract", async () => {
         const { StandardLCFactory } = LC.loadContract(new Web3("http://1.54.89.229:32278"));
 
