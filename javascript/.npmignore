@@ -2,5 +2,5 @@ src
 test
 tsconfig.json
 tsconfig.tsbuildinfo
-webpack.config.js
+rollup.config.js
 *lock
