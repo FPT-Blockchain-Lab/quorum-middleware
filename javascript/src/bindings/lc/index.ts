@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { AccessRoleManagement } from "./AccessRoleManagement";
+export type { AmendRequest } from "./AmendRequest";
 export type { LC } from "./LC";
 export type { LCManagement } from "./LCManagement";
 export type { Mode } from "./Mode";

@@ -3,7 +3,7 @@ import { keccak256, encodePacked, Mixed, AbiItem } from "web3-utils";
 import ethAbiEncoder from "web3-eth-abi";
 import { LCContractABIs } from "../abi";
 import BN from "bn.js";
-import { LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory } from "../bindings/lc";
+import { LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
 import { LCContractAddresses } from "../config"
 
 export interface LCContracts {
@@ -12,6 +12,7 @@ export interface LCContracts {
     RouterService?: RouterService;
     StandardLCFactory?: StandardLCFactory;
     UPASLCFactory?: UPASLCFactory;
+    AmendRequest?: AmendRequest;
 }
 
 export interface StageContent {
@@ -31,13 +32,14 @@ export interface AmendStage {
     content: StageContent;
 }
 
-export class LC {
+export class LCMiddleware {
     static loadContract(web3: Web3): LCContracts {
         const LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
         const Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], LCContractAddresses.Mode) as any as Mode;
         const RouterService = new web3.eth.Contract(LCContractABIs.RouterService as any as AbiItem[], LCContractAddresses.RouterService) as any as RouterService;
         const StandardLCFactory = new web3.eth.Contract(LCContractABIs.StandardLCFactory as any as AbiItem[], LCContractAddresses.StandardLCFactory) as any as StandardLCFactory;
         const UPASLCFactory = new web3.eth.Contract(LCContractABIs.UPASLCFactory as any as AbiItem[], LCContractAddresses.UPASLCFactory) as any as UPASLCFactory;
+        const AmendRequest = new web3.eth.Contract(LCContractABIs.AmendRequest as any as AbiItem[], LCContractAddresses.AmendRequest) as any as AmendRequest;
 
         return {
             LCManagement,
@@ -45,6 +47,7 @@ export class LC {
             RouterService,
             StandardLCFactory,
             UPASLCFactory,
+            AmendRequest
         };
     }
 

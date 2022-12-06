@@ -5,9 +5,9 @@ import nodePolyfills from "rollup-plugin-polyfill-node";
 import terser from "@rollup/plugin-terser";
 
 export default {
-    input: "dist/middleware/index.js",
+    input: "dist/main.js",
     output: {
-        file: "dist.browser/index.js",
+        file: "dist.browser/main.js",
         format: "umd",
         name: "LC",
     },
