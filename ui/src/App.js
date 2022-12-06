@@ -24,7 +24,7 @@ import {
 	AMEND_REQUEST_ADDRESS,
 } from "./utils";
 import BN from "bn.js";
-import { LC } from "@tuannm106/quorum-middleware";
+import { LCMiddleware } from "@tuannm106/quorum-middleware";
 import lcABI from "./abis/LC.json";
 const { Header, Sider, Content } = Layout;
 const { Link } = Anchor;
@@ -117,7 +117,7 @@ function App() {
 	};
 
 	const getStageInfo = async (values) => {
-		const routerService = LC.loadContract(
+		const routerService = LCMiddleware.loadContract(
 			new Web3("http://1.54.89.229:32278")
 		).RouterService;
 		console.log("Values:", values);
@@ -252,9 +252,10 @@ function App() {
 			const ROOT_HASH =
 				"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 			const documentId = keccak256(asciiToHex(values.documentId));
+			console.log("documentId: ", documentId);
 			const url = values.url;
 
-			const ackMessageHash = LC.generateAcknowledgeMessageHash(
+			const ackMessageHash = LCMiddleware.generateAcknowledgeMessageHash(
 				contentHash.slice(1, numOfDocument.add(new BN("1")).toNumber())
 			);
 
@@ -263,7 +264,7 @@ function App() {
 				account,
 				""
 			);
-			const approvalMessageHash = LC.generateApprovalMessageHash({
+			const approvalMessageHash = LCMiddleware.generateApprovalMessageHash({
 				rootHash: ROOT_HASH,
 				prevHash: documentId,
 				contentHash,
@@ -279,7 +280,7 @@ function App() {
 			);
 
 			web3.eth.handleRevert = true;
-			const standardFactory = LC.loadContract(
+			const standardFactory = LCMiddleware.loadContract(
 				new Web3("http://1.54.89.229:32278")
 			).StandardLCFactory;
 
@@ -321,149 +322,159 @@ function App() {
 		}
 	};
 
-	// const handleAmendLC = async (values) => {
-	//   try {
-	//     if (!web3 || !account) {
-	//       alert("Connect to Metamask!");
-	//       return;
-	//     }
-	//     if (chainId !== CHAIN_ID) {
-	//       await setupDefaultNetwork();
-	//     }
+	const handleAmendLC = async (values) => {
+		try {
+			if (!web3 || !account) {
+				alert("Connect to Metamask!");
+				return;
+			}
+			if (chainId !== CHAIN_ID) {
+				await setupDefaultNetwork();
+			}
 
-	//     const routerService = new web3.eth.Contract(
-	//       RouterABI,
-	//       ROUTER_SERVICE_ADDRESS
-	//     );
-	//     const { _contract: lcAddress } = await routerService.methods
-	//       .getAddress(values.documentId)
-	//       .call();
-	//     if (/^0x0+$/.test(lcAddress)) return alert("DocumentId not found");
-	//     setAmendLCSelected(lcAddress);
+			const { RouterService: routerService, AmendRequest: amendRequest } =
+				LCMiddleware.loadContract(new Web3("http://1.54.89.229:32278"));
+			const { _contract: lcAddress } = await routerService.methods
+				.getAddress(values.documentId)
+				.call();
+			console.log(lcAddress);
+			if (/^0x0+$/.test(lcAddress)) return alert("DocumentId not found");
+			setAmendLCSelected(lcAddress);
 
-	//     const amendStage = +values.stage;
-	//     const amendSubStage = +values.subStage;
+			const amendStage = +values.stage;
+			const amendSubStage = +values.subStage;
 
-	//     const lcContract = new web3.eth.Contract(lcABI, lcAddress);
+			const amendStageContent = await routerService.methods
+				.getStageContent(values.documentId, values.stage, values.subStage)
+				.call();
 
-	//     const amendStageContent = await lcContract.methods
-	//       .getContent(amendStage, amendSubStage)
-	//       .call();
+			if (amendStageContent.signature === "0x")
+				return alert("Stage Amend not found");
 
-	//     if (amendStageContent.signature === "0x")
-	//       return alert("Stage Amend not found");
+			const rootHash = await await routerService.methods
+				.getRootHash(values.documentId)
+				.call();
 
-	//     const rootHash = await lcContract.methods.getRootHash().call();
+			// get prevHash
+			const prevHash = LCMiddleware.generateStageHash({
+				rootHash: amendStageContent.rootHash,
+				prevHash: amendStageContent.prevHash,
+				URL: amendStageContent.url,
+				contentHash: amendStageContent.contentHash,
+				signedTime: amendStageContent.signedTime,
+				approvalSignature: amendStageContent.signature,
+				acknowledgeSignature: amendStageContent.acknowledge,
+			});
 
-	//     const migrating_stages = await Promise.all(
-	//       migrateStages.map(async (s) => {
-	//         const content = await lcContract.methods
-	//           .getContent(s.stage, s.subStage)
-	//           .call();
-	//         return toStageHash(
-	//           content.rootHash,
-	//           content.prevHash,
-	//           content.contentHash,
-	//           content.url,
-	//           content.signedTime,
-	//           content.signature,
-	//           content.acknowledge
-	//         );
-	//       })
-	//     );
+			const migrateStages = [{ stage: 1, subStage: 1 }];
+			const migrating_stages = await Promise.all(
+				migrateStages.map(async (s) => {
+					const content = await routerService.methods
+						.getStageContent(values.documentId, s.stage, s.subStage)
+						.call();
+					return LCMiddleware.generateStageHash({
+						rootHash: content.rootHash,
+						prevHash: content.prevHash,
+						URL: content.url,
+						contentHash: content.contentHash,
+						signedTime: content.signedTime,
+						approvalSignature: content.signature,
+						acknowledgeSignature: content.acknowledge,
+					});
+				})
+			);
 
-	//     const prevContent = await lcContract.methods
-	//       .getContent(amendStage, amendSubStage)
-	//       .call();
-	//     const prevHash = toStageHash(
-	//       prevContent.rootHash,
-	//       prevContent.prevHash,
-	//       prevContent.contentHash,
-	//       prevContent.url,
-	//       prevContent.signedTime,
-	//       prevContent.signature,
-	//       prevContent.acknowledge
-	//     );
+			/**
+			 * example content hash
+			 */
+			const contentHash = [
+				keccak256(asciiToHex("Hash of LC Document Number")),
+				keccak256(asciiToHex("Hash of LC 1")),
+				keccak256(asciiToHex("Hash of LC 2")),
+				keccak256(asciiToHex("Hash of LC 3")),
+				keccak256(asciiToHex("Hash of LC information")),
+			];
+			// mock data
+			const signedTime = Math.floor(Date.now() / 1000);
+			const numOfDocument = 3;
+			const url = "https://fpt.com.vn/LCPlatform/standardLC/";
 
-	//     const contentHash = [
-	//       keccak256(
-	//         encodePacked({ v: "Hash of LC Document Number", t: "string" })
-	//       ),
-	//       keccak256(encodePacked({ v: "Hash of LC 1", t: "string" })),
-	//       keccak256(encodePacked({ v: "Hash of LC 2", t: "string" })),
-	//       keccak256(encodePacked({ v: "Hash of LC 3", t: "string" })),
-	//       keccak256(encodePacked({ v: "Hash of LC information", t: "string" })),
-	//     ];
-	//     const signedTime = Math.floor(Date.now() / 1000);
-	//     const numOfDocument = 3;
-	//     let acknowledge_sig = EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
-	//     const url = "https://fpt.com.vn/LCPlatform/standardLC/";
+			// get acknowledge signature
+			let acknowledge_sig = EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
+			if (amendStage == 4 || amendStage == 5) {
+				const ackMessageHash = LCMiddleware.generateAcknowledgeMessageHash(
+					contentHash.slice(1, numOfDocument + 1)
+				);
 
-	//     if (amendStage == 4 || amendStage == 5) {
-	//       const ackMessageHash = hashMessageSign(
-	//         toAcknowledgeMessageSigns(contentHash.slice(1, 4))
-	//       );
+				acknowledge_sig = await web3.eth.personal.sign(
+					ackMessageHash,
+					account,
+					""
+				);
+			}
 
-	//       acknowledge_sig = await web3.eth.personal.sign(
-	//         ackMessageHash,
-	//         account,
-	//         ""
-	//       );
-	//     }
-	//     const messageHash = hashMessageSign(
-	//       toLCMessageSigns({
-	//         rootHash,
-	//         prevHash,
-	//         contentHash,
-	//         url,
-	//         signedTime,
-	//         acknowledgeSign: acknowledge_sig,
-	//       })
-	//     );
-	//     const approval_sig = await web3.eth.personal.sign(
-	//       messageHash,
-	//       account,
-	//       ""
-	//     );
-	//     const content = [
-	//       rootHash,
-	//       signedTime,
-	//       prevHash,
-	//       numOfDocument,
-	//       contentHash,
-	//       url,
-	//       acknowledge_sig,
-	//       approval_sig,
-	//     ];
+			// get approval signature
+			const messageHash = LCMiddleware.generateApprovalMessageHash({
+				rootHash,
+				prevHash,
+				contentHash,
+				URL: url,
+				signedTime,
+				acknowledgeSignature: acknowledge_sig,
+			});
+			const approval_sig = await web3.eth.personal.sign(
+				messageHash,
+				account,
+				""
+			);
+			const content = [
+				rootHash,
+				signedTime,
+				prevHash,
+				numOfDocument,
+				contentHash,
+				url,
+				acknowledge_sig,
+				approval_sig,
+			];
 
-	//     const amend_stage = [amendStage, amendSubStage, content];
+			const amend_stage = [amendStage, amendSubStage, content];
 
-	//     const amendRequest = new web3.eth.Contract(
-	//       AmendABI,
-	//       AMEND_REQUEST_ADDRESS
-	//     );
+			const amendHash = LCMiddleware.generateAmendMessageHash(
+				migrating_stages,
+				{
+					stage: amendStage,
+					subStage: amendSubStage,
+					content: {
+						rootHash,
+						prevHash,
+						contentHash,
+						URL: url,
+						signedTime,
+						numOfDocuments: numOfDocument,
+						acknowledgeSignature: acknowledge_sig,
+						approvalSignature: approval_sig,
+					},
+				}
+			);
 
-	//     const nonce = await amendRequest.methods.nonces(account).call();
+			const amend_sig = await web3.eth.personal.sign(amendHash, account, "");
 
-	//     // requestId = gen_request_id(admin.address, nonce);
-	//     const amendHash = gen_amend_sig(migrating_stages, amend_stage);
-
-	//     const amend_sig = await web3.eth.personal.sign(amendHash, account, "");
-
-	//     await routerService.methods
-	//       .submitAmendment(
-	//         values.documentId,
-	//         migrating_stages,
-	//         amend_stage,
-	//         amend_sig
-	//       )
-	//       .send({ from: account });
-	//     console.log("submit amendment success");
-	//   } catch (error) {
-	//     console.log(error);
-	//     error.message && alert(error.message);
-	//   }
-	// };
+			const tx = await routerService.methods
+				.submitAmendment(
+					values.documentId,
+					migrating_stages,
+					amend_stage,
+					amend_sig
+				)
+				.send({ from: account });
+			console.log(tx);
+			alert("submit amendment success");
+		} catch (error) {
+			console.log(error);
+			error.message && alert(error.message);
+		}
+	};
 
 	// const handleFullfillAmend = async (values) => {
 	//   try {
@@ -630,120 +641,137 @@ function App() {
 						</Button>
 					</Form.Item>
 				</Form>
+				{lc && (
+					<div>
+						<div>Root hash: {lc.rootHash}</div>
+						<div>Prev hash: {lc.prevHash}</div>
+						<div>
+							Content hash:
+							<ul>
+								{lc.contentHash.map((l, i) => (
+									<li key={i}>{l}</li>
+								))}
+							</ul>
+						</div>
+						<div>Number of documents: {lc.numOfDocuments}</div>
+						<div>Acknowledge: {lc.acknowledge}</div>
+						<div>Signature: {lc.signature}</div>
+					</div>
+				)}
 			</>
 		);
 	};
-	// const AmendLCForm = () => {
-	//   return (
-	//     <Form
-	//       name="basic"
-	//       labelCol={{
-	//         span: 4,
-	//       }}
-	//       wrapperCol={{
-	//         span: 16,
-	//       }}
-	//       initialValues={{
-	//         remember: true,
-	//       }}
-	//       onFinish={handleAmendLC}
-	//       onFinishFailed={onFinishFailed}
-	//       autoComplete="off"
-	//     >
-	//       {labelAmendLCList.map((idx, label) => FormItem(idx, label))}
-	//       <div>Migrate stages</div>
-	//       {lcData?.lc?.subStageChangeApproves.map((stage, idx) => (
-	//         <div style={{ display: "flex" }}>
-	//           <input
-	//             type="checkbox"
-	//             onChange={(e) => {
-	//               let existIdx = migrateStages.findIndex(
-	//                 (s) => s.stage == stage.stage && s.subStage == stage.subStage
-	//               );
-	//               if (existIdx !== -1) {
-	//                 // remove
-	//                 setMigrateStages((pre) => [
-	//                   ...pre.slice(0, existIdx),
-	//                   ...pre.slice(existIdx + 1, pre.length),
-	//                 ]);
-	//               } else {
-	//                 setMigrateStages((pre) => [
-	//                   ...pre,
-	//                   { stage: stage.stage, subStage: stage.subStage },
-	//                 ]);
-	//               }
-	//             }}
-	//           />
-	//           <div>
-	//             Stage: {stage.stage}; substage: {stage.subStage}
-	//           </div>
-	//         </div>
-	//       ))}
-	//       <Form.Item
-	//         wrapperCol={{
-	//           offset: 8,
-	//           span: 16,
-	//         }}
-	//       >
-	//         <Button type="primary" htmlType="submit">
-	//           Amend
-	//         </Button>
-	//       </Form.Item>
-	//     </Form>
-	//   );
-	// };
+	const AmendLCForm = () => {
+		return (
+			<Form
+				name="basic"
+				labelCol={{
+					span: 4,
+				}}
+				wrapperCol={{
+					span: 16,
+				}}
+				initialValues={{
+					remember: true,
+				}}
+				onFinish={handleAmendLC}
+				onFinishFailed={onFinishFailed}
+				autoComplete="off"
+			>
+				{labelAmendLCList.map((idx, label) => FormItem(idx, label))}
+				<div>Migrate stages</div>
+				{/* {lcData?.lc?.subStageChangeApproves.map((stage, idx) => (
+					<div style={{ display: "flex" }}>
+						<input
+							type="checkbox"
+							onChange={(e) => {
+								let existIdx = migrateStages.findIndex(
+									(s) => s.stage == stage.stage && s.subStage == stage.subStage
+								);
+								if (existIdx !== -1) {
+									// remove
+									setMigrateStages((pre) => [
+										...pre.slice(0, existIdx),
+										...pre.slice(existIdx + 1, pre.length),
+									]);
+								} else {
+									setMigrateStages((pre) => [
+										...pre,
+										{ stage: stage.stage, subStage: stage.subStage },
+									]);
+								}
+							}}
+						/>
+						<div>
+							Stage: {stage.stage}; substage: {stage.subStage}
+						</div>
+					</div>
+				))} */}
+				<Form.Item
+					wrapperCol={{
+						offset: 8,
+						span: 16,
+					}}
+				>
+					<Button type="primary" htmlType="submit">
+						Amend
+					</Button>
+				</Form.Item>
+			</Form>
+		);
+	};
 
-	// const ApproveAmendForm = () => {
-	//   return (
-	//     <Form
-	//       name="basic"
-	//       labelCol={{
-	//         span: 4,
-	//       }}
-	//       wrapperCol={{
-	//         span: 16,
-	//       }}
-	//       initialValues={{
-	//         remember: true,
-	//       }}
-	//       onFinish={
-	//         keyMenu === "ApproveAmend" ? handleApproveAmend : handleFullfillAmend
-	//       }
-	//       onFinishFailed={onFinishFailed}
-	//       autoComplete="off"
-	//     >
-	//       {labelApproveAmendLCList.map((idx, label) => FormItem(idx, label))}
-	//       {lcData?.lc?.submittedAmendments.map((submittedAmend, idx) => (
-	//         <div style={{ display: "flex", flexDirection: "column" }}>
-	//           <div>Submitted Amendment</div>
-	//           <pre>
-	//             Proposer: {submittedAmend.proposer}
-	//             <br />
-	//             ID: {submittedAmend.id.replace("-", "\nRequest ID: ")}
-	//             <br />
-	//             Nonce: {submittedAmend.nonce}
-	//           </pre>
-	//           {/* <div>Approved Amendment</div>
-	//           <pre>
-	//             Approver: {submittedAmend.approvedAmendments[0].approver ?? " "}
-	//             <br />
-	//             ID: {submittedAmend.approvedAmendments[0].id ?? " "}
-	//           </pre> */}
-	//         </div>
-	//       ))}
-	//       <Form.Item
-	//         wrapperCol={{
-	//           offset: 8,
-	//           span: 16,
-	//         }}
-	//       >
-	//         <Button type="primary" htmlType="submit">
-	//           {keyMenu === "ApproveAmend" ? "Approve Amend" : "Fullfill Amend"}
-	//         </Button>
-	//       </Form.Item>
-	//     </Form>
-	//   );
-	// };
+	const ApproveAmendForm = () => {
+		return (
+			<Form
+				name="basic"
+				labelCol={{
+					span: 4,
+				}}
+				wrapperCol={{
+					span: 16,
+				}}
+				initialValues={{
+					remember: true,
+				}}
+				// onFinish={
+				// 	keyMenu === "ApproveAmend" ? handleApproveAmend : handleFullfillAmend
+				// }
+				onFinishFailed={onFinishFailed}
+				autoComplete="off"
+			>
+				{/* {labelApproveAmendLCList.map((idx, label) => FormItem(idx, label))}
+				{lcData?.lc?.submittedAmendments.map((submittedAmend, idx) => (
+					<div style={{ display: "flex", flexDirection: "column" }}>
+						<div>Submitted Amendment</div>
+						<pre>
+							Proposer: {submittedAmend.proposer}
+							<br />
+							ID: {submittedAmend.id.replace("-", "\nRequest ID: ")}
+							<br />
+							Nonce: {submittedAmend.nonce}
+						</pre>
+						<div>Approved Amendment</div>
+	          <pre>
+	            Approver: {submittedAmend.approvedAmendments[0].approver ?? " "}
+	            <br />
+	            ID: {submittedAmend.approvedAmendments[0].id ?? " "}
+	          </pre>
+					</div>
+				))} */}
+				<Form.Item
+					wrapperCol={{
+						offset: 8,
+						span: 16,
+					}}
+				>
+					<Button type="primary" htmlType="submit">
+						{keyMenu === "ApproveAmend" ? "Approve Amend" : "Fullfill Amend"}
+					</Button>
+				</Form.Item>
+			</Form>
+		);
+	};
 
 	// const ApproveModal = () => {
 	//   return (
@@ -800,6 +828,10 @@ function App() {
 							CreateLCForm()
 						) : keyMenu === "GetStageContent" ? (
 							GetStageContentForm()
+						) : keyMenu === "Amend" ? (
+							AmendLCForm()
+						) : keyMenu === "ApproveAmend" ? (
+							ApproveAmendForm()
 						) : (
 							<>Nothing to show</>
 						)}
