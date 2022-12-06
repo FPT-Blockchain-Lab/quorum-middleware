@@ -57,6 +57,30 @@ public class LC {
         }
     }
 
+    public static String DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+
+    public static String checkStage(BigInteger stage) {
+        String _stage = stage.toString();
+        switch (_stage) {
+            case "1":
+                return "Letter Of Credit";
+            case "2":
+                return "Presentation Document";
+            case "3":
+                return "Documentation Result Notification";
+            case "4":
+                return "LC Payment Acceptance";
+            case "5":
+                return "LC Issuance Bank To Advising Bank Payment";
+            case "6":
+                return "LC Advising Bank To Beneficiary Payment";
+            case "7":
+                return "UpasLC Payment Acceptance";
+            default:
+                return "";
+        }
+    }
+
     public static Bytes32 generateAcknowledgeMessageHashBytes(Bytes32[] contentHash, int numOfDocuments) {
         int lastIndex = numOfDocuments + 1;
         return new Bytes32(
@@ -104,12 +128,18 @@ public class LC {
         );
     }
 
+    private static String _encodeSignature(String signature) {
+        return signature.equals("0x") ?
+            "0000000000000000000000000000000000000000000000000000000000000000" : // signature (0 byte -> 32 bytes)
+                "0000000000000000000000000000000000000000000000000000000000000041" + // length of acknowledge signature byte
+                    signature.trim().substring(2, signature.length()).trim() + "00000000000000000000000000000000000000000000000000000000000000"; // signature (65 bytes -> 96 bytes)
+    }
+
     public static String generateApprovalMessageHash(LC.Content stageContent) {
         int contentHashLength = stageContent.contentHash.length;
         List urlList = new ArrayList<Utf8String>();
         urlList.add(new Utf8String(stageContent.url));
         String urlEncoded = FunctionEncoder.encodeConstructor(urlList);
-        String acknowledgeNoPrefix = stageContent.acknowledge.substring(2, stageContent.acknowledge.length()).trim();
         return
             Hash.sha3(
                 FunctionEncoder.encodeConstructor(Arrays.asList(
@@ -129,8 +159,7 @@ public class LC {
                         )
                     ) +
                     urlEncoded.substring(64, urlEncoded.length()) + // remove offset
-                    "0000000000000000000000000000000000000000000000000000000000000041" + // length of acknowledge byte
-                    acknowledgeNoPrefix + "00000000000000000000000000000000000000000000000000000000000000" // signature 65 bytes -> 96 bytes);
+                    _encodeSignature(stageContent.acknowledge) // signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
             );
     }
 
@@ -178,8 +207,8 @@ public class LC {
         List urlList = new ArrayList<Utf8String>();
         urlList.add(new Utf8String(stageContent.url));
         String urlEncoded = FunctionEncoder.encodeConstructor(urlList);
-        String acknowledgeNoPrefix = Numeric.toHexStringNoPrefix(Numeric.hexStringToByteArray(stageContent.acknowledge));
-        String signatureNoPrefix = Numeric.toHexStringNoPrefix(Numeric.hexStringToByteArray(stageContent.signature));
+        String encodeAcknowledge = _encodeSignature(stageContent.acknowledge);
+        int offsetAcknowledge = 9 + contentHashLength + urlEncoded.length() / 64;
         String message = Hash.sha3(
                 FunctionEncoder.encodeConstructor(Arrays.asList(
                     new Uint256(amendStage.stage),
@@ -190,8 +219,8 @@ public class LC {
                     "0000000000000000000000000000000000000000000000000000000000000120" + // offset in bytes to the start of contentHash
                     Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf((contentHashLength + 10) * 32)), 64) + // offset in bytes to the start of url
                     Numeric.toHexStringNoPrefixZeroPadded(stageContent.signedTime, 64) +
-                    Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((9 + contentHashLength + urlEncoded.length() / 64) * 32L), 64) + // offset in bytes to the start of acknowledge signature
-                    Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((13 + contentHashLength + urlEncoded.length() / 64) * 32L), 64) + // offset in bytes to the start of acknowledge signature
+                    Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((offsetAcknowledge) * 32L), 64) + // offset in bytes to the start of acknowledge signature
+                    Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((offsetAcknowledge + encodeAcknowledge.length() / 64 ) * 32L), 64) + // offset in bytes to the start of approval signature
                     Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf(contentHashLength)), 64) +
                     FunctionEncoder.encodeConstructor(
                         Arrays.asList(
@@ -201,12 +230,9 @@ public class LC {
                         )
                     ) +
                     urlEncoded.substring(64, urlEncoded.length()) + // remove offset
-                    "0000000000000000000000000000000000000000000000000000000000000041" + // length of acknowledge signature byte
-                    acknowledgeNoPrefix + "00000000000000000000000000000000000000000000000000000000000000" + // acknowledge signature 65 bytes -> 96 bytes);
-                    "0000000000000000000000000000000000000000000000000000000000000041" + // length of approval signature byte
-                    signatureNoPrefix + "00000000000000000000000000000000000000000000000000000000000000" // approval signature 65 bytes -> 96 bytes);
+                    _encodeSignature(stageContent.acknowledge) + // signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
+                    _encodeSignature(stageContent.signature) // approval signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
             );
-        
         return Hash.sha3(
         "0000000000000000000000000000000000000000000000000000000000000040" +
             Numeric.toHexStringNoPrefix(Numeric.hexStringToByteArray(message)) +
