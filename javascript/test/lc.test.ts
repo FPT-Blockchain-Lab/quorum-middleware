@@ -38,6 +38,28 @@ describe("Hash message testing", () => {
         expect(messageHash).to.deep.eq("0x751dc41c674b71ca1336861eca08f040134ed68fe144c2417e440422d956b1eb");
     });
 
+    it("Generate prev message hash", () => {
+        const messageHash = LC.generateStageHash({
+            rootHash: "0xc2c4f0a49a60f614f550c6280e1a9ee0983417b08069faa6d9583aaca234634d",
+            prevHash: "0x3a6d8ac7ce3e03566daf6bafcf8e27ee31dd295ab94501fa52dce4ae01a64eb1",
+            contentHash: [
+                "0xb4d0ada81a05d1b9d1647929f59495053ce478189fc2af55d72e74a1f06b94a9",
+                "0x7884deeb865048dfe3b12ebc2093ba764be251624fe5f317920bde308ca45b13",
+                "0x87a769378d095d70a264efcac7df27ed2179d6905bab7e608fdd2a973b89a208",
+                "0x6a03827c16d56fb40f423d70c108f74c80fd19bf29b01dab5ba15c7d0e3b42c1",
+                "0x7d6599f79c3b43d26b457bf9624c0cc2e30ebfbac1a0c042f8899b21b05240e3",
+            ],
+            URL: "google.com",
+            signedTime: new BN("3000"),
+            acknowledgeSignature:
+                "0x0690111fffba5193a9c41459021c6526b2c286f5968c24b07754d5e2839aba06552a6014bc5e0a356ce4c681bbb42bdf3732deb38fe76278b5aa0b0447d219bd1b",
+            approvalSignature:
+                "0x788e849330087f638b701c906b7c9e474ec60c40b170f63b59c614b311c30ffc7be3098286770d59b72cf0226c7ccdca325961cdaf482b582a0fa56b6449834e1b",
+        });
+
+        expect(messageHash).to.deep.eq("0xcde2ec7310927e96ee25df94975c6cc94b2ca0de2fdbf4d1e631989890f38d49");
+    });
+
     it("Generate request id", () => {
         const proposer = "0x0FDa058408bD342DA277A1bEb0DFa9F9145C3cfE";
         const nonce = new BN(3333);
