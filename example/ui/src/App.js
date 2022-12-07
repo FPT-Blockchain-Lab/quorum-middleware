@@ -1,23 +1,12 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
-import {
-  Layout,
-  Menu,
-  Descriptions,
-  Anchor,
-  Form,
-  Input,
-  Button,
-  Modal,
-  message,
-} from "antd";
+import { Layout, Menu, Form, Input, Button } from "antd";
 import Web3 from "web3";
 import { asciiToHex, keccak256 } from "web3-utils";
 import { CHAIN_ID, setupDefaultNetwork, EMPTY_BYTES } from "./utils";
 import BN from "bn.js";
 import { Middleware } from "@tuannm106/quorum-middleware";
-const { Header, Sider, Content } = Layout;
-const { Link } = Anchor;
+const { Header, Content } = Layout;
 
 const labelCreateLCList = [
   "documentId",
@@ -54,8 +43,6 @@ function App() {
   const [web3, setWeb3] = useState(new Web3());
   const [account, setAccount] = useState(undefined);
   const [chainId, setChainId] = useState(undefined);
-  const [amendLCSelected, setAmendLCSelected] = useState(undefined);
-  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const handleConnect = async () => {
     try {
@@ -79,14 +66,6 @@ function App() {
   useEffect(() => {
     handleConnect();
   }, []);
-
-  const showModal = () => {
-    setIsModalVisible(true);
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-  };
 
   const onFinishFailed = (errorInfo) => {
     console.log("Failed:", errorInfo);
@@ -137,8 +116,7 @@ function App() {
       const signedTime = new BN(values.signedTime);
 
       const numOfDocument = new BN(values.numOfDocument);
-      const ROOT_HASH =
-        "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+      const ROOT_HASH = Middleware.LC.DEFAULT_ROOT_HASH;
       // Generate documentId
       const documentId = keccak256(asciiToHex(values.documentId));
       const url = values.url;
@@ -311,7 +289,6 @@ function App() {
         .send({ from: account });
       console.log(tx);
       alert("Update LC success");
-      setIsModalVisible(false);
     } catch (error) {
       console.error(error);
     }
@@ -361,7 +338,6 @@ function App() {
         .getAddress(documentId)
         .call();
       if (/^0x0+$/.test(lcAddress)) return alert("DocumentId not found");
-      setAmendLCSelected(lcAddress);
 
       const amendStage = +values.stage;
       const amendSubStage = +values.subStage;

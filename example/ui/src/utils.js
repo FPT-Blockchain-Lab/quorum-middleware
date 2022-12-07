@@ -1,24 +1,3 @@
-export function checkStage(stage) {
-  switch (stage) {
-    case "1":
-      return "Letter Of Credit";
-    case "2":
-      return "Presentation Document";
-    case "3":
-      return "Documentation Result Notification";
-    case "4":
-      return "LC Payment Acceptance";
-    case "5":
-      return "LC Issuance Bank To Advising Bank Payment";
-    case "6":
-      return "LC Advising Bank To Beneficiary Payment";
-    case "7":
-      return "UpasLC Payment Acceptance";
-    default:
-      return "";
-  }
-}
-
 export const CHAIN_ID = 6788;
 
 export const EMPTY_BYTES = "0x";
