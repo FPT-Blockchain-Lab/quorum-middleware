@@ -45,5 +45,5 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
-      - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots package
+      - name: Run the Maven verify phase
+        run: mvn --batch-mode --update-snapshots verify
