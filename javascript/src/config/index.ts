@@ -4,4 +4,5 @@ export const LCContractAddresses = {
     RouterService: "0xEdD3C07B254995c2520C28F0D4a0f6082006eFDe",
     StandardLCFactory: "0xfB1691a1BF872d4cc823563cC3d78bf740225C36",
     UPASLCFactory: "0xDf8c56d1c4ff6C2f34835513Cd700D4D6A258036",
+    AmendRequest: "0x9043A4b3ABF6210cdfA95e7ef9B2e1fC8D17d38E",
 };
