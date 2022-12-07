@@ -5,7 +5,7 @@ on:
     types: [created]
 
 jobs:
-  build-javascript:
+  publish-npm:
 
     runs-on: ubuntu-latest
     defaults:
