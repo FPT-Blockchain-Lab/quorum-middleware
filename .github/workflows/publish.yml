@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '16.x'
           registry-url: 'https://registry.npmjs.org'
-          scope: @fptblockchainlabbot
+          scope: '@fptblockchainlabbot'
       - run: yarn --frozen-lockfile
       - run: yarn npm publish
         env:
