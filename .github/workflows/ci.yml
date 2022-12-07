@@ -1,4 +1,4 @@
-name: Node.js CI
+name: Continous integration
 
 on:
   push:
@@ -7,9 +7,12 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-javascript:
 
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: javascript
 
     strategy:
       matrix:
@@ -18,15 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
-        working-directory: ./javascript
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
       - name: Install dependencies
-        working-directory: ./javascript
         run: yarn --frozen-lockfile
       - name: Test
-        working-directory: ./javascript
         run: yarn test
       
