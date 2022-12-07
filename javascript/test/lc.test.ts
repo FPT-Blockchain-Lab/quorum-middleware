@@ -51,7 +51,7 @@ describe("Hash message testing", () => {
 
         const address = await StandardLCFactory?.methods.getLCAddress("102002754747479172180633994781527983425432706666881898828191417484204372588497").call();
 
-        expect(address?.at(0)).to.deep.eq("0x9CbB5f2C4Aee5383e65fc9826527302430c28a0f");
+        expect(address ? address[0] : "").to.deep.eq("0x9CbB5f2C4Aee5383e65fc9826527302430c28a0f");
     });
 
     it("Stage hash", () => {
