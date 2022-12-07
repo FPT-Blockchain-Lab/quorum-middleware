@@ -2,7 +2,6 @@
     "name": "quorum-middleware",
     "version": "0.4.0",
     "description": "Middleware between FPT Platform and Quorum Blockchain",
-    "private": true,
     "repository": {
         "type": "git",
         "url": "git+https://github.com/FPT-Blockchain-Lab/quorum-middleware.git"
