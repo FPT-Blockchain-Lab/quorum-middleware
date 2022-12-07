@@ -44,14 +44,16 @@ const labelUpdateLCList = [
 ];
 
 const labelAmendLCList = ["documentId", "stage", "subStage"];
-const labelApproveAmendLCList = ["documentId", "requestID"];
-
+const labelApproveAmendLCList = ["documentId", "requestId"];
+const labelFullfillAmendLCList = ["documentId", "requestId"];
+const labelCloseLCList = ["documentId"];
 function App() {
   const [lc, setLC] = useState(undefined);
   const [keyMenu, setKeyMenu] = useState("");
   const [web3, setWeb3] = useState(new Web3());
   const [account, setAccount] = useState(undefined);
   const [chainId, setChainId] = useState(undefined);
+  const [amendLCSelected, setAmendLCSelected] = useState(undefined);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const handleConnect = async () => {
@@ -106,115 +108,6 @@ function App() {
       .call();
     console.log(tx);
     setLC(tx);
-  };
-
-  const handleUpdateLC = async (values) => {
-    try {
-      if (!web3 || !account) {
-        alert("Connect to Metamask!");
-        return;
-      }
-      if (chainId !== CHAIN_ID) {
-        await setupDefaultNetwork();
-      }
-
-      const routerService = LCMiddleware.loadContract(
-        new Web3("http://1.54.89.229:32278")
-      ).RouterService;
-
-      /**
-       * example content hash
-       */
-      const contentHash = [
-        keccak256(asciiToHex("Hash of LC Document Number")),
-        keccak256(asciiToHex("Hash of LC 1")),
-        keccak256(asciiToHex("Hash of LC 2")),
-        keccak256(asciiToHex("Hash of LC 3")),
-        keccak256(asciiToHex("Hash of LC information")),
-      ];
-
-      const documentId = keccak256(asciiToHex(values.documentId));
-      const stageInfo = await routerService.methods
-        .getStageContent(documentId, values.stage - 1, values.subStage)
-        .call();
-      console.log("Stage info: ", stageInfo);
-      const prevHash = LCMiddleware.generateStageHash({
-        rootHash: stageInfo.rootHash,
-        prevHash: stageInfo.prevHash,
-        contentHash: stageInfo.contentHash,
-        URL: stageInfo.url,
-        signedTime: new BN(stageInfo.signedTime),
-        acknowledgeSignature: stageInfo.signature,
-        approvalSignature: stageInfo.acknowledge,
-      });
-      // const prevHash =
-      //   "0x1ff52a878fe0bc00b2a5c058cab7d32c1d1a96e1adfa149782c09a4d4b3d82cd";
-      console.log("Stage Message Hash: ", prevHash);
-
-      const signedTime = new BN(values.signedTime);
-      const _stage = new BN(values.stage);
-      // const _subStage = new BN(+values.subStage + 1);
-      const _subStage = new BN(values.subStage);
-      const numOfDocument = new BN(values.numOfDocument);
-      const url = values.url;
-
-      let acknowledgeSignature = EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
-
-      if (_stage == 1 || _stage == 4 || _stage == 5) {
-        const ackMessageHash = LCMiddleware.generateAcknowledgeMessageHash(
-          contentHash.slice(1, numOfDocument.add(new BN("1")).toNumber())
-        );
-
-        acknowledgeSignature = await web3.eth.personal.sign(
-          ackMessageHash,
-          account,
-          ""
-        );
-      }
-
-      const ROOT_HASH = await routerService.methods
-        .getRootHash(documentId)
-        .call();
-      console.log(ROOT_HASH);
-
-      const messageHash = LCMiddleware.generateApprovalMessageHash({
-        rootHash: ROOT_HASH,
-        prevHash: prevHash,
-        contentHash,
-        URL: url,
-        signedTime,
-        acknowledgeSignature,
-      });
-      console.log("Approval Message Hash: ", messageHash);
-
-      const approval_sig = await web3.eth.personal.sign(
-        messageHash,
-        account,
-        ""
-      );
-      console.log("Approval sig: ", approval_sig);
-
-      const content = [
-        ROOT_HASH,
-        signedTime.toString(),
-        prevHash,
-        numOfDocument.toString(),
-        contentHash,
-        url,
-        acknowledgeSignature,
-        approval_sig,
-      ];
-
-      const tx = await routerService.methods
-        .approve(documentId, _stage, _subStage, content)
-        .send({ from: account });
-      console.log(tx);
-
-      alert("Update LC success");
-      setIsModalVisible(false);
-    } catch (error) {
-      console.error(error);
-    }
   };
 
   const handleCreateLC = async (values) => {
@@ -314,6 +207,141 @@ function App() {
     }
   };
 
+  const handleUpdateLC = async (values) => {
+    try {
+      if (!web3 || !account) {
+        alert("Connect to Metamask!");
+        return;
+      }
+      if (chainId !== CHAIN_ID) {
+        await setupDefaultNetwork();
+      }
+
+      const routerService = LCMiddleware.loadContract(
+        new Web3("http://1.54.89.229:32278")
+      ).RouterService;
+
+      /**
+       * example content hash
+       */
+      const contentHash = [
+        keccak256(asciiToHex("Hash of LC Document Number")),
+        keccak256(asciiToHex("Hash of LC 1")),
+        keccak256(asciiToHex("Hash of LC 2")),
+        keccak256(asciiToHex("Hash of LC 3")),
+        keccak256(asciiToHex("Hash of LC information")),
+      ];
+
+      const documentId = keccak256(asciiToHex(values.documentId));
+      const stageInfo = await routerService.methods
+        .getStageContent(documentId, values.stage - 1, values.subStage)
+        .call();
+      console.log("Stage info: ", stageInfo);
+      const prevHash = LCMiddleware.generateStageHash({
+        rootHash: stageInfo.rootHash,
+        prevHash: stageInfo.prevHash,
+        contentHash: stageInfo.contentHash,
+        URL: stageInfo.url,
+        signedTime: new BN(stageInfo.signedTime),
+        acknowledgeSignature: stageInfo.acknowledge,
+        approvalSignature: stageInfo.signature,
+      });
+      // const prevHash =
+      //   "0x1ff52a878fe0bc00b2a5c058cab7d32c1d1a96e1adfa149782c09a4d4b3d82cd";
+      console.log("Stage Message Hash: ", prevHash);
+
+      const signedTime = new BN(values.signedTime);
+      const _stage = new BN(values.stage);
+      // const _subStage = new BN(+values.subStage + 1);
+      const _subStage = new BN(values.subStage);
+      const numOfDocument = new BN(values.numOfDocument);
+      const url = values.url;
+
+      let acknowledgeSignature = EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
+
+      if (_stage == 1 || _stage == 4 || _stage == 5) {
+        const ackMessageHash = LCMiddleware.generateAcknowledgeMessageHash(
+          contentHash.slice(1, numOfDocument.add(new BN("1")).toNumber())
+        );
+
+        acknowledgeSignature = await web3.eth.personal.sign(
+          ackMessageHash,
+          account,
+          ""
+        );
+      }
+
+      const ROOT_HASH = await routerService.methods
+        .getRootHash(documentId)
+        .call();
+      console.log(ROOT_HASH);
+
+      const messageHash = LCMiddleware.generateApprovalMessageHash({
+        rootHash: ROOT_HASH,
+        prevHash: prevHash,
+        contentHash,
+        URL: url,
+        signedTime,
+        acknowledgeSignature,
+      });
+      console.log("Approval Message Hash: ", messageHash);
+
+      const approval_sig = await web3.eth.personal.sign(
+        messageHash,
+        account,
+        ""
+      );
+      console.log("Approval sig: ", approval_sig);
+
+      const content = [
+        ROOT_HASH,
+        signedTime.toString(),
+        prevHash,
+        numOfDocument.toString(),
+        contentHash,
+        url,
+        acknowledgeSignature,
+        approval_sig,
+      ];
+
+      const tx = await routerService.methods
+        .approve(documentId, _stage, _subStage, content)
+        .send({ from: account });
+      console.log(tx);
+
+      alert("Update LC success");
+      setIsModalVisible(false);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleCloseLC = async (values) => {
+    try {
+      if (!web3 || !account) {
+        alert("Connect to the metamask!");
+        return;
+      }
+      if (chainId !== CHAIN_ID) {
+        await setupDefaultNetwork();
+      }
+
+      const routerService = LCMiddleware.loadContract(
+        new Web3("http://1.54.89.229:32278")
+      ).RouterService;
+
+      const documentId = keccak256(asciiToHex(values.documentId));
+
+      const tx = await routerService.methods
+        .closeLC(documentId)
+        .send({ from: account });
+      console.log(tx);
+      alert("Close LC success!");
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   const handleAmendLC = async (values) => {
     try {
       if (!web3 || !account) {
@@ -326,43 +354,44 @@ function App() {
 
       const { RouterService: routerService, AmendRequest: amendRequest } =
         LCMiddleware.loadContract(new Web3("http://1.54.89.229:32278"));
+      const documentId = keccak256(asciiToHex(values.documentId));
       const { _contract: lcAddress } = await routerService.methods
-        .getAddress(values.documentId)
+        .getAddress(documentId)
         .call();
       console.log(lcAddress);
       if (/^0x0+$/.test(lcAddress)) return alert("DocumentId not found");
-      // setAmendLCSelected(lcAddress);
+      setAmendLCSelected(lcAddress);
 
       const amendStage = +values.stage;
       const amendSubStage = +values.subStage;
 
       const amendStageContent = await routerService.methods
-        .getStageContent(values.documentId, values.stage, values.subStage)
+        .getStageContent(documentId, values.stage, values.subStage)
         .call();
 
       if (amendStageContent.signature === "0x")
         return alert("Stage Amend not found");
 
       const rootHash = await await routerService.methods
-        .getRootHash(values.documentId)
+        .getRootHash(documentId)
         .call();
 
       // get prevHash
       const prevHash = LCMiddleware.generateStageHash({
         rootHash: amendStageContent.rootHash,
         prevHash: amendStageContent.prevHash,
-        URL: amendStageContent.url,
         contentHash: amendStageContent.contentHash,
+        URL: amendStageContent.url,
         signedTime: amendStageContent.signedTime,
-        approvalSignature: amendStageContent.signature,
         acknowledgeSignature: amendStageContent.acknowledge,
+        approvalSignature: amendStageContent.signature,
       });
 
       const migrateStages = [{ stage: 1, subStage: 1 }];
       const migrating_stages = await Promise.all(
         migrateStages.map(async (s) => {
           const content = await routerService.methods
-            .getStageContent(values.documentId, s.stage, s.subStage)
+            .getStageContent(documentId, s.stage, s.subStage)
             .call();
           return LCMiddleware.generateStageHash({
             rootHash: content.rootHash,
@@ -393,7 +422,7 @@ function App() {
 
       // get acknowledge signature
       let acknowledge_sig = EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
-      if (amendStage == 4 || amendStage == 5) {
+      if (amendStage == 1 || amendStage == 4 || amendStage == 5) {
         const ackMessageHash = LCMiddleware.generateAcknowledgeMessageHash(
           contentHash.slice(1, numOfDocument + 1)
         );
@@ -453,93 +482,95 @@ function App() {
       const amend_sig = await web3.eth.personal.sign(amendHash, account, "");
 
       const tx = await routerService.methods
-        .submitAmendment(
-          values.documentId,
-          migrating_stages,
-          amend_stage,
-          amend_sig
-        )
+        .submitAmendment(documentId, migrating_stages, amend_stage, amend_sig)
         .send({ from: account });
       console.log(tx);
-      alert("submit amendment success");
+      alert("Submit Amend Success");
     } catch (error) {
       console.log(error);
       error.message && alert(error.message);
     }
   };
 
-  // const handleFullfillAmend = async (values) => {
-  //   try {
-  //     if (!web3 || !account) {
-  //       alert("Connect to Metamask!");
-  //       return;
-  //     }
-  //     if (chainId !== CHAIN_ID) {
-  //       await setupDefaultNetwork();
-  //     }
+  const handleApproveAmendLC = async (values) => {
+    try {
+      if (!web3 || !account) {
+        alert("Connect to Metamask!");
+        return;
+      }
+      if (chainId !== CHAIN_ID) {
+        await setupDefaultNetwork();
+      }
 
-  //     const routerService = new web3.eth.Contract(
-  //       RouterABI,
-  //       ROUTER_SERVICE_ADDRESS
-  //     );
+      const { RouterService: routerService, AmendRequest: amendRequest } =
+        LCMiddleware.loadContract(new Web3("http://1.54.89.229:32278"));
+      const documentId = keccak256(asciiToHex(values.documentId));
+      const nonces = await amendRequest.methods.nonces(account).call();
+      const requestId = LCMiddleware.generateRequestId(account, nonces);
+      const amendmentRequest = await routerService.methods
+        .getAmendmentRequest(documentId, requestId)
+        .call();
+      console.log("Amendment request: ", amendmentRequest);
+      const isApproved = await routerService.methods
+        .isAmendApproved(documentId, requestId)
+        .call();
+      console.log(isApproved);
+      if (isApproved) return alert("Amend request has been approved!");
 
-  //     const request = await routerService.methods
-  //       .getAmendmentRequest(values.documentId, values.requestID)
-  //       .call();
-  //     if (!request) alert("Amend request not found!");
-  //     console.log(request);
-  //     await routerService.methods
-  //       .fulfillAmendment(values.documentId, values.requestID)
-  //       .call()
-  //       .then((res) => alert("Fullfill success!"))
-  //       .catch((err) => console.log(err));
-  //   } catch (error) {
-  //     console.log(error);
-  //     error.message && alert(error.message);
-  //   }
-  // };
+      const amendMessageHash = LCMiddleware.generateAmendMessageHash(
+        amendmentRequest.migratingStages,
+        amendmentRequest.amendStage
+      );
+      console.log("Amend Message Hash: ", amendMessageHash);
 
-  // const handleApproveAmend = async (values) => {
-  //   try {
-  //     if (!web3 || !account) {
-  //       alert("Connect to Metamask!");
-  //       return;
-  //     }
-  //     if (chainId !== CHAIN_ID) {
-  //       await setupDefaultNetwork();
-  //     }
+      const amend_sig = await web3.eth.personal.sign(
+        amendMessageHash,
+        account,
+        ""
+      );
 
-  //     console.log(values);
+      const tx = await routerService.methods
+        .approveAmendment(documentId, requestId, amend_sig)
+        .send({ from: account });
+      console.log(tx);
+      alert("Approve Amendment Success!");
+    } catch (error) {
+      console.log(error);
+      error.message && alert(error.message);
+    }
+  };
 
-  //     const routerService = new web3.eth.Contract(
-  //       RouterABI,
-  //       ROUTER_SERVICE_ADDRESS
-  //     );
+  const handleFullfillAmend = async (values) => {
+    try {
+      if (!web3 || !account) {
+        alert("Connect to Metamask!");
+        return;
+      }
+      if (chainId !== CHAIN_ID) {
+        await setupDefaultNetwork();
+      }
 
-  //     const request = await routerService.methods
-  //       .getAmendmentRequest(values.documentId, values.requestID)
-  //       .call();
-  //     console.log(request);
-  //     const isApproved = await routerService.methods
-  //       .isAmendApproved(values.documentId, values.requestID)
-  //       .call();
-  //     if (isApproved) return alert("Amend request has been approved!");
-  //     const approval_sig = await gen_amend_sig(
-  //       request.migratingStages,
-  //       request.amendStage
-  //     );
+      const routerService = LCMiddleware.loadContract(
+        new Web3("http://1.54.89.229:32278")
+      ).RouterService;
 
-  //     const amend_sig = await web3.eth.personal.sign(approval_sig, account, "");
+      const documentId = keccak256(asciiToHex(values.documentId));
 
-  //     await routerService.methods
-  //       .approveAmendment(values.documentId, values.requestID, amend_sig)
-  //       .send({ from: account });
-  //     console.log("Approve amendment success");
-  //   } catch (error) {
-  //     console.log(error);
-  //     error.message && alert(error.message);
-  //   }
-  // };
+      const request = await routerService.methods
+        .getAmendmentRequest(documentId, values.requestID)
+        .call();
+      if (!request) alert("Amend request not found!");
+      console.log(request);
+      const tx = await routerService.methods
+        .fulfillAmendment(documentId, values.requestID)
+        .call();
+      console.log(tx);
+      alert("Fullfill success!");
+    } catch (error) {
+      console.log(error);
+      error.message && alert(error.message);
+    }
+  };
 
   const FormItem = (label) => {
     return (
@@ -758,31 +789,11 @@ function App() {
         initialValues={{
           remember: true,
         }}
-        // onFinish={
-        // 	keyMenu === "ApproveAmend" ? handleApproveAmend : handleFullfillAmend
-        // }
+        onFinish={handleApproveAmendLC}
         onFinishFailed={onFinishFailed}
         autoComplete="off"
       >
-        {/* {labelApproveAmendLCList.map((idx, label) => FormItem(idx, label))}
-				{lcData?.lc?.submittedAmendments.map((submittedAmend, idx) => (
-					<div style={{ display: "flex", flexDirection: "column" }}>
-						<div>Submitted Amendment</div>
-						<pre>
-							Proposer: {submittedAmend.proposer}
-							<br />
-							ID: {submittedAmend.id.replace("-", "\nRequest ID: ")}
-							<br />
-							Nonce: {submittedAmend.nonce}
-						</pre>
-						<div>Approved Amendment</div>
-	          <pre>
-	            Approver: {submittedAmend.approvedAmendments[0].approver ?? " "}
-	            <br />
-	            ID: {submittedAmend.approvedAmendments[0].id ?? " "}
-	          </pre>
-					</div>
-				))} */}
+        {labelApproveAmendLCList.map((idx, label) => FormItem(idx, label))}
         <Form.Item
           wrapperCol={{
             offset: 8,
@@ -791,6 +802,70 @@ function App() {
         >
           <Button type="primary" htmlType="submit">
             {keyMenu === "ApproveAmend" ? "Approve Amend" : "Fullfill Amend"}
+          </Button>
+        </Form.Item>
+      </Form>
+    );
+  };
+
+  const FullfillAmendForm = () => {
+    return (
+      <Form
+        name="basic"
+        labelCol={{
+          span: 4,
+        }}
+        wrapperCol={{
+          span: 16,
+        }}
+        initialValues={{
+          remember: true,
+        }}
+        onFinish={handleFullfillAmend}
+        onFinishFailed={onFinishFailed}
+        autoComplete="off"
+      >
+        {labelFullfillAmendLCList.map((idx, label) => FormItem(idx, label))}
+        <Form.Item
+          wrapperCol={{
+            offset: 8,
+            span: 16,
+          }}
+        >
+          <Button type="primary" htmlType="submit">
+            {keyMenu === "ApproveAmend" ? "Approve Amend" : "Fullfill Amend"}
+          </Button>
+        </Form.Item>
+      </Form>
+    );
+  };
+
+  const CloseLCForm = () => {
+    return (
+      <Form
+        name="basic"
+        labelCol={{
+          span: 4,
+        }}
+        wrapperCol={{
+          span: 16,
+        }}
+        initialValues={{
+          remember: true,
+        }}
+        onFinish={handleCloseLC}
+        onFinishFailed={onFinishFailed}
+        autoComplete="off"
+      >
+        {labelCloseLCList.map((idx, label) => FormItem(idx, label))}
+        <Form.Item
+          wrapperCol={{
+            offset: 8,
+            span: 16,
+          }}
+        >
+          <Button type="primary" htmlType="submit">
+            Close
           </Button>
         </Form.Item>
       </Form>
@@ -824,6 +899,7 @@ function App() {
             { key: "GetStageContent", label: "Get Stage Content" },
             { key: "CreateLC", label: "Create LC" },
             { key: "ApproveLC", label: "Approve LC" },
+            { key: "CloseLC", label: "Close LC" },
             { key: "Amend", label: "Amend LC" },
             { key: "ApproveAmend", label: "Approve Amend" },
             { key: "FullfillAmend", label: "Fullfill Amend" },
@@ -849,16 +925,20 @@ function App() {
               minHeight: 280,
             }}
           >
-            {keyMenu === "CreateLC" ? (
-              CreateLCForm()
-            ) : keyMenu === "GetStageContent" ? (
+            {keyMenu === "GetStageContent" ? (
               GetStageContentForm()
+            ) : keyMenu === "CreateLC" ? (
+              CreateLCForm()
+            ) : keyMenu === "ApproveLC" ? (
+              UpdateLCForm()
+            ) : keyMenu === "CloseLC" ? (
+              CloseLCForm()
             ) : keyMenu === "Amend" ? (
               AmendLCForm()
             ) : keyMenu === "ApproveAmend" ? (
               ApproveAmendForm()
-            ) : keyMenu === "ApproveLC" ? (
-              UpdateLCForm()
+            ) : keyMenu === "FullfillAmend" ? (
+              FullfillAmendForm()
             ) : (
               <>Nothing to show</>
             )}
