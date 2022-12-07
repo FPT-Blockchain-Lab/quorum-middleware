@@ -15,7 +15,7 @@ import Web3 from "web3";
 import { asciiToHex, keccak256 } from "web3-utils";
 import { CHAIN_ID, setupDefaultNetwork, EMPTY_BYTES } from "./utils";
 import BN from "bn.js";
-import { LCMiddleware } from "@tuannm106/quorum-middleware";
+import { Middleware } from "@tuannm106/quorum-middleware";
 const { Header, Sider, Content } = Layout;
 const { Link } = Anchor;
 
@@ -44,9 +44,10 @@ const labelUpdateLCList = [
 ];
 
 const labelAmendLCList = ["documentId", "stage", "subStage"];
-const labelApproveAmendLCList = ["documentId", "requestId"];
-const labelFullfillAmendLCList = ["documentId", "requestId"];
+const labelApproveAmendLCList = ["documentId"];
+const labelFullfillAmendLCList = ["documentId"];
 const labelCloseLCList = ["documentId"];
+
 function App() {
   const [lc, setLC] = useState(undefined);
   const [keyMenu, setKeyMenu] = useState("");
@@ -99,9 +100,10 @@ function App() {
   };
 
   const getStageInfo = async (values) => {
-    const routerService = LCMiddleware.loadContract(
+    const routerService = Middleware.LC.loadContract(
       new Web3("http://1.54.89.229:32278")
     ).RouterService;
+    // Generate documentId
     const documentId = keccak256(asciiToHex(values.documentId));
     const tx = await routerService.methods
       .getStageContent(documentId, values.stage, values.subStage)
@@ -137,10 +139,12 @@ function App() {
       const numOfDocument = new BN(values.numOfDocument);
       const ROOT_HASH =
         "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+      // Generate documentId
       const documentId = keccak256(asciiToHex(values.documentId));
       const url = values.url;
 
-      const ackMessageHash = LCMiddleware.generateAcknowledgeMessageHash(
+      // Get acknowledge message hash
+      const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
         contentHash.slice(1, numOfDocument.add(new BN("1")).toNumber())
       );
 
@@ -149,11 +153,13 @@ function App() {
         account,
         ""
       );
-      const approvalMessageHash = LCMiddleware.generateApprovalMessageHash({
+
+      // Get approval message hash
+      const approvalMessageHash = Middleware.LC.generateApprovalMessageHash({
         rootHash: ROOT_HASH,
         prevHash: documentId,
         contentHash,
-        URL: url,
+        url: url,
         signedTime,
         acknowledgeSignature,
       });
@@ -165,7 +171,7 @@ function App() {
       );
 
       web3.eth.handleRevert = true;
-      const standardFactory = LCMiddleware.loadContract(
+      const standardFactory = Middleware.LC.loadContract(
         new Web3("http://1.54.89.229:32278")
       ).StandardLCFactory;
 
@@ -217,7 +223,7 @@ function App() {
         await setupDefaultNetwork();
       }
 
-      const routerService = LCMiddleware.loadContract(
+      const routerService = Middleware.LC.loadContract(
         new Web3("http://1.54.89.229:32278")
       ).RouterService;
 
@@ -231,28 +237,25 @@ function App() {
         keccak256(asciiToHex("Hash of LC 3")),
         keccak256(asciiToHex("Hash of LC information")),
       ];
-
+      // Generate documentId
       const documentId = keccak256(asciiToHex(values.documentId));
       const stageInfo = await routerService.methods
         .getStageContent(documentId, values.stage - 1, values.subStage)
         .call();
-      console.log("Stage info: ", stageInfo);
-      const prevHash = LCMiddleware.generateStageHash({
+
+      // Get message hash
+      const prevHash = Middleware.LC.generateStageHash({
         rootHash: stageInfo.rootHash,
         prevHash: stageInfo.prevHash,
         contentHash: stageInfo.contentHash,
-        URL: stageInfo.url,
+        url: stageInfo.url,
         signedTime: new BN(stageInfo.signedTime),
         acknowledgeSignature: stageInfo.acknowledge,
         approvalSignature: stageInfo.signature,
       });
-      // const prevHash =
-      //   "0x1ff52a878fe0bc00b2a5c058cab7d32c1d1a96e1adfa149782c09a4d4b3d82cd";
-      console.log("Stage Message Hash: ", prevHash);
 
       const signedTime = new BN(values.signedTime);
       const _stage = new BN(values.stage);
-      // const _subStage = new BN(+values.subStage + 1);
       const _subStage = new BN(values.subStage);
       const numOfDocument = new BN(values.numOfDocument);
       const url = values.url;
@@ -260,7 +263,7 @@ function App() {
       let acknowledgeSignature = EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
 
       if (_stage == 1 || _stage == 4 || _stage == 5) {
-        const ackMessageHash = LCMiddleware.generateAcknowledgeMessageHash(
+        const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
           contentHash.slice(1, numOfDocument.add(new BN("1")).toNumber())
         );
 
@@ -276,22 +279,21 @@ function App() {
         .call();
       console.log(ROOT_HASH);
 
-      const messageHash = LCMiddleware.generateApprovalMessageHash({
+      // Get approval message hash
+      const messageHash = Middleware.LC.generateApprovalMessageHash({
         rootHash: ROOT_HASH,
         prevHash: prevHash,
         contentHash,
-        URL: url,
+        url: url,
         signedTime,
         acknowledgeSignature,
       });
-      console.log("Approval Message Hash: ", messageHash);
 
       const approval_sig = await web3.eth.personal.sign(
         messageHash,
         account,
         ""
       );
-      console.log("Approval sig: ", approval_sig);
 
       const content = [
         ROOT_HASH,
@@ -308,7 +310,6 @@ function App() {
         .approve(documentId, _stage, _subStage, content)
         .send({ from: account });
       console.log(tx);
-
       alert("Update LC success");
       setIsModalVisible(false);
     } catch (error) {
@@ -326,10 +327,10 @@ function App() {
         await setupDefaultNetwork();
       }
 
-      const routerService = LCMiddleware.loadContract(
+      const routerService = Middleware.LC.loadContract(
         new Web3("http://1.54.89.229:32278")
       ).RouterService;
-
+      // Generate documentId
       const documentId = keccak256(asciiToHex(values.documentId));
 
       const tx = await routerService.methods
@@ -353,18 +354,17 @@ function App() {
       }
 
       const { RouterService: routerService, AmendRequest: amendRequest } =
-        LCMiddleware.loadContract(new Web3("http://1.54.89.229:32278"));
+        Middleware.LC.loadContract(new Web3("http://1.54.89.229:32278"));
+      // Generate documentId
       const documentId = keccak256(asciiToHex(values.documentId));
       const { _contract: lcAddress } = await routerService.methods
         .getAddress(documentId)
         .call();
-      console.log(lcAddress);
       if (/^0x0+$/.test(lcAddress)) return alert("DocumentId not found");
       setAmendLCSelected(lcAddress);
 
       const amendStage = +values.stage;
       const amendSubStage = +values.subStage;
-
       const amendStageContent = await routerService.methods
         .getStageContent(documentId, values.stage, values.subStage)
         .call();
@@ -372,31 +372,31 @@ function App() {
       if (amendStageContent.signature === "0x")
         return alert("Stage Amend not found");
 
-      const rootHash = await await routerService.methods
+      const rootHash = await routerService.methods
         .getRootHash(documentId)
         .call();
 
       // get prevHash
-      const prevHash = LCMiddleware.generateStageHash({
+      const prevHash = Middleware.LC.generateStageHash({
         rootHash: amendStageContent.rootHash,
         prevHash: amendStageContent.prevHash,
         contentHash: amendStageContent.contentHash,
-        URL: amendStageContent.url,
+        url: amendStageContent.url,
         signedTime: amendStageContent.signedTime,
         acknowledgeSignature: amendStageContent.acknowledge,
         approvalSignature: amendStageContent.signature,
       });
-
+      console.log("Prev hash: ", prevHash);
       const migrateStages = [{ stage: 1, subStage: 1 }];
       const migrating_stages = await Promise.all(
         migrateStages.map(async (s) => {
           const content = await routerService.methods
             .getStageContent(documentId, s.stage, s.subStage)
             .call();
-          return LCMiddleware.generateStageHash({
+          return Middleware.LC.generateStageHash({
             rootHash: content.rootHash,
             prevHash: content.prevHash,
-            URL: content.url,
+            url: content.url,
             contentHash: content.contentHash,
             signedTime: content.signedTime,
             approvalSignature: content.signature,
@@ -423,7 +423,7 @@ function App() {
       // get acknowledge signature
       let acknowledge_sig = EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
       if (amendStage == 1 || amendStage == 4 || amendStage == 5) {
-        const ackMessageHash = LCMiddleware.generateAcknowledgeMessageHash(
+        const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
           contentHash.slice(1, numOfDocument + 1)
         );
 
@@ -435,11 +435,11 @@ function App() {
       }
 
       // get approval signature
-      const messageHash = LCMiddleware.generateApprovalMessageHash({
+      const messageHash = Middleware.LC.generateApprovalMessageHash({
         rootHash,
         prevHash,
         contentHash,
-        URL: url,
+        url: url,
         signedTime,
         acknowledgeSignature: acknowledge_sig,
       });
@@ -461,7 +461,8 @@ function App() {
 
       const amend_stage = [amendStage, amendSubStage, content];
 
-      const amendHash = LCMiddleware.generateAmendMessageHash(
+      //get amend message hash
+      const amendHash = Middleware.LC.generateAmendMessageHash(
         migrating_stages,
         {
           stage: amendStage,
@@ -470,7 +471,7 @@ function App() {
             rootHash,
             prevHash,
             contentHash,
-            URL: url,
+            url: url,
             signedTime,
             numOfDocuments: numOfDocument,
             acknowledgeSignature: acknowledge_sig,
@@ -503,25 +504,47 @@ function App() {
       }
 
       const { RouterService: routerService, AmendRequest: amendRequest } =
-        LCMiddleware.loadContract(new Web3("http://1.54.89.229:32278"));
+        Middleware.LC.loadContract(new Web3("http://1.54.89.229:32278"));
+      // Generate documentId
       const documentId = keccak256(asciiToHex(values.documentId));
+
+      //  Account 1 has been submitted amendment request twice -> current_nonce = 2
+      //  - `nonce = 0` -> Standard LC amendment request
+      //  - `nonce = 1` -> UPAS LC amendment request
+      // Get current nonces of proposer
       const nonces = await amendRequest.methods.nonces(account).call();
-      const requestId = LCMiddleware.generateRequestId(account, nonces);
+      // Generate requestId
+      const requestId = Middleware.LC.generateRequestId(
+        account,
+        new BN(nonces - 1)
+      );
       const amendmentRequest = await routerService.methods
         .getAmendmentRequest(documentId, requestId)
         .call();
-      console.log("Amendment request: ", amendmentRequest);
       const isApproved = await routerService.methods
         .isAmendApproved(documentId, requestId)
         .call();
-      console.log(isApproved);
       if (isApproved) return alert("Amend request has been approved!");
 
-      const amendMessageHash = LCMiddleware.generateAmendMessageHash(
+      const content = Object.assign({}, amendmentRequest.amendStage.content);
+      // Format amendmentRequest
+      const amendStage = {
+        stage: amendmentRequest.amendStage.stage,
+        subStage: amendmentRequest.amendStage.subStage,
+        content: {
+          rootHash: content.rootHash,
+          prevHash: content.prevHash,
+          contentHash: content.contentHash,
+          url: content.url,
+          signedTime: content.signedTime,
+          acknowledgeSignature: content.acknowledge,
+          approvalSignature: content.signature,
+        },
+      };
+      const amendMessageHash = Middleware.LC.generateAmendMessageHash(
         amendmentRequest.migratingStages,
-        amendmentRequest.amendStage
+        amendStage
       );
-      console.log("Amend Message Hash: ", amendMessageHash);
 
       const amend_sig = await web3.eth.personal.sign(
         amendMessageHash,
@@ -550,19 +573,29 @@ function App() {
         await setupDefaultNetwork();
       }
 
-      const routerService = LCMiddleware.loadContract(
-        new Web3("http://1.54.89.229:32278")
-      ).RouterService;
-
+      const { RouterService: routerService, AmendRequest: amendRequest } =
+        Middleware.LC.loadContract(new Web3("http://1.54.89.229:32278"));
+      // Generate documentId
       const documentId = keccak256(asciiToHex(values.documentId));
 
+      //  Account 1 has been submitted amendment request twice -> current_nonce = 2
+      //  - `nonce = 0` -> Standard LC amendment request
+      //  - `nonce = 1` -> UPAS LC amendment request
+      // Get current nonce of proposer
+      const nonces = await amendRequest.methods.nonces(account).call();
+      // Generate requestId using current nonce
+      const requestId = Middleware.LC.generateRequestId(
+        account,
+        new BN(nonces - 1)
+      );
+
       const request = await routerService.methods
-        .getAmendmentRequest(documentId, values.requestID)
+        .getAmendmentRequest(documentId, requestId)
         .call();
       if (!request) alert("Amend request not found!");
       console.log(request);
       const tx = await routerService.methods
-        .fulfillAmendment(documentId, values.requestID)
+        .fulfillAmendment(documentId, requestId)
         .call();
       console.log(tx);
       alert("Fullfill success!");
@@ -692,7 +725,7 @@ function App() {
             }}
           >
             <Button type="primary" htmlType="submit">
-              Create
+              Get
             </Button>
           </Form.Item>
         </Form>

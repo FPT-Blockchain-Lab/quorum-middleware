@@ -1,5 +1,3 @@
-import axios from "axios";
-
 export function checkStage(stage) {
   switch (stage) {
     case "1":
@@ -21,26 +19,9 @@ export function checkStage(stage) {
   }
 }
 
-export function postMethod(data) {
-  return axios({
-    method: "post",
-    url: "http://localhost:3000/json-rpc",
-    data: data,
-  });
-}
-
 export const CHAIN_ID = 6788;
 
 export const EMPTY_BYTES = "0x";
-
-export const STANDARD_FACTORY_ADDRESS =
-  "0xf5e87bDE531B43A5e98847C15344F9Ec95dED0e7";
-
-export const ROUTER_SERVICE_ADDRESS =
-  "0x5EeE5a0028FC1Ff91e75B5168564b3232f2De2Fc";
-
-export const AMEND_REQUEST_ADDRESS =
-  "0x13e0cc465a3B7873391C239DD8A6b9C5473cC3fC";
 
 export const setupDefaultNetwork = async () => {
   const provider = window.ethereum;
