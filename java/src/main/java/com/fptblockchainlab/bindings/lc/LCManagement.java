@@ -415,12 +415,12 @@ public class LCManagement extends Contract {
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> unwhitelist(List<byte[]> _orgs) {
+    public RemoteFunctionCall<TransactionReceipt> unwhitelist(List<String> _orgs) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
                 FUNC_UNWHITELIST, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.generated.Bytes32>(
-                        org.web3j.abi.datatypes.generated.Bytes32.class,
-                        org.web3j.abi.Utils.typeMap(_orgs, org.web3j.abi.datatypes.generated.Bytes32.class))), 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.Utf8String>(
+                        org.web3j.abi.datatypes.Utf8String.class,
+                        org.web3j.abi.Utils.typeMap(_orgs, org.web3j.abi.datatypes.Utf8String.class))), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
@@ -432,27 +432,27 @@ public class LCManagement extends Contract {
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
-    public RemoteFunctionCall<Boolean> verifyIdentity(String _account, byte[] _org) {
+    public RemoteFunctionCall<Boolean> verifyIdentity(String _account, String _org) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_VERIFYIDENTITY, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _account), 
-                new org.web3j.abi.datatypes.generated.Bytes32(_org)), 
+                new org.web3j.abi.datatypes.Utf8String(_org)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> whitelist(List<byte[]> _orgs) {
+    public RemoteFunctionCall<TransactionReceipt> whitelist(List<String> _orgs) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
                 FUNC_WHITELIST, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.generated.Bytes32>(
-                        org.web3j.abi.datatypes.generated.Bytes32.class,
-                        org.web3j.abi.Utils.typeMap(_orgs, org.web3j.abi.datatypes.generated.Bytes32.class))), 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.Utf8String>(
+                        org.web3j.abi.datatypes.Utf8String.class,
+                        org.web3j.abi.Utils.typeMap(_orgs, org.web3j.abi.datatypes.Utf8String.class))), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteFunctionCall<Boolean> whitelistOrgs(byte[] param0) {
+    public RemoteFunctionCall<Boolean> whitelistOrgs(String _org) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_WHITELISTORGS, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(param0)), 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Utf8String(_org)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }

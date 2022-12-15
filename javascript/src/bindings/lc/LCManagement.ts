@@ -123,22 +123,18 @@ export interface LCManagement extends BaseContract {
       interfaceId: string | number[]
     ): NonPayableTransactionObject<boolean>;
 
-    unwhitelist(
-      _orgs: (string | number[])[]
-    ): NonPayableTransactionObject<void>;
+    unwhitelist(_orgs: string[]): NonPayableTransactionObject<void>;
 
     upasFactory(): NonPayableTransactionObject<string>;
 
     verifyIdentity(
       _account: string,
-      _org: string | number[]
+      _org: string
     ): NonPayableTransactionObject<boolean>;
 
-    whitelist(_orgs: (string | number[])[]): NonPayableTransactionObject<void>;
+    whitelist(_orgs: string[]): NonPayableTransactionObject<void>;
 
-    whitelistOrgs(
-      arg0: string | number[]
-    ): NonPayableTransactionObject<boolean>;
+    whitelistOrgs(_org: string): NonPayableTransactionObject<boolean>;
   };
   events: {
     RoleAdminChanged(cb?: Callback<RoleAdminChanged>): EventEmitter;
