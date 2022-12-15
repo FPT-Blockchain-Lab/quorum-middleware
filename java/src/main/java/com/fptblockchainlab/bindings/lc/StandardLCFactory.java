@@ -112,24 +112,24 @@ public class StandardLCFactory extends Contract {
         return newStandardLCEventFlowable(filter);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> amend(String _executor, BigInteger _documentId, List<byte[]> _parties) {
+    public RemoteFunctionCall<TransactionReceipt> amend(String _executor, BigInteger _documentId, List<String> _parties) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
                 FUNC_AMEND, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _executor), 
                 new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
-                new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.generated.Bytes32>(
-                        org.web3j.abi.datatypes.generated.Bytes32.class,
-                        org.web3j.abi.Utils.typeMap(_parties, org.web3j.abi.datatypes.generated.Bytes32.class))), 
+                new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.Utf8String>(
+                        org.web3j.abi.datatypes.Utf8String.class,
+                        org.web3j.abi.Utils.typeMap(_parties, org.web3j.abi.datatypes.Utf8String.class))), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> create(List<byte[]> _parties, Content _content) {
+    public RemoteFunctionCall<TransactionReceipt> create(List<String> _parties, Content _content) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
                 FUNC_CREATE, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.generated.Bytes32>(
-                        org.web3j.abi.datatypes.generated.Bytes32.class,
-                        org.web3j.abi.Utils.typeMap(_parties, org.web3j.abi.datatypes.generated.Bytes32.class)), 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.Utf8String>(
+                        org.web3j.abi.datatypes.Utf8String.class,
+                        org.web3j.abi.Utils.typeMap(_parties, org.web3j.abi.datatypes.Utf8String.class)), 
                 _content), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);

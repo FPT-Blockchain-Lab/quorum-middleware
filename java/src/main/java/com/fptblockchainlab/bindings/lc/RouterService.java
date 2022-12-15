@@ -265,11 +265,11 @@ public class RouterService extends Contract {
     }
 
     public static class Confirmation extends DynamicStruct {
-        public byte[] issuingBank;
+        public String issuingBank;
 
-        public byte[] advisingBank;
+        public String advisingBank;
 
-        public byte[] reimbursingBank;
+        public String reimbursingBank;
 
         public byte[] issuingBankSig;
 
@@ -277,10 +277,10 @@ public class RouterService extends Contract {
 
         public byte[] reimbursingBankSig;
 
-        public Confirmation(byte[] issuingBank, byte[] advisingBank, byte[] reimbursingBank, byte[] issuingBankSig, byte[] advisingBankSig, byte[] reimbursingBankSig) {
-            super(new org.web3j.abi.datatypes.generated.Bytes32(issuingBank), 
-                    new org.web3j.abi.datatypes.generated.Bytes32(advisingBank), 
-                    new org.web3j.abi.datatypes.generated.Bytes32(reimbursingBank), 
+        public Confirmation(String issuingBank, String advisingBank, String reimbursingBank, byte[] issuingBankSig, byte[] advisingBankSig, byte[] reimbursingBankSig) {
+            super(new org.web3j.abi.datatypes.Utf8String(issuingBank), 
+                    new org.web3j.abi.datatypes.Utf8String(advisingBank), 
+                    new org.web3j.abi.datatypes.Utf8String(reimbursingBank), 
                     new org.web3j.abi.datatypes.DynamicBytes(issuingBankSig), 
                     new org.web3j.abi.datatypes.DynamicBytes(advisingBankSig), 
                     new org.web3j.abi.datatypes.DynamicBytes(reimbursingBankSig));
@@ -292,7 +292,7 @@ public class RouterService extends Contract {
             this.reimbursingBankSig = reimbursingBankSig;
         }
 
-        public Confirmation(Bytes32 issuingBank, Bytes32 advisingBank, Bytes32 reimbursingBank, DynamicBytes issuingBankSig, DynamicBytes advisingBankSig, DynamicBytes reimbursingBankSig) {
+        public Confirmation(Utf8String issuingBank, Utf8String advisingBank, Utf8String reimbursingBank, DynamicBytes issuingBankSig, DynamicBytes advisingBankSig, DynamicBytes reimbursingBankSig) {
             super(issuingBank, advisingBank, reimbursingBank, issuingBankSig, advisingBankSig, reimbursingBankSig);
             this.issuingBank = issuingBank.getValue();
             this.advisingBank = advisingBank.getValue();

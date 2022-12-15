@@ -23,11 +23,11 @@ export interface EventOptions {
 
 export type Approved = ContractEventLog<{
   caller: string;
-  organization: string;
   stage: string;
   subStage: string;
   documentID: string;
   approvedTime: string;
+  organization: string;
   0: string;
   1: string;
   2: string;
