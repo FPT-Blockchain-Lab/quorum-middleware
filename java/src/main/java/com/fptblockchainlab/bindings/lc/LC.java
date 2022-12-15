@@ -81,7 +81,7 @@ public class LC extends Contract {
     public static final String FUNC_SETCOUNTER = "setCounter";
 
     public static final Event APPROVED_EVENT = new Event("Approved", 
-            Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {}, new TypeReference<Bytes32>() {}, new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}, new TypeReference<Uint256>(true) {}, new TypeReference<Uint256>() {}));
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>(true) {}, new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}, new TypeReference<Uint256>(true) {}, new TypeReference<Uint256>() {}, new TypeReference<Utf8String>() {}));
     ;
 
     @Deprecated
@@ -110,10 +110,10 @@ public class LC extends Contract {
             typedResponse.log = eventValues.getLog();
             typedResponse.caller = (String) eventValues.getIndexedValues().get(0).getValue();
             typedResponse.documentID = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
-            typedResponse.organization = (byte[]) eventValues.getNonIndexedValues().get(0).getValue();
-            typedResponse.stage = (BigInteger) eventValues.getNonIndexedValues().get(1).getValue();
-            typedResponse.subStage = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
-            typedResponse.approvedTime = (BigInteger) eventValues.getNonIndexedValues().get(3).getValue();
+            typedResponse.stage = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
+            typedResponse.subStage = (BigInteger) eventValues.getNonIndexedValues().get(1).getValue();
+            typedResponse.approvedTime = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
+            typedResponse.organization = (String) eventValues.getNonIndexedValues().get(3).getValue();
             responses.add(typedResponse);
         }
         return responses;
@@ -128,10 +128,10 @@ public class LC extends Contract {
                 typedResponse.log = log;
                 typedResponse.caller = (String) eventValues.getIndexedValues().get(0).getValue();
                 typedResponse.documentID = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
-                typedResponse.organization = (byte[]) eventValues.getNonIndexedValues().get(0).getValue();
-                typedResponse.stage = (BigInteger) eventValues.getNonIndexedValues().get(1).getValue();
-                typedResponse.subStage = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
-                typedResponse.approvedTime = (BigInteger) eventValues.getNonIndexedValues().get(3).getValue();
+                typedResponse.stage = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
+                typedResponse.subStage = (BigInteger) eventValues.getNonIndexedValues().get(1).getValue();
+                typedResponse.approvedTime = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
+                typedResponse.organization = (String) eventValues.getNonIndexedValues().get(3).getValue();
                 return typedResponse;
             }
         });
@@ -169,12 +169,12 @@ public class LC extends Contract {
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteFunctionCall<byte[]> checkProposer(String _proposer, BigInteger _stage) {
+    public RemoteFunctionCall<String> checkProposer(String _proposer, BigInteger _stage) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_CHECKPROPOSER, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _proposer), 
                 new org.web3j.abi.datatypes.generated.Uint256(_stage)), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>() {}));
-        return executeRemoteCallSingleValueReturn(function, byte[].class);
+                Arrays.<TypeReference<?>>asList(new TypeReference<Utf8String>() {}));
+        return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> close() {
@@ -210,7 +210,7 @@ public class LC extends Contract {
     public RemoteFunctionCall<List> getInvolvedParties() {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETINVOLVEDPARTIES, 
                 Arrays.<Type>asList(), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<Bytes32>>() {}));
+                Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<Utf8String>>() {}));
         return new RemoteFunctionCall<List>(function,
                 new Callable<List>() {
                     @Override
@@ -412,12 +412,12 @@ public class LC extends Contract {
 
         public BigInteger documentID;
 
-        public byte[] organization;
-
         public BigInteger stage;
 
         public BigInteger subStage;
 
         public BigInteger approvedTime;
+
+        public String organization;
     }
 }
