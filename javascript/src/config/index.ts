@@ -6,3 +6,7 @@ export const LCContractAddresses = {
     UPASLCFactory: "0x908839dA4161391e897097Fb404bef69060d05bc",
     AmendRequest: "0x6937fe172d03264599B029f36CD85330dA0FD775",
 };
+
+export const PermissionContractAddresses = {
+    OrgManager: "0x1136216Bbf1b9d246924F4e6fde050bd8295E219",
+};
