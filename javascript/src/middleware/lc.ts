@@ -1,10 +1,20 @@
-import Web3 from "web3";
-import { keccak256, encodePacked, Mixed, AbiItem } from "web3-utils";
-import ethAbiEncoder from "web3-eth-abi";
-import { LCContractABIs } from "../abi";
 import BN from "bn.js";
-import { LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
+import Web3 from "web3";
+import ethAbiEncoder from "web3-eth-abi";
+import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
+import { LCContractABIs } from "../abi";
+import { AmendRequest, LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory } from "../bindings/lc";
 import { LCContractAddresses } from "../config";
+import { validateCreateStandardLC, validateCreateUPASLC } from "./validate";
+
+type AnyFunction = (...args: any[]) => any;
+
+function wrapper<Fn extends AnyFunction>(mainFn: Fn, validateFn: AnyFunction) {
+    return function (...args: Parameters<Fn>): ReturnType<Fn> {
+        validateFn(...args);
+        return mainFn(...args);
+    };
+}
 
 export namespace Middleware {
     /** Contracts of LC protocol */
@@ -58,12 +68,24 @@ export namespace Middleware {
         static readonly DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 
         static loadContract(web3: Web3): LCContracts {
-            const LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
-            const Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], LCContractAddresses.Mode) as any as Mode;
-            const RouterService = new web3.eth.Contract(LCContractABIs.RouterService as any as AbiItem[], LCContractAddresses.RouterService) as any as RouterService;
-            const StandardLCFactory = new web3.eth.Contract(LCContractABIs.StandardLCFactory as any as AbiItem[], LCContractAddresses.StandardLCFactory) as any as StandardLCFactory;
-            const UPASLCFactory = new web3.eth.Contract(LCContractABIs.UPASLCFactory as any as AbiItem[], LCContractAddresses.UPASLCFactory) as any as UPASLCFactory;
-            const AmendRequest = new web3.eth.Contract(LCContractABIs.AmendRequest as any as AbiItem[], LCContractAddresses.AmendRequest) as any as AmendRequest;
+            let LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
+            let Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], LCContractAddresses.Mode) as any as Mode;
+            let RouterService = new web3.eth.Contract(
+                LCContractABIs.RouterService as any as AbiItem[],
+                LCContractAddresses.RouterService
+            ) as any as RouterService;
+            let StandardLCFactory = new web3.eth.Contract(
+                LCContractABIs.StandardLCFactory as any as AbiItem[],
+                LCContractAddresses.StandardLCFactory
+            ) as any as StandardLCFactory;
+            let UPASLCFactory = new web3.eth.Contract(
+                LCContractABIs.UPASLCFactory as any as AbiItem[],
+                LCContractAddresses.UPASLCFactory
+            ) as any as UPASLCFactory;
+            let AmendRequest = new web3.eth.Contract(LCContractABIs.AmendRequest as any as AbiItem[], LCContractAddresses.AmendRequest) as any as AmendRequest;
+
+            StandardLCFactory.methods.create = wrapper(StandardLCFactory.methods.create, validateCreateStandardLC);
+            UPASLCFactory.methods.create = wrapper(UPASLCFactory.methods.create, validateCreateUPASLC);
 
             return {
                 LCManagement,
@@ -141,7 +163,7 @@ export namespace Middleware {
             let content: Mixed[] = [
                 { v: rootHash, t: "bytes32" },
                 { v: prevHash, t: "bytes32" },
-                ...contentHash.map(hash => ({ v: hash, t: "bytes32" })),
+                ...contentHash.map((hash) => ({ v: hash, t: "bytes32" })),
                 { v: url, t: "string" },
                 { v: signedTime, t: "uint256" },
                 { v: approvalSignature, t: "bytes" },
