@@ -1,10 +1,12 @@
-import Web3 from "web3";
-import { keccak256, encodePacked, Mixed, AbiItem } from "web3-utils";
-import ethAbiEncoder from "web3-eth-abi";
-import { LCContractABIs } from "../abi";
 import BN from "bn.js";
-import { LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
-import { LCContractAddresses } from "../config";
+import Web3 from "web3";
+import ethAbiEncoder from "web3-eth-abi";
+import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
+import { LCContractABIs } from "../abi/lc";
+import { PermissionContractABIs } from "../abi/permission";
+import { AmendRequest, LCManagement, Mode, RouterService, StandardLC, StandardLCFactory, UPASLC, UPASLCFactory } from "../bindings/lc";
+import { OrgManager } from "../bindings/permission";
+import { LCContractAddresses, PermissionContractAddresses } from "../config";
 
 export namespace Middleware {
     /** Contracts of LC protocol */
@@ -52,18 +54,32 @@ export namespace Middleware {
         content: StageContent;
     }
 
+    export interface MigrateStage {
+        stage: BN;
+        subStage: BN;
+    }
+
     /** LC protocol */
     export class LC {
         /** The hash of empty bytes */
         static readonly DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 
         static loadContract(web3: Web3): LCContracts {
-            const LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
-            const Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], LCContractAddresses.Mode) as any as Mode;
-            const RouterService = new web3.eth.Contract(LCContractABIs.RouterService as any as AbiItem[], LCContractAddresses.RouterService) as any as RouterService;
-            const StandardLCFactory = new web3.eth.Contract(LCContractABIs.StandardLCFactory as any as AbiItem[], LCContractAddresses.StandardLCFactory) as any as StandardLCFactory;
-            const UPASLCFactory = new web3.eth.Contract(LCContractABIs.UPASLCFactory as any as AbiItem[], LCContractAddresses.UPASLCFactory) as any as UPASLCFactory;
-            const AmendRequest = new web3.eth.Contract(LCContractABIs.AmendRequest as any as AbiItem[], LCContractAddresses.AmendRequest) as any as AmendRequest;
+            let LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
+            let Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], LCContractAddresses.Mode) as any as Mode;
+            let RouterService = new web3.eth.Contract(
+                LCContractABIs.RouterService as any as AbiItem[],
+                LCContractAddresses.RouterService
+            ) as any as RouterService;
+            let StandardLCFactory = new web3.eth.Contract(
+                LCContractABIs.StandardLCFactory as any as AbiItem[],
+                LCContractAddresses.StandardLCFactory
+            ) as any as StandardLCFactory;
+            let UPASLCFactory = new web3.eth.Contract(
+                LCContractABIs.UPASLCFactory as any as AbiItem[],
+                LCContractAddresses.UPASLCFactory
+            ) as any as UPASLCFactory;
+            let AmendRequest = new web3.eth.Contract(LCContractABIs.AmendRequest as any as AbiItem[], LCContractAddresses.AmendRequest) as any as AmendRequest;
 
             return {
                 LCManagement,
@@ -141,7 +157,7 @@ export namespace Middleware {
             let content: Mixed[] = [
                 { v: rootHash, t: "bytes32" },
                 { v: prevHash, t: "bytes32" },
-                ...contentHash.map(hash => ({ v: hash, t: "bytes32" })),
+                ...contentHash.map((hash) => ({ v: hash, t: "bytes32" })),
                 { v: url, t: "string" },
                 { v: signedTime, t: "uint256" },
                 { v: approvalSignature, t: "bytes" },
@@ -183,6 +199,556 @@ export namespace Middleware {
                 default:
                     return "";
             }
+        }
+    }
+
+    export class LCWrapper {
+        private readonly DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+        private readonly EMPTY_BYTES = "0x";
+        readonly web3: Web3;
+        readonly LCManagement: LCManagement;
+        readonly RouterService: RouterService;
+        readonly StandardLCFactory: StandardLCFactory;
+        readonly UPASLCFactory: UPASLCFactory;
+        readonly OrgManager: OrgManager;
+
+        constructor(web3: Web3) {
+            this.LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
+            this.RouterService = new web3.eth.Contract(
+                LCContractABIs.RouterService as any as AbiItem[],
+                LCContractAddresses.RouterService
+            ) as any as RouterService;
+            this.StandardLCFactory = new web3.eth.Contract(
+                LCContractABIs.StandardLCFactory as any as AbiItem[],
+                LCContractAddresses.StandardLCFactory
+            ) as any as StandardLCFactory;
+            this.UPASLCFactory = new web3.eth.Contract(
+                LCContractABIs.UPASLCFactory as any as AbiItem[],
+                LCContractAddresses.UPASLCFactory
+            ) as any as UPASLCFactory;
+            this.OrgManager = new web3.eth.Contract(
+                PermissionContractABIs.OrgManager as any[] as AbiItem[],
+                PermissionContractAddresses.OrgManager
+            ) as any as OrgManager;
+            this.web3 = web3;
+        }
+
+        async createStandardLC(parties: string[], content: Omit<StageContent, "acknowledgeSignature" | "approvalSignature" | "rootHash">, from: string) {
+            // Get acknowledge message hash
+            const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
+                content.contentHash.slice(1, content.numOfDocuments.add(new BN("1")).toNumber())
+            );
+
+            const acknowledgeSignature = await this.web3.eth.personal.sign(ackMessageHash, from, "");
+
+            // Get approval message hash
+            const approvalMessageHash = Middleware.LC.generateApprovalMessageHash({
+                rootHash: this.DEFAULT_ROOT_HASH,
+                prevHash: content.prevHash,
+                contentHash: content.contentHash,
+                url: content.url,
+                signedTime: content.signedTime,
+                acknowledgeSignature,
+            });
+
+            const approvalSignature = await this.web3.eth.personal.sign(approvalMessageHash, from, "");
+
+            const _content = {
+                rootHash: this.DEFAULT_ROOT_HASH,
+                prevHash: content.prevHash,
+                contentHash: content.contentHash,
+                url: content.url,
+                signedTime: content.signedTime,
+                numOfDocuments: content.numOfDocuments,
+                acknowledgeSignature: acknowledgeSignature,
+                approvalSignature: approvalSignature,
+            };
+
+            if (parties.length != 4) {
+                throw new Error("The number of involved parties does not match. Expected 4.");
+            }
+
+            const orgs = await Promise.all([0, 1].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call()));
+
+            if (!orgs.every((org) => org)) {
+                throw new Error("Organization at index 0 or 1 does not exsist.");
+            }
+
+            const [isWhitelist, isVerifyIdentity] = await Promise.all([
+                this.LCManagement.methods.whitelistOrgs(parties[0]).call(),
+                this.LCManagement.methods.verifyIdentity(from, parties[0]).call(),
+            ]);
+
+            if (!isWhitelist) {
+                throw new Error("Organization does not whitelist.");
+            }
+
+            if (!isVerifyIdentity) {
+                throw new Error("Account not belong to organization.");
+            }
+
+            if (_content.rootHash.toLowerCase() != this.DEFAULT_ROOT_HASH.toLowerCase()) {
+                throw new Error("Root hash must be DEFAULT_ROOT_HASH");
+            }
+
+            if (_content.numOfDocuments.toNumber() > _content.contentHash.length) {
+                throw new Error("The number of documents cannot greater than the length of content hash.");
+            }
+
+            if (_content.prevHash != _content.contentHash[0]) {
+                throw new Error("Unlink to previous");
+            }
+
+            const data: [
+                string[],
+                [
+                    string | number[],
+                    number | string | BN,
+                    string | number[],
+                    number | string | BN,
+                    (string | number[])[],
+                    string,
+                    string | number[],
+                    string | number[]
+                ]
+            ] = [
+                parties,
+                [
+                    _content.rootHash,
+                    _content.signedTime.toString(),
+                    _content.prevHash,
+                    _content.numOfDocuments.toString(),
+                    _content.contentHash,
+                    _content.url,
+                    _content.acknowledgeSignature,
+                    _content.approvalSignature,
+                ],
+            ];
+
+            const gas = await this.StandardLCFactory.methods.create(...data).estimateGas({ from });
+
+            return this.StandardLCFactory.methods.create(...data).send({ from, gas });
+        }
+
+        async createUPASLC(parties: string[], content: Omit<StageContent, "acknowledgeSignature" | "approvalSignature" | "rootHash">, from: string) {
+            // Get acknowledge message hash
+            const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
+                content.contentHash.slice(1, content.numOfDocuments.add(new BN("1")).toNumber())
+            );
+
+            const acknowledgeSignature = await this.web3.eth.personal.sign(ackMessageHash, from, "");
+
+            // Get approval message hash
+            const approvalMessageHash = Middleware.LC.generateApprovalMessageHash({
+                rootHash: this.DEFAULT_ROOT_HASH,
+                prevHash: content.prevHash,
+                contentHash: content.contentHash,
+                url: content.url,
+                signedTime: content.signedTime,
+                acknowledgeSignature,
+            });
+
+            const approvalSignature = await this.web3.eth.personal.sign(approvalMessageHash, from, "");
+
+            const _content = {
+                rootHash: this.DEFAULT_ROOT_HASH,
+                prevHash: content.prevHash,
+                contentHash: content.contentHash,
+                url: content.url,
+                signedTime: content.signedTime,
+                numOfDocuments: content.numOfDocuments,
+                acknowledgeSignature: acknowledgeSignature,
+                approvalSignature: approvalSignature,
+            };
+
+            if (parties.length != 5) {
+                throw new Error("The number of involved parties does not match. Expected 5.");
+            }
+
+            const orgs = await Promise.all([0, 1, 2].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call()));
+
+            if (!orgs.every((org) => org)) {
+                throw new Error("Organization at index 0 or 1 or 2 does not exsist.");
+            }
+
+            const [isWhitelist, isVerifyIdentity] = await Promise.all([
+                this.LCManagement.methods.whitelistOrgs(parties[0]).call(),
+                this.LCManagement.methods.verifyIdentity(from, parties[0]).call(),
+            ]);
+
+            if (!isWhitelist) {
+                throw new Error("Organization does not whitelist.");
+            }
+
+            if (!isVerifyIdentity) {
+                throw new Error("Account not belong to organization.");
+            }
+
+            if (_content.rootHash != this.DEFAULT_ROOT_HASH) {
+                throw new Error("Root hash must be DEFAULT_ROOT_HASH");
+            }
+
+            if (_content.numOfDocuments.toNumber() > _content.contentHash.length) {
+                throw new Error("The number of documents cannot greater than the length of content hash.");
+            }
+
+            if (_content.prevHash != _content.contentHash[0]) {
+                throw new Error("Unlink to previous");
+            }
+
+            const data: [
+                string[],
+                [
+                    string | number[],
+                    number | string | BN,
+                    string | number[],
+                    number | string | BN,
+                    (string | number[])[],
+                    string,
+                    string | number[],
+                    string | number[]
+                ]
+            ] = [
+                parties,
+                [
+                    _content.rootHash,
+                    _content.signedTime.toString(),
+                    _content.prevHash,
+                    _content.numOfDocuments.toString(),
+                    _content.contentHash,
+                    _content.url,
+                    _content.acknowledgeSignature,
+                    _content.approvalSignature,
+                ],
+            ];
+            const gas = await this.UPASLCFactory.methods.create(...data).estimateGas({ from });
+
+            return this.UPASLCFactory.methods.create(...data).send({ from, gas });
+        }
+
+        async approveLC(
+            documentId: number | string | BN,
+            stage: number | string | BN,
+            subStage: number | string | BN,
+            content: Omit<StageContent, "acknowledgeSignature" | "approvalSignature" | "rootHash" | "prevHash">,
+            from: string
+        ) {
+            const { _contract, _typeOf } = await this.RouterService.methods.getAddress(documentId).call();
+            if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
+
+            let prevStage = new BN(stage),
+                prevSubStage = new BN(subStage);
+            const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+            const counter = await StandardLC.methods.getCounter().call();
+
+            if (!new BN(stage).eq(new BN(1))) {
+                prevStage = prevStage.sub(new BN(1));
+            }
+
+            if (new BN(stage).eq(new BN(2))) {
+                prevSubStage = new BN(counter).add(new BN(1));
+            }
+
+            const stageInfo = await this.RouterService.methods.getStageContent(documentId, prevStage.toString(), prevSubStage.toString()).call();
+
+            // Get message hash
+            const prevHash = Middleware.LC.generateStageHash({
+                rootHash: stageInfo[0],
+                prevHash: stageInfo[2],
+                contentHash: stageInfo[4],
+                url: stageInfo[5],
+                signedTime: new BN(stageInfo[1]),
+                acknowledgeSignature: stageInfo[6],
+                approvalSignature: stageInfo[7],
+            });
+
+            let acknowledgeSignature = this.EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
+
+            if (stage == 1 || stage == 4 || stage == 5) {
+                const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
+                    content.contentHash.slice(1, content.numOfDocuments.add(new BN("1")).toNumber())
+                );
+
+                acknowledgeSignature = await this.web3.eth.personal.sign(ackMessageHash, from, "");
+            }
+
+            const ROOT_HASH = await this.RouterService.methods.getRootHash(documentId).call();
+
+            // Get approval message hash
+            const messageHash = Middleware.LC.generateApprovalMessageHash({
+                rootHash: ROOT_HASH,
+                prevHash: prevHash,
+                contentHash: content.contentHash,
+                url: content.url,
+                signedTime: content.signedTime,
+                acknowledgeSignature,
+            });
+
+            const approval_sig = await this.web3.eth.personal.sign(messageHash, from, "");
+            let org = "";
+
+            if (_typeOf == "1") {
+                const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+                const parties = await StandardLC.methods.getInvolvedParties().call();
+
+                if (stage == 2 || stage == 6) {
+                    org = parties[1];
+                } else {
+                    org = parties[0];
+                }
+            } else if (_typeOf == "2") {
+                const UPASLC = new this.web3.eth.Contract(LCContractABIs.UPASLC as any[] as AbiItem[], _contract) as any as UPASLC;
+                const parties = await UPASLC.methods.getInvolvedParties().call();
+
+                if (stage == 2 || stage == 6) {
+                    org = parties[1];
+                } else if (stage == 5) {
+                    org = parties[2];
+                } else {
+                    org = parties[0];
+                }
+            }
+
+            const [isWhitelist, isVerifyIdentity] = await Promise.all([
+                this.LCManagement.methods.whitelistOrgs(org).call(),
+                this.LCManagement.methods.verifyIdentity(from, org).call(),
+            ]);
+
+            if (!isWhitelist) {
+                throw new Error("Organization does not whitelist.");
+            }
+
+            if (!isVerifyIdentity) {
+                throw new Error("Account not belong to organization.");
+            }
+
+            const data: [
+                number | string | BN,
+                number | string | BN,
+                number | string | BN,
+                [
+                    string | number[],
+                    number | string | BN,
+                    string | number[],
+                    number | string | BN,
+                    (string | number[])[],
+                    string,
+                    string | number[],
+                    string | number[]
+                ]
+            ] = [
+                documentId,
+                stage,
+                subStage,
+                [
+                    ROOT_HASH,
+                    content.signedTime.toString(),
+                    prevHash,
+                    content.numOfDocuments.toString(),
+                    content.contentHash,
+                    content.url,
+                    acknowledgeSignature,
+                    approval_sig,
+                ],
+            ];
+
+            const gas = await this.RouterService.methods.approve(...data).estimateGas({ from });
+
+            return this.RouterService.methods.approve(...data).send({ from, gas });
+        }
+
+        async closeLC(documentId: number | string | BN, from: string) {
+            const gas = await this.RouterService.methods.closeLC(documentId).estimateGas({ from });
+
+            return this.RouterService.methods.closeLC(documentId).send({ from, gas });
+        }
+
+        async submitAmendment(
+            documentId: number | string | BN,
+            stage: number | string | BN,
+            subStage: number | string | BN,
+            content: Omit<StageContent, "acknowledgeSignature" | "approvalSignature" | "rootHash" | "prevHash">,
+            migrateStages: MigrateStage[],
+            from: string
+        ) {
+            const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
+            if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
+
+            const amendStage = new BN(stage);
+            let amendSubStage = new BN(subStage);
+            let prevStage = amendStage,
+                prevSubStage = amendSubStage;
+            const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+            const counter = await StandardLC.methods.getCounter().call();
+
+            if (amendStage.eq(new BN(1))) {
+                amendSubStage = new BN(counter).add(new BN(2));
+            } else {
+                prevStage = prevStage.sub(new BN(1));
+            }
+
+            if (amendStage.eq(new BN(2))) {
+                prevSubStage = new BN(counter).add(new BN(1));
+            }
+
+            const amendStageContent = await this.RouterService.methods.getStageContent(documentId, prevStage.toString(), prevSubStage.toString()).call();
+
+            if (amendStageContent[7] === this.EMPTY_BYTES) throw new Error("Stage Amend not found");
+
+            const rootHash = await this.RouterService.methods.getRootHash(documentId).call();
+
+            // get prevHash
+            const prevHash = Middleware.LC.generateStageHash({
+                rootHash: amendStageContent[0],
+                prevHash: amendStageContent[2],
+                contentHash: amendStageContent[4],
+                url: amendStageContent[5],
+                signedTime: new BN(amendStageContent[1]),
+                acknowledgeSignature: amendStageContent[6],
+                approvalSignature: amendStageContent[7],
+            });
+
+            const migrating_stages = await Promise.all(
+                migrateStages.map(async (s) => {
+                    const content = await this.RouterService.methods.getStageContent(documentId, s.stage, s.subStage).call();
+                    return Middleware.LC.generateStageHash({
+                        rootHash: content[0],
+                        prevHash: content[2],
+                        url: content[5],
+                        contentHash: content[4],
+                        signedTime: new BN(content[1]),
+                        acknowledgeSignature: content[6],
+                        approvalSignature: content[7],
+                    });
+                })
+            );
+
+            // get acknowledge signature
+            let acknowledge_sig = this.EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
+            if (amendStage.eq(new BN(1)) || amendStage.eq(new BN(4)) || amendStage.eq(new BN(5))) {
+                const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
+                    content.contentHash.slice(1, new BN(content.numOfDocuments).add(new BN(1)).toNumber())
+                );
+
+                acknowledge_sig = await this.web3.eth.personal.sign(ackMessageHash, from, "");
+            }
+
+            // get approval signature
+            const messageHash = Middleware.LC.generateApprovalMessageHash({
+                rootHash,
+                prevHash,
+                contentHash: content.contentHash,
+                url: content.url,
+                signedTime: new BN(content.signedTime),
+                acknowledgeSignature: acknowledge_sig,
+            });
+            const approval_sig = await this.web3.eth.personal.sign(messageHash, from, "");
+            //get amend message hash
+            const amendHash = Middleware.LC.generateAmendMessageHash(migrating_stages, {
+                stage: amendStage,
+                subStage: amendSubStage,
+                content: {
+                    rootHash,
+                    prevHash,
+                    contentHash: content.contentHash,
+                    url: content.url,
+                    signedTime: new BN(content.signedTime),
+                    numOfDocuments: new BN(content.numOfDocuments),
+                    acknowledgeSignature: acknowledge_sig,
+                    approvalSignature: approval_sig,
+                },
+            });
+
+            const amend_sig = await this.web3.eth.personal.sign(amendHash, from, "");
+
+            const data: [
+                number | string | BN,
+                (string | number[])[],
+                [
+                    number | string | BN,
+                    number | string | BN,
+                    [
+                        string | number[],
+                        number | string | BN,
+                        string | number[],
+                        number | string | BN,
+                        (string | number[])[],
+                        string,
+                        string | number[],
+                        string | number[]
+                    ]
+                ],
+                string | number[]
+            ] = [
+                documentId,
+                migrating_stages,
+                [
+                    amendStage.toString(),
+                    amendSubStage.toString(),
+                    [
+                        rootHash,
+                        content.signedTime.toString(),
+                        prevHash,
+                        content.numOfDocuments.toString(),
+                        content.contentHash,
+                        content.url,
+                        acknowledge_sig,
+                        approval_sig,
+                    ],
+                ],
+                amend_sig,
+            ];
+            const gas = await this.RouterService.methods.submitAmendment(...data).estimateGas({ from });
+
+            return this.RouterService.methods.submitAmendment(...data).send({ from, gas });
+        }
+
+        async approveAmendment(documentId: number | string | BN, nonce: BN, from: string) {
+            // Generate requestId
+            const requestId = Middleware.LC.generateRequestId(from, nonce);
+
+            const [amendmentRequest, isApproved] = await Promise.all([
+                this.RouterService.methods.getAmendmentRequest(documentId, requestId).call(),
+                this.RouterService.methods.isAmendApproved(documentId, requestId).call(),
+            ]);
+
+            if (isApproved) return alert("Amend request has been approved!");
+
+            const content = Object.assign({}, amendmentRequest[3][2]);
+            // Format amendmentRequest
+            const amendStage = {
+                stage: new BN(amendmentRequest[3][0]),
+                subStage: new BN(amendmentRequest[3][1]),
+                content: {
+                    rootHash: content[0],
+                    prevHash: content[2],
+                    contentHash: content[4],
+                    url: content[5],
+                    numOfDocuments: new BN(content[3]),
+                    signedTime: new BN(content[1]),
+                    acknowledgeSignature: content[6],
+                    approvalSignature: content[7],
+                },
+            };
+            const amendMessageHash = Middleware.LC.generateAmendMessageHash(amendmentRequest[2], amendStage);
+
+            const amendSig = await this.web3.eth.personal.sign(amendMessageHash, from, "");
+
+            const gas = await this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).estimateGas({ from });
+
+            return this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).send({ from, gas });
+        }
+
+        async fulfillAmendment(documentId: number | string | BN, nonce: BN, from: string) {
+            // Generate requestId
+            const requestId = Middleware.LC.generateRequestId(from, nonce);
+
+            const request = await this.RouterService.methods.getAmendmentRequest(documentId, requestId).call();
+            if (!request) throw new Error("Amend request not found.");
+
+            const gas = await this.RouterService.methods.fulfillAmendment(documentId, requestId).estimateGas({ from });
+
+            return this.RouterService.methods.fulfillAmendment(documentId, requestId).send({ from, gas });
         }
     }
 }
