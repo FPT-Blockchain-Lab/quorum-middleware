@@ -2,19 +2,13 @@ import BN from "bn.js";
 import Web3 from "web3";
 import ethAbiEncoder from "web3-eth-abi";
 import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
-import { LCContractABIs } from "../abi";
-import { AmendRequest, LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory } from "../bindings/lc";
-import { LCContractAddresses } from "../config";
-import { validateCreateStandardLC, validateCreateUPASLC } from "./validate";
+import { LCContractABIs } from "../abi/lc";
+import { PermissionContractABIs } from "../abi/permission";
+import { AmendRequest, LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory, StandardLC, UPASLC } from "../bindings/lc";
+import { OrgManager } from "../bindings/permission";
+import { LCContractAddresses, PermissionContractAddresses } from "../config";
 
-type AnyFunction = (...args: any[]) => any;
-
-function wrapper<Fn extends AnyFunction>(mainFn: Fn, validateFn: AnyFunction) {
-    return function (...args: Parameters<Fn>): ReturnType<Fn> {
-        validateFn(...args);
-        return mainFn(...args);
-    };
-}
+const SIGNATURE_LENGTH = 132;
 
 export namespace Middleware {
     /** Contracts of LC protocol */
@@ -83,9 +77,6 @@ export namespace Middleware {
                 LCContractAddresses.UPASLCFactory
             ) as any as UPASLCFactory;
             let AmendRequest = new web3.eth.Contract(LCContractABIs.AmendRequest as any as AbiItem[], LCContractAddresses.AmendRequest) as any as AmendRequest;
-
-            StandardLCFactory.methods.create = wrapper(StandardLCFactory.methods.create, validateCreateStandardLC);
-            UPASLCFactory.methods.create = wrapper(UPASLCFactory.methods.create, validateCreateUPASLC);
 
             return {
                 LCManagement,
@@ -205,6 +196,380 @@ export namespace Middleware {
                 default:
                     return "";
             }
+        }
+    }
+
+    export class LCContractWrapper {
+        readonly LCManagement: LCManagement;
+        readonly Mode: Mode;
+        readonly RouterService: RouterService;
+        readonly StandardLCFactory: StandardLCFactory;
+        readonly UPASLCFactory: UPASLCFactory;
+        readonly AmendRequest: AmendRequest;
+        readonly OrgManager: OrgManager;
+        readonly web3: Web3;
+        private readonly DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+
+        constructor(web3: Web3) {
+            this.LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
+            this.Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], LCContractAddresses.Mode) as any as Mode;
+            this.RouterService = new web3.eth.Contract(
+                LCContractABIs.RouterService as any as AbiItem[],
+                LCContractAddresses.RouterService
+            ) as any as RouterService;
+            this.StandardLCFactory = new web3.eth.Contract(
+                LCContractABIs.StandardLCFactory as any as AbiItem[],
+                LCContractAddresses.StandardLCFactory
+            ) as any as StandardLCFactory;
+            this.UPASLCFactory = new web3.eth.Contract(
+                LCContractABIs.UPASLCFactory as any as AbiItem[],
+                LCContractAddresses.UPASLCFactory
+            ) as any as UPASLCFactory;
+            this.AmendRequest = new web3.eth.Contract(LCContractABIs.AmendRequest as any as AbiItem[], LCContractAddresses.AmendRequest) as any as AmendRequest;
+            this.OrgManager = new web3.eth.Contract(
+                PermissionContractABIs.OrgManager as any[] as AbiItem[],
+                PermissionContractAddresses.OrgManager
+            ) as any as OrgManager;
+            this.web3 = web3;
+        }
+
+        async createStandardLC(parties: (string | number[])[], content: StageContent, from: string) {
+            if (parties.length != 4) {
+                throw new Error("The number of involved parties does not match. Expected 4.");
+            }
+
+            if (
+                !(
+                    (await this.OrgManager.methods.checkOrgExists(parties[0].toString()).call()) &&
+                    (await this.OrgManager.methods.checkOrgExists(parties[1].toString()).call())
+                )
+            ) {
+                throw new Error("Organization at index 0 or 1 does not exsist.");
+            }
+
+            if (!(await this.LCManagement.methods.whitelistOrgs(parties[0]).call())) {
+                throw new Error("Organization does not whitelist.");
+            }
+
+            if (!(await this.LCManagement.methods.verifyIdentity(from, parties[0]).call())) {
+                throw new Error("Account not belong to organization.");
+            }
+
+            if (content.rootHash.toLowerCase() != this.DEFAULT_ROOT_HASH.toLowerCase()) {
+                throw new Error("Root hash must be DEFAULT_ROOT_HASH");
+            }
+
+            if (content.numOfDocuments.toNumber() > content.contentHash.length) {
+                throw new Error("The number of documents cannot greater than the length of content hash.");
+            }
+
+            if (content.prevHash != content.contentHash[0]) {
+                throw new Error("Unlink to previous");
+            }
+
+            if (content.acknowledgeSignature.length != SIGNATURE_LENGTH) {
+                throw new Error("Invalid acknowledge signature.");
+            }
+
+            if (content.approvalSignature.length != SIGNATURE_LENGTH) {
+                throw new Error("Invalid approval signature.");
+            }
+
+            const data: [
+                (string | number[])[],
+                [
+                    string | number[],
+                    number | string | BN,
+                    string | number[],
+                    number | string | BN,
+                    (string | number[])[],
+                    string,
+                    string | number[],
+                    string | number[]
+                ]
+            ] = [
+                parties,
+                [
+                    content.rootHash,
+                    content.signedTime.toString(),
+                    content.prevHash,
+                    content.numOfDocuments.toString(),
+                    content.contentHash,
+                    content.url,
+                    content.acknowledgeSignature,
+                    content.approvalSignature,
+                ],
+            ];
+
+            const gas = await this.StandardLCFactory.methods.create(...data).estimateGas({ from });
+
+            return this.StandardLCFactory.methods.create(...data).send({ from, gas });
+        }
+
+        async createUPASLC(parties: (string | number[])[], content: StageContent, from: string) {
+            if (parties.length != 5) {
+                throw new Error("The number of involved parties does not match. Expected 5.");
+            }
+
+            if (
+                !(
+                    (await this.OrgManager.methods.checkOrgExists(parties[0].toString()).call()) &&
+                    (await this.OrgManager.methods.checkOrgExists(parties[1].toString()).call()) &&
+                    (await this.OrgManager.methods.checkOrgExists(parties[2].toString()).call())
+                )
+            ) {
+                throw new Error("Organization at index 0 or 1 does not exsist.");
+            }
+
+            if (!(await this.LCManagement.methods.whitelistOrgs(parties[0]).call())) {
+                throw new Error("Organization does not whitelist.");
+            }
+
+            if (!(await this.LCManagement.methods.verifyIdentity(from, parties[0]).call())) {
+                throw new Error("Account not belong to organization.");
+            }
+
+            if (content.rootHash != this.DEFAULT_ROOT_HASH) {
+                throw new Error("Root hash must be DEFAULT_ROOT_HASH");
+            }
+
+            if (content.numOfDocuments.toNumber() > content.contentHash.length) {
+                throw new Error("The number of documents cannot greater than the length of content hash.");
+            }
+
+            if (content.prevHash != content.contentHash[0]) {
+                throw new Error("Unlink to previous");
+            }
+
+            if (content.acknowledgeSignature.length != SIGNATURE_LENGTH) {
+                throw new Error("Invalid acknowledge signature.");
+            }
+
+            if (content.approvalSignature.length != SIGNATURE_LENGTH) {
+                throw new Error("Invalid approval signature.");
+            }
+
+            const data: [
+                (string | number[])[],
+                [
+                    string | number[],
+                    number | string | BN,
+                    string | number[],
+                    number | string | BN,
+                    (string | number[])[],
+                    string,
+                    string | number[],
+                    string | number[]
+                ]
+            ] = [
+                parties,
+                [
+                    content.rootHash,
+                    content.signedTime.toString(),
+                    content.prevHash,
+                    content.numOfDocuments.toString(),
+                    content.contentHash,
+                    content.url,
+                    content.acknowledgeSignature,
+                    content.approvalSignature,
+                ],
+            ];
+            const gas = await this.UPASLCFactory.methods.create(...data).estimateGas({ from });
+
+            return this.UPASLCFactory.methods.create(...data).send({ from, gas });
+        }
+
+        async approveLC(documentId: number | string | BN, stage: number | string | BN, subStage: number | string | BN, content: StageContent, from: string) {
+            const { _contract, _typeOf } = await this.RouterService.methods.getAddress(documentId).call();
+            console.log(content);
+
+            if (_typeOf == "1") {
+                const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+                const parties = await StandardLC.methods.getInvolvedParties().call();
+                let org;
+
+                if (stage == 2 || stage == 6) {
+                    org = parties[1];
+                } else {
+                    org = parties[0];
+                }
+
+                if (!(await this.LCManagement.methods.whitelistOrgs(org).call())) {
+                    throw new Error("Organization does not whitelist.");
+                }
+
+                if (!(await this.LCManagement.methods.verifyIdentity(from, org).call())) {
+                    throw new Error("Account not belong to organization.");
+                }
+            } else if (_typeOf == "2") {
+                const UPASLC = new this.web3.eth.Contract(LCContractABIs.UPASLC as any[] as AbiItem[], _contract) as any as UPASLC;
+                const parties = await UPASLC.methods.getInvolvedParties().call();
+                let org;
+
+                if (stage == 2 || stage == 6) {
+                    org = parties[1];
+                } else if (stage == 5) {
+                    org = parties[2];
+                } else {
+                    org = parties[0];
+                }
+
+                if (!(await this.LCManagement.methods.whitelistOrgs(org).call())) {
+                    throw new Error("Organization does not whitelist.");
+                }
+
+                if (!(await this.LCManagement.methods.verifyIdentity(from, org).call())) {
+                    throw new Error("Account not belong to organization.");
+                }
+            }
+
+            const data: [
+                number | string | BN,
+                number | string | BN,
+                number | string | BN,
+                [
+                    string | number[],
+                    number | string | BN,
+                    string | number[],
+                    number | string | BN,
+                    (string | number[])[],
+                    string,
+                    string | number[],
+                    string | number[]
+                ]
+            ] = [
+                documentId,
+                stage,
+                subStage,
+                [
+                    content.rootHash,
+                    content.signedTime.toString(),
+                    content.prevHash,
+                    content.numOfDocuments.toString(),
+                    content.contentHash,
+                    content.url,
+                    content.acknowledgeSignature,
+                    content.approvalSignature,
+                ],
+            ];
+
+            const gas = await this.RouterService.methods.approve(...data).estimateGas({ from });
+
+            return this.RouterService.methods.approve(...data).send({ from, gas });
+        }
+
+        async closeLC(documentId: number | string | BN, from: string) {
+            const gas = await this.RouterService.methods.closeLC(documentId).estimateGas({ from });
+
+            return this.RouterService.methods.closeLC(documentId).send({ from, gas });
+        }
+
+        async submitAmendment(
+            documentId: number | string | BN,
+            migratingStages: (string | number[])[],
+            amendStage: AmendStage,
+            signature: string | number[],
+            from: string
+        ) {
+            const data: [
+                number | string | BN,
+                (string | number[])[],
+                [
+                    number | string | BN,
+                    number | string | BN,
+                    [
+                        string | number[],
+                        number | string | BN,
+                        string | number[],
+                        number | string | BN,
+                        (string | number[])[],
+                        string,
+                        string | number[],
+                        string | number[]
+                    ]
+                ],
+                string | number[]
+            ] = [
+                documentId,
+                migratingStages,
+                [
+                    amendStage.stage,
+                    amendStage.subStage,
+                    [
+                        amendStage.content.rootHash,
+                        amendStage.content.signedTime,
+                        amendStage.content.prevHash,
+                        amendStage.content.numOfDocuments,
+                        amendStage.content.contentHash,
+                        amendStage.content.url,
+                        amendStage.content.acknowledgeSignature,
+                        amendStage.content.approvalSignature,
+                    ],
+                ],
+                signature,
+            ];
+            const gas = await this.RouterService.methods.submitAmendment(...data).estimateGas({ from });
+
+            return this.RouterService.methods.submitAmendment(...data).send({ from, gas });
+        }
+
+        // async approveAmendment(documentId: number | string | BN, requestId: number | string | BN, signature: string | number[], from: string) {
+        async approveAmendment(documentId: number | string | BN, from: string) {
+            //  Account 1 has been submitted amendment request twice -> current_nonce = 2
+            //  - `nonce = 0` -> Standard LC amendment request
+            //  - `nonce = 1` -> UPAS LC amendment request
+            // Get current nonces of proposer
+            const nonces = await this.AmendRequest.methods.nonces(from).call();
+            // Generate requestId
+            const requestId = Middleware.LC.generateRequestId(from, new BN(nonces).sub(new BN(1)));
+
+            const [amendmentRequest, isApproved] = await Promise.all([
+                this.RouterService.methods.getAmendmentRequest(documentId, requestId).call(),
+                this.RouterService.methods.isAmendApproved(documentId, requestId).call(),
+            ]);
+
+            if (isApproved) return alert("Amend request has been approved!");
+
+            const content = Object.assign({}, amendmentRequest[3][2]);
+            // Format amendmentRequest
+            const amendStage = {
+                stage: new BN(amendmentRequest[3][0]),
+                subStage: new BN(amendmentRequest[3][1]),
+                content: {
+                    rootHash: content[0],
+                    prevHash: content[2],
+                    contentHash: content[4],
+                    url: content[5],
+                    numOfDocuments: new BN(content[3]),
+                    signedTime: new BN(content[1]),
+                    acknowledgeSignature: content[6],
+                    approvalSignature: content[7],
+                },
+            };
+            const amendMessageHash = Middleware.LC.generateAmendMessageHash(amendmentRequest[2], amendStage);
+
+            const amendSig = await this.web3.eth.personal.sign(amendMessageHash, from, "");
+
+            const gas = await this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).estimateGas({ from });
+
+            return this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).send({ from, gas });
+        }
+
+        async fulfillAmendment(documentId: number | string | BN, from: string) {
+            //  Account 1 has been submitted amendment request twice -> current_nonce = 2
+            //  - `nonce = 0` -> Standard LC amendment request
+            //  - `nonce = 1` -> UPAS LC amendment request
+            // Get current nonce of proposer
+            const nonces = await this.AmendRequest.methods.nonces(from).call();
+            // Generate requestId using current nonce
+            const requestId = Middleware.LC.generateRequestId(from, new BN(nonces).sub(new BN(1)));
+
+            const request = await this.RouterService.methods.getAmendmentRequest(documentId, requestId).call();
+            if (!request) throw new Error("Amend request not found.");
+
+            const gas = await this.RouterService.methods.fulfillAmendment(documentId, requestId).estimateGas({ from });
+
+            return this.RouterService.methods.fulfillAmendment(documentId, requestId).send({ from, gas });
         }
     }
 }

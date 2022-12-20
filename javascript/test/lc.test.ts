@@ -46,13 +46,13 @@ describe("Hash message testing", () => {
         expect(requestId).to.deep.eq("0x79dadfe586c911bb0de0c07736fd5c0478e69de542b867ad0a4dc240d68ae8e6");
     });
 
-    // it("Get standard lc contract", async () => {
-    //     const { StandardLCFactory } = Middleware.LC.loadContract(new Web3("http://1.54.89.229:32278"));
+    it("Get standard lc contract", async () => {
+        const { StandardLCFactory } = await Middleware.LC.loadContract(new Web3("http://1.54.89.229:32278"));
 
-    //     const address = await StandardLCFactory?.methods.getLCAddress("102002754747479172180633994781527983425432706666881898828191417484204372588497").call();
+        const address = await StandardLCFactory?.methods.getLCAddress("102002754747479172180633994781527983425432706666881898828191417484204372588497").call();
 
-    //     expect(address ? address[0] : "").to.deep.eq("0x9CbB5f2C4Aee5383e65fc9826527302430c28a0f");
-    // });
+        expect(address ? address[0] : "").to.deep.eq("0x9CbB5f2C4Aee5383e65fc9826527302430c28a0f");
+    });
 
     it("Stage hash", () => {
         const messageHash = Middleware.LC.generateStageHash({
