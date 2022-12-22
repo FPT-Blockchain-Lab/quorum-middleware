@@ -233,13 +233,11 @@ export namespace Middleware {
             this.web3 = web3;
         }
 
-        async createStandardLC(parties: string[], content: Omit<StageContent, "acknowledgeSignature" | "approvalSignature" | "rootHash">, from: string) {
-            // Get acknowledge message hash
-            const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
-                content.contentHash.slice(1, content.numOfDocuments.add(new BN("1")).toNumber())
-            );
-
-            const acknowledgeSignature = await this.web3.eth.personal.sign(ackMessageHash, from, "");
+        async createStandardLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, from: string) {
+            // Check acknowledge signature
+            if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
+                throw new Error("Invalid acknowledge signature.");
+            }
 
             // Get approval message hash
             const approvalMessageHash = Middleware.LC.generateApprovalMessageHash({
@@ -248,7 +246,7 @@ export namespace Middleware {
                 contentHash: content.contentHash,
                 url: content.url,
                 signedTime: content.signedTime,
-                acknowledgeSignature,
+                acknowledgeSignature: content.acknowledgeSignature,
             });
 
             const approvalSignature = await this.web3.eth.personal.sign(approvalMessageHash, from, "");
@@ -260,7 +258,7 @@ export namespace Middleware {
                 url: content.url,
                 signedTime: content.signedTime,
                 numOfDocuments: content.numOfDocuments,
-                acknowledgeSignature: acknowledgeSignature,
+                acknowledgeSignature: content.acknowledgeSignature,
                 approvalSignature: approvalSignature,
             };
 
@@ -285,10 +283,6 @@ export namespace Middleware {
 
             if (!isVerifyIdentity) {
                 throw new Error("Account not belong to organization.");
-            }
-
-            if (_content.rootHash.toLowerCase() != this.DEFAULT_ROOT_HASH.toLowerCase()) {
-                throw new Error("Root hash must be DEFAULT_ROOT_HASH");
             }
 
             if (_content.numOfDocuments.toNumber() > _content.contentHash.length) {
@@ -330,13 +324,11 @@ export namespace Middleware {
             return this.StandardLCFactory.methods.create(...data).send({ from, gas });
         }
 
-        async createUPASLC(parties: string[], content: Omit<StageContent, "acknowledgeSignature" | "approvalSignature" | "rootHash">, from: string) {
-            // Get acknowledge message hash
-            const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
-                content.contentHash.slice(1, content.numOfDocuments.add(new BN("1")).toNumber())
-            );
-
-            const acknowledgeSignature = await this.web3.eth.personal.sign(ackMessageHash, from, "");
+        async createUPASLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, from: string) {
+            // Check acknowledge signature
+            if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
+                throw new Error("Invalid acknowledge signature.");
+            }
 
             // Get approval message hash
             const approvalMessageHash = Middleware.LC.generateApprovalMessageHash({
@@ -345,7 +337,7 @@ export namespace Middleware {
                 contentHash: content.contentHash,
                 url: content.url,
                 signedTime: content.signedTime,
-                acknowledgeSignature,
+                acknowledgeSignature: content.acknowledgeSignature,
             });
 
             const approvalSignature = await this.web3.eth.personal.sign(approvalMessageHash, from, "");
@@ -357,7 +349,7 @@ export namespace Middleware {
                 url: content.url,
                 signedTime: content.signedTime,
                 numOfDocuments: content.numOfDocuments,
-                acknowledgeSignature: acknowledgeSignature,
+                acknowledgeSignature: content.acknowledgeSignature,
                 approvalSignature: approvalSignature,
             };
 
@@ -382,10 +374,6 @@ export namespace Middleware {
 
             if (!isVerifyIdentity) {
                 throw new Error("Account not belong to organization.");
-            }
-
-            if (_content.rootHash != this.DEFAULT_ROOT_HASH) {
-                throw new Error("Root hash must be DEFAULT_ROOT_HASH");
             }
 
             if (_content.numOfDocuments.toNumber() > _content.contentHash.length) {
@@ -430,7 +418,7 @@ export namespace Middleware {
             documentId: number | string | BN,
             stage: number | string | BN,
             subStage: number | string | BN,
-            content: Omit<StageContent, "acknowledgeSignature" | "approvalSignature" | "rootHash" | "prevHash">,
+            content: Omit<StageContent, "approvalSignature" | "rootHash" | "prevHash">,
             from: string
         ) {
             const { _contract, _typeOf } = await this.RouterService.methods.getAddress(documentId).call();
@@ -462,14 +450,10 @@ export namespace Middleware {
                 approvalSignature: stageInfo[7],
             });
 
-            let acknowledgeSignature = this.EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
-
-            if (stage == 1 || stage == 4 || stage == 5) {
-                const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
-                    content.contentHash.slice(1, content.numOfDocuments.add(new BN("1")).toNumber())
-                );
-
-                acknowledgeSignature = await this.web3.eth.personal.sign(ackMessageHash, from, "");
+            if (new BN(stage).eq(new BN(1)) || new BN(stage).eq(new BN(4)) || new BN(stage).eq(new BN(5))) {
+                if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
+                    throw new Error("Invalid acknowledge signature.");
+                }
             }
 
             const ROOT_HASH = await this.RouterService.methods.getRootHash(documentId).call();
@@ -481,7 +465,7 @@ export namespace Middleware {
                 contentHash: content.contentHash,
                 url: content.url,
                 signedTime: content.signedTime,
-                acknowledgeSignature,
+                acknowledgeSignature: content.acknowledgeSignature,
             });
 
             const approval_sig = await this.web3.eth.personal.sign(messageHash, from, "");
@@ -547,7 +531,7 @@ export namespace Middleware {
                     content.numOfDocuments.toString(),
                     content.contentHash,
                     content.url,
-                    acknowledgeSignature,
+                    content.acknowledgeSignature,
                     approval_sig,
                 ],
             ];
@@ -567,7 +551,7 @@ export namespace Middleware {
             documentId: number | string | BN,
             stage: number | string | BN,
             subStage: number | string | BN,
-            content: Omit<StageContent, "acknowledgeSignature" | "approvalSignature" | "rootHash" | "prevHash">,
+            content: Omit<StageContent, "approvalSignature" | "rootHash" | "prevHash">,
             migrateStages: MigrateStage[],
             from: string
         ) {
@@ -623,14 +607,10 @@ export namespace Middleware {
                 })
             );
 
-            // get acknowledge signature
-            let acknowledge_sig = this.EMPTY_BYTES; //  Acknowledge signature only for Stage 1, Stage 4 and Stage 5
             if (amendStage.eq(new BN(1)) || amendStage.eq(new BN(4)) || amendStage.eq(new BN(5))) {
-                const ackMessageHash = Middleware.LC.generateAcknowledgeMessageHash(
-                    content.contentHash.slice(1, new BN(content.numOfDocuments).add(new BN(1)).toNumber())
-                );
-
-                acknowledge_sig = await this.web3.eth.personal.sign(ackMessageHash, from, "");
+                if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
+                    throw new Error("Invalid acknowledge signature.");
+                }
             }
 
             // get approval signature
@@ -640,7 +620,7 @@ export namespace Middleware {
                 contentHash: content.contentHash,
                 url: content.url,
                 signedTime: new BN(content.signedTime),
-                acknowledgeSignature: acknowledge_sig,
+                acknowledgeSignature: content.acknowledgeSignature,
             });
             const approval_sig = await this.web3.eth.personal.sign(messageHash, from, "");
             //get amend message hash
@@ -654,7 +634,7 @@ export namespace Middleware {
                     url: content.url,
                     signedTime: new BN(content.signedTime),
                     numOfDocuments: new BN(content.numOfDocuments),
-                    acknowledgeSignature: acknowledge_sig,
+                    acknowledgeSignature: content.acknowledgeSignature,
                     approvalSignature: approval_sig,
                 },
             });
@@ -692,7 +672,7 @@ export namespace Middleware {
                         content.numOfDocuments.toString(),
                         content.contentHash,
                         content.url,
-                        acknowledge_sig,
+                        content.acknowledgeSignature,
                         approval_sig,
                     ],
                 ],
