@@ -146,7 +146,7 @@ function App() {
         numOfDocuments: numOfDocument,
       };
 
-      const wrapperContract = new Middleware.LCContractWrapper(web3);
+      const wrapperContract = new Middleware.LCWrapper(web3);
       const tx = await wrapperContract.createStandardLC(
         parties,
         content,
@@ -188,7 +188,7 @@ function App() {
       const _subStage = new BN(values.subStage);
       const numOfDocument = new BN(values.numOfDocument);
       const url = values.url;
-      const wrapperContract = new Middleware.LCContractWrapper(web3);
+      const wrapperContract = new Middleware.LCWrapper(web3);
       const tx = await wrapperContract.approveLC(
         documentId,
         _stage,
@@ -220,7 +220,7 @@ function App() {
 
       // Generate documentId
       const documentId = keccak256(asciiToHex(values.documentId));
-      const wrapperContract = new Middleware.LCContractWrapper(web3);
+      const wrapperContract = new Middleware.LCWrapper(web3);
       const tx = await wrapperContract.closeLC(documentId, account);
 
       console.log(tx);
@@ -258,7 +258,7 @@ function App() {
       const numOfDocuments = 3;
       const url = "https://fpt.com.vn/LCPlatform/standardLC/";
 
-      const wrapperContract = new Middleware.LCContractWrapper(web3);
+      const wrapperContract = new Middleware.LCWrapper(web3);
       // MUST STORE nonce TO APPROVE AND FULLFILL AMEND LC
       const tx = await wrapperContract.submitAmendment(
         documentId,
@@ -294,7 +294,7 @@ function App() {
       }
 
       const documentId = keccak256(asciiToHex(values.documentId));
-      const wrapperContract = new Middleware.LCContractWrapper(web3);
+      const wrapperContract = new Middleware.LCWrapper(web3);
       const tx = await wrapperContract.approveAmendment(
         documentId,
         new BN(values.nonce),
@@ -320,7 +320,7 @@ function App() {
       }
 
       const documentId = keccak256(asciiToHex(values.documentId));
-      const wrapperContract = new Middleware.LCContractWrapper(web3);
+      const wrapperContract = new Middleware.LCWrapper(web3);
       const tx = await wrapperContract.fulfillAmendment(
         documentId,
         new BN(values.nonce),
