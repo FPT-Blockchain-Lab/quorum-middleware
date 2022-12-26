@@ -1,1 +1,2 @@
-export * from './lc';
+export * from "./lc";
+export * from "./permission";
