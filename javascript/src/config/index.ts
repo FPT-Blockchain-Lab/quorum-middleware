@@ -9,4 +9,11 @@ export const LCContractAddresses = {
 
 export const PermissionContractAddresses = {
     OrgManager: "0x1136216Bbf1b9d246924F4e6fde050bd8295E219",
+    AccountManager: "0x743faFfc6B732C954b00766fB64372CB9Fe1F094",
+    PermissionsImplementation: "0x5C4221C331E50110b31E45aa30C5615eFc6f6Aaa",
+    PermissionsInterface: "0xEE455baA75A1D8f856094B3dA86Eea479de64582",
+    PermissionsUpgradable: "0x304AAd8e4Bd0A10ee2dEb04C24d61AA6E068c229",
+    NodeManager: "0x29af984cf4D92669Fb88e6022cAAC9028A1Eb510",
+    RoleManager: "0xbe4DcF0c5E310847b3D7750fD2DdA41455a588Cd",
+    VoterManager: "0x01866bC496097C77d298696e2A9d194A487AED03",
 };

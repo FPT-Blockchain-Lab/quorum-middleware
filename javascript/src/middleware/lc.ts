@@ -65,21 +65,27 @@ export namespace Middleware {
         static readonly DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 
         static loadContract(web3: Web3): LCContracts {
-            let LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
-            let Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], LCContractAddresses.Mode) as any as Mode;
-            let RouterService = new web3.eth.Contract(
+            const LCManagement = new web3.eth.Contract(
+                LCContractABIs.LCManagement as any as AbiItem[],
+                LCContractAddresses.LCManagement
+            ) as any as LCManagement;
+            const Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], LCContractAddresses.Mode) as any as Mode;
+            const RouterService = new web3.eth.Contract(
                 LCContractABIs.RouterService as any as AbiItem[],
                 LCContractAddresses.RouterService
             ) as any as RouterService;
-            let StandardLCFactory = new web3.eth.Contract(
+            const StandardLCFactory = new web3.eth.Contract(
                 LCContractABIs.StandardLCFactory as any as AbiItem[],
                 LCContractAddresses.StandardLCFactory
             ) as any as StandardLCFactory;
-            let UPASLCFactory = new web3.eth.Contract(
+            const UPASLCFactory = new web3.eth.Contract(
                 LCContractABIs.UPASLCFactory as any as AbiItem[],
                 LCContractAddresses.UPASLCFactory
             ) as any as UPASLCFactory;
-            let AmendRequest = new web3.eth.Contract(LCContractABIs.AmendRequest as any as AbiItem[], LCContractAddresses.AmendRequest) as any as AmendRequest;
+            const AmendRequest = new web3.eth.Contract(
+                LCContractABIs.AmendRequest as any as AbiItem[],
+                LCContractAddresses.AmendRequest
+            ) as any as AmendRequest;
 
             return {
                 LCManagement,
@@ -205,12 +211,12 @@ export namespace Middleware {
     export class LCWrapper {
         private readonly DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
         private readonly EMPTY_BYTES = "0x";
-        readonly web3: Web3;
-        readonly LCManagement: LCManagement;
-        readonly RouterService: RouterService;
-        readonly StandardLCFactory: StandardLCFactory;
-        readonly UPASLCFactory: UPASLCFactory;
-        readonly OrgManager: OrgManager;
+        private readonly web3: Web3;
+        private readonly LCManagement: LCManagement;
+        private readonly RouterService: RouterService;
+        private readonly StandardLCFactory: StandardLCFactory;
+        private readonly UPASLCFactory: UPASLCFactory;
+        private readonly OrgManager: OrgManager;
 
         constructor(web3: Web3) {
             this.LCManagement = new web3.eth.Contract(LCContractABIs.LCManagement as any as AbiItem[], LCContractAddresses.LCManagement) as any as LCManagement;
