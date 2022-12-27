@@ -2,6 +2,8 @@ import BN from "bn.js";
 import { encodePacked, keccak256 } from "web3-utils";
 
 export namespace Utils {
+    export const EMPTY_BYTES = "0x";
+    
     export function keccak256Utf8(value: string): string {
         return keccak256(value);
     }

@@ -11,7 +11,7 @@ import {
     RoleManager,
     VoterManager,
 } from "../bindings/permission";
-import { PermissionContractAddresses } from "../config";
+import { DEFAULT_CONFIG } from "../config";
 
 export interface PermissionContracts {
     AccountManager: AccountManager;
@@ -25,38 +25,38 @@ export interface PermissionContracts {
 }
 
 export class Permission {
-    static loadContract(web3: Web3): PermissionContracts {
+    static loadContract(web3: Web3, config = DEFAULT_CONFIG): PermissionContracts {
         const AccountManager = new web3.eth.Contract(
             PermissionContractABIs.AccountManager as any[] as AbiItem[],
-            PermissionContractAddresses.AccountManager
+            config.permissionContractAddresses.AccountManager
         ) as any as AccountManager;
         const PermissionsImplementation = new web3.eth.Contract(
             PermissionContractABIs.PermissionsImplementation as any[] as AbiItem[],
-            PermissionContractAddresses.PermissionsImplementation
+            config.permissionContractAddresses.PermissionsImplementation
         ) as any as PermissionsImplementation;
         const PermissionsInterface = new web3.eth.Contract(
             PermissionContractABIs.PermissionsInterface as any[] as AbiItem[],
-            PermissionContractAddresses.PermissionsInterface
+            config.permissionContractAddresses.PermissionsInterface
         ) as any as PermissionsInterface;
         const NodeManager = new web3.eth.Contract(
             PermissionContractABIs.NodeManager as any[] as AbiItem[],
-            PermissionContractAddresses.NodeManager
+            config.permissionContractAddresses.NodeManager
         ) as any as NodeManager;
         const OrgManager = new web3.eth.Contract(
             PermissionContractABIs.OrgManager as any[] as AbiItem[],
-            PermissionContractAddresses.OrgManager
+            config.permissionContractAddresses.OrgManager
         ) as any as OrgManager;
         const PermissionsUpgradable = new web3.eth.Contract(
             PermissionContractABIs.PermissionsUpgradable as any[] as AbiItem[],
-            PermissionContractAddresses.PermissionsUpgradable
+            config.permissionContractAddresses.PermissionsUpgradable
         ) as any as PermissionsUpgradable;
         const RoleManager = new web3.eth.Contract(
             PermissionContractABIs.RoleManager as any[] as AbiItem[],
-            PermissionContractAddresses.RoleManager
+            config.permissionContractAddresses.RoleManager
         ) as any as RoleManager;
         const VoterManager = new web3.eth.Contract(
             PermissionContractABIs.VoterManager as any[] as AbiItem[],
-            PermissionContractAddresses.VoterManager
+            config.permissionContractAddresses.VoterManager
         ) as any as VoterManager;
 
         return {

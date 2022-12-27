@@ -1,11 +1,9 @@
-export const CHAIN_ID = 6788;
-
-export const EMPTY_BYTES = "0x";
+import { DEFAULT_CONFIG } from "quorum-middleware";
 
 export const setupDefaultNetwork = async () => {
   const provider = window.ethereum;
   if (provider) {
-    const _chainId = `0x${CHAIN_ID.toString(16)}`;
+    const _chainId = `0x${DEFAULT_CONFIG.chainId.toString(16)}`;
     try {
       await provider.request({
         method: "wallet_switchEthereumChain",
@@ -20,13 +18,13 @@ export const setupDefaultNetwork = async () => {
             params: [
               {
                 chainId: _chainId,
-                chainName: "FPT  Quorum testnet",
+                chainName: DEFAULT_CONFIG.chainName,
                 nativeCurrency: {
                   name: "FPT",
                   symbol: "FPT",
                   decimals: 18,
                 },
-                rpcUrls: ["http://1.54.89.229:30308"],
+                rpcUrls: [DEFAULT_CONFIG.url],
               },
             ],
           });
