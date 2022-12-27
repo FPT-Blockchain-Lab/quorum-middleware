@@ -221,10 +221,7 @@ function App() {
 
 			// Generate documentId
 			const documentId = keccak256(asciiToHex(values.documentId));
-			console.log('1')
 			const wrapperContract = new Middleware.LCWrapper(web3);
-			// console.log('2')
-			// return;
 			const tx = await wrapperContract.closeLC(documentId, account);
 
 			console.log(tx);
