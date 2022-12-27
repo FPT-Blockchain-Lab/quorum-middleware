@@ -13,17 +13,7 @@ module.exports = {
         }),
       ],
       resolve: {
-        ...config.resolve,
-        fallback: {
-          assert: require.resolve("assert/"),
-          stream: require.resolve("stream-browserify"),
-          buffer: require.resolve("buffer"),
-          os: require.resolve("os-browserify/browser"),
-          url: require.resolve("url/"),
-          https: require.resolve("https-browserify"),
-          http: require.resolve("stream-http"),
-          crypto: require.resolve("crypto-browserify"),
-        },
+        ...config.resolve
       },
     };
 

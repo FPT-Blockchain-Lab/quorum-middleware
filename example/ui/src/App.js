@@ -2,10 +2,9 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 import { Layout, Menu, Form, Input, Button } from "antd";
 import Web3 from "web3";
-import { asciiToHex, keccak256 } from "web3-utils";
-import { CHAIN_ID, setupDefaultNetwork, EMPTY_BYTES } from "./utils";
+import { CHAIN_ID, setupDefaultNetwork } from "./utils";
 import BN from "bn.js";
-import { Middleware, Permission } from "quorum-middleware";
+import { Middleware, Permission, Utils } from "quorum-middleware";
 const { Header, Content } = Layout;
 
 const labelCreateLCList = [
@@ -84,7 +83,7 @@ function App() {
 			new Web3("http://1.54.89.229:32278")
 		).RouterService;
 		// Generate documentId
-		const documentId = keccak256(asciiToHex(values.documentId));
+		const documentId = Utils.keccak256Utf8(values.documentId);
 		const tx = await routerService.methods
 			.getStageContent(documentId, values.stage, values.subStage)
 			.call();
@@ -107,7 +106,7 @@ function App() {
 
 			const numOfDocument = new BN(values.numOfDocument);
 			// Generate documentId
-			const documentId = keccak256(asciiToHex(values.documentId));
+			const documentId = Utils.keccak256Utf8(values.documentId);
 			const url = values.url;
 
 			/**
@@ -115,11 +114,11 @@ function App() {
 			 */
 			const contentHash = [
 				documentId,
-				keccak256(asciiToHex("Hash of LC 1")),
-				keccak256(asciiToHex("Hash of LC 2")),
-				keccak256(asciiToHex("Hash of LC 3")),
-				keccak256(asciiToHex("Hash of LC information")),
-				keccak256(asciiToHex("Hash of LC information")),
+				Utils.keccak256Utf8("Hash of LC 1"),
+				Utils.keccak256Utf8("Hash of LC 2"),
+				Utils.keccak256Utf8("Hash of LC 3"),
+				Utils.keccak256Utf8("Hash of LC information"),
+				Utils.keccak256Utf8("Hash of LC information"),
 			];
 
 			/**
@@ -176,14 +175,14 @@ function App() {
 			 * example content hash
 			 */
 			const contentHash = [
-				keccak256(asciiToHex("Hash of LC Document Number")),
-				keccak256(asciiToHex("Hash of LC 1")),
-				keccak256(asciiToHex("Hash of LC 2")),
-				keccak256(asciiToHex("Hash of LC 3")),
-				keccak256(asciiToHex("Hash of LC information")),
+				Utils.keccak256Utf8("Hash of LC Document Number"),
+				Utils.keccak256Utf8("Hash of LC 1"),
+				Utils.keccak256Utf8("Hash of LC 2"),
+				Utils.keccak256Utf8("Hash of LC 3"),
+				Utils.keccak256Utf8("Hash of LC information"),
 			];
 			// Generate documentId
-			const documentId = keccak256(asciiToHex(values.documentId));
+			const documentId = Utils.keccak256Utf8(values.documentId);
 			const signedTime = new BN(values.signedTime);
 			const _stage = new BN(values.stage);
 			const _subStage = new BN(values.subStage);
@@ -220,7 +219,7 @@ function App() {
 			}
 
 			// Generate documentId
-			const documentId = keccak256(asciiToHex(values.documentId));
+			const documentId = Utils.keccak256Utf8(values.documentId);
 			const wrapperContract = new Middleware.LCWrapper(web3);
 			const tx = await wrapperContract.closeLC(documentId, account);
 
@@ -241,18 +240,18 @@ function App() {
 				await setupDefaultNetwork();
 			}
 			// Generate documentId
-			const documentId = keccak256(asciiToHex(values.documentId));
+			const documentId = Utils.keccak256Utf8(values.documentId);
 			const migrateStages = [{ stage: 1, subStage: 1 }];
 
 			/**
 			 * example content hash
 			 */
 			const contentHash = [
-				keccak256(asciiToHex("Hash of LC Document Number")),
-				keccak256(asciiToHex("Hash of LC 1")),
-				keccak256(asciiToHex("Hash of LC 2")),
-				keccak256(asciiToHex("Hash of LC 3")),
-				keccak256(asciiToHex("Hash of LC information")),
+				Utils.keccak256Utf8("Hash of LC Document Number"),
+				Utils.keccak256Utf8("Hash of LC 1"),
+				Utils.keccak256Utf8("Hash of LC 2"),
+				Utils.keccak256Utf8("Hash of LC 3"),
+				Utils.keccak256Utf8("Hash of LC information"),
 			];
 			// mock data
 			const signedTime = Math.floor(Date.now() / 1000);
@@ -294,7 +293,7 @@ function App() {
 				await setupDefaultNetwork();
 			}
 
-			const documentId = keccak256(asciiToHex(values.documentId));
+			const documentId = Utils.keccak256Utf8(values.documentId);
 			const wrapperContract = new Middleware.LCWrapper(web3);
 			const tx = await wrapperContract.approveAmendment(
 				documentId,
@@ -320,7 +319,7 @@ function App() {
 				await setupDefaultNetwork();
 			}
 
-			const documentId = keccak256(asciiToHex(values.documentId));
+			const documentId = Utils.keccak256Utf8(values.documentId);
 			const wrapperContract = new Middleware.LCWrapper(web3);
 			const tx = await wrapperContract.fulfillAmendment(
 				documentId,
@@ -347,10 +346,9 @@ function App() {
 			}
 			console.log(values);
 
-			// const documentId = keccak256(asciiToHex(values.documentId));
-
 			const { PermissionsInterface } = new Permission.loadContract(web3);
-			await await PermissionsInterface.methods
+			
+			await PermissionsInterface.methods
 				.assignAccountRole(values.accountId, values.orgId, values.roleId)
 				.estimateGas({ from: account });
 			const tx = await PermissionsInterface.methods

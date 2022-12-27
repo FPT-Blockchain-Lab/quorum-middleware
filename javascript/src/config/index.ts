@@ -17,3 +17,5 @@ export const PermissionContractAddresses = {
     RoleManager: "0xbe4DcF0c5E310847b3D7750fD2DdA41455a588Cd",
     VoterManager: "0x01866bC496097C77d298696e2A9d194A487AED03",
 };
+
+export const CHAIN_ID = 6788;
