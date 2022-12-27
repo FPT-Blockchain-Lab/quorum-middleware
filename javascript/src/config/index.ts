@@ -1,3 +1,5 @@
+import pino from "pino";
+
 export const LCContractAddresses = {
     LCManagement: "0x76B88dd44c9c70b2BF2869Db7E00FDBE9f12eE77",
     Mode: "0x8E106A20BDF6161716a3D9D58951fA4C2cC32301",
@@ -17,3 +19,8 @@ export const PermissionContractAddresses = {
     RoleManager: "0xbe4DcF0c5E310847b3D7750fD2DdA41455a588Cd",
     VoterManager: "0x01866bC496097C77d298696e2A9d194A487AED03",
 };
+
+export const GLOBAL_LOGGER = pino({
+    name: 'quorum-middleware',
+    level: 'debug',
+});

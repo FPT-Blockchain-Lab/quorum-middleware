@@ -11,7 +11,7 @@ import {
     RoleManager,
     VoterManager,
 } from "../bindings/permission";
-import { PermissionContractAddresses } from "../config";
+import { GLOBAL_LOGGER, PermissionContractAddresses } from "../config";
 
 export interface PermissionContracts {
     AccountManager: AccountManager;
@@ -25,6 +25,8 @@ export interface PermissionContracts {
 }
 
 export class Permission {
+    private readonly logger = GLOBAL_LOGGER.child({ class: 'Permission'})
+
     static loadContract(web3: Web3): PermissionContracts {
         const AccountManager = new web3.eth.Contract(
             PermissionContractABIs.AccountManager as any[] as AbiItem[],

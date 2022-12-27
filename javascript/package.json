@@ -13,6 +13,7 @@
     },
     "dependencies": {
         "events": "^3.3.0",
+        "pino": "^8.8.0",
         "web3": "^1.8.1",
         "web3-core": "^1.8.1",
         "web3-eth-abi": "^1.8.1",
@@ -37,6 +38,7 @@
         "@rollup/plugin-terser": "^0.1.0",
         "@types/chai": "^4.3.4",
         "@types/mocha": "^10.0.0",
+        "@types/pino": "^7.0.5",
         "chai": "^4.3.7",
         "mocha": "^10.1.0",
         "rimraf": "^3.0.2",

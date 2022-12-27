@@ -3,7 +3,7 @@ import "./App.css";
 import { Layout, Menu, Form, Input, Button } from "antd";
 import Web3 from "web3";
 import { asciiToHex, keccak256 } from "web3-utils";
-import { CHAIN_ID, setupDefaultNetwork, EMPTY_BYTES } from "./utils";
+import { CHAIN_ID, setupDefaultNetwork } from "./utils";
 import BN from "bn.js";
 import { Middleware, Permission } from "quorum-middleware";
 const { Header, Content } = Layout;
@@ -221,7 +221,10 @@ function App() {
 
 			// Generate documentId
 			const documentId = keccak256(asciiToHex(values.documentId));
+			console.log('1')
 			const wrapperContract = new Middleware.LCWrapper(web3);
+			// console.log('2')
+			// return;
 			const tx = await wrapperContract.closeLC(documentId, account);
 
 			console.log(tx);
@@ -350,7 +353,7 @@ function App() {
 			// const documentId = keccak256(asciiToHex(values.documentId));
 
 			const { PermissionsInterface } = new Permission.loadContract(web3);
-			await await PermissionsInterface.methods
+			await PermissionsInterface.methods
 				.assignAccountRole(values.accountId, values.orgId, values.roleId)
 				.estimateGas({ from: account });
 			const tx = await PermissionsInterface.methods
