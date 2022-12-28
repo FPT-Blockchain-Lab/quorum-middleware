@@ -12,17 +12,7 @@ import {
     VoterManager,
 } from "../bindings/permission";
 import { DEFAULT_CONFIG } from "../config";
-
-export interface PermissionContracts {
-    AccountManager: AccountManager;
-    PermissionsImplementation: PermissionsImplementation;
-    PermissionsInterface: PermissionsInterface;
-    NodeManager: NodeManager;
-    OrgManager: OrgManager;
-    PermissionsUpgradable: PermissionsUpgradable;
-    RoleManager: RoleManager;
-    VoterManager: VoterManager;
-}
+import { PermissionContracts } from "./interfaces";
 
 export class Permission {
     static loadContract(web3: Web3, config = DEFAULT_CONFIG): PermissionContracts {
