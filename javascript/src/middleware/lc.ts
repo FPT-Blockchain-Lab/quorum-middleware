@@ -1,12 +1,46 @@
 import BN from "bn.js";
+import Web3 from "web3";
 import ethAbiEncoder from "web3-eth-abi";
-import { encodePacked, keccak256, Mixed } from "web3-utils";
-import { StageContent, AmendStage } from "./interfaces";
+import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
+import { StageContent, AmendStage, LCContracts } from "./interfaces";
+import { DEFAULT_CONFIG } from "../config";
+import { LCContractABIs } from "../abi/lc";
+import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, Mode, AmendRequest } from "../bindings/lc";
 
 /** LC protocol */
 export class LC {
-    /** The hash of empty bytes */
-    static readonly DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+    static loadContract(web3: Web3, config = DEFAULT_CONFIG): LCContracts {
+        const LCManagement = new web3.eth.Contract(
+            LCContractABIs.LCManagement as any as AbiItem[],
+            config.lCContractAddresses.LCManagement
+        ) as any as LCManagement;
+        const Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], config.lCContractAddresses.Mode) as any as Mode;
+        const RouterService = new web3.eth.Contract(
+            LCContractABIs.RouterService as any as AbiItem[],
+            config.lCContractAddresses.RouterService
+        ) as any as RouterService;
+        const StandardLCFactory = new web3.eth.Contract(
+            LCContractABIs.StandardLCFactory as any as AbiItem[],
+            config.lCContractAddresses.StandardLCFactory
+        ) as any as StandardLCFactory;
+        const UPASLCFactory = new web3.eth.Contract(
+            LCContractABIs.UPASLCFactory as any as AbiItem[],
+            config.lCContractAddresses.UPASLCFactory
+        ) as any as UPASLCFactory;
+        const AmendRequest = new web3.eth.Contract(
+            LCContractABIs.AmendRequest as any as AbiItem[],
+            config.lCContractAddresses.AmendRequest
+        ) as any as AmendRequest;
+
+        return {
+            LCManagement,
+            Mode,
+            RouterService,
+            StandardLCFactory,
+            UPASLCFactory,
+            AmendRequest,
+        };
+    }
 
     /**
      * Compute the hash of content array
@@ -118,4 +152,3 @@ export class LC {
         }
     }
 }
-

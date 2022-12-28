@@ -2,7 +2,7 @@ import { asciiToHex, utf8ToHex, keccak256 } from "web3-utils";
 import { expect } from "chai";
 import Web3 from "web3";
 import BN from "bn.js";
-import { Middleware } from "../src/main";
+import { LC } from "../src/main";
 
 const ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 const documentId = keccak256(asciiToHex("Document 1"));
@@ -19,13 +19,13 @@ const acknowledgeSignature =
 
 describe("Hash message testing", () => {
     it("Generate acknowledge message hash", () => {
-        const messageHash = Middleware.LC.generateAcknowledgeMessageHash(contentHash.slice(1, numOfDocument + 1));
+        const messageHash = LC.generateAcknowledgeMessageHash(contentHash.slice(1, numOfDocument + 1));
 
         expect(messageHash).to.deep.eq("0xb4bfd37a323afdf767e777452a6befaeb3823cd934b9d208388865b127faa770");
     });
 
     it("Generate approval message hash", () => {
-        const messageHash = Middleware.LC.generateApprovalMessageHash({
+        const messageHash = LC.generateApprovalMessageHash({
             rootHash: ROOT_HASH,
             prevHash: documentId,
             contentHash,
@@ -41,13 +41,13 @@ describe("Hash message testing", () => {
         const proposer = "0x0FDa058408bD342DA277A1bEb0DFa9F9145C3cfE";
         const nonce = new BN(3333);
 
-        const requestId = Middleware.LC.generateRequestId(proposer, nonce);
+        const requestId = LC.generateRequestId(proposer, nonce);
 
         expect(requestId).to.deep.eq("0x79dadfe586c911bb0de0c07736fd5c0478e69de542b867ad0a4dc240d68ae8e6");
     });
 
     it("Stage hash", () => {
-        const messageHash = Middleware.LC.generateStageHash({
+        const messageHash = LC.generateStageHash({
             rootHash: "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
             prevHash: "0x1841d653f9c4edda9d66a7e7737b39763d6bd40f569a3ec6859d3305b72310e6",
             contentHash: [

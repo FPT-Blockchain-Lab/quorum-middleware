@@ -1,14 +1,24 @@
 import BN from "bn.js";
 import { LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
+import {
+    AccountManager,
+    NodeManager,
+    OrgManager,
+    PermissionsImplementation,
+    PermissionsInterface,
+    PermissionsUpgradable,
+    RoleManager,
+    VoterManager,
+} from "../bindings/permission";
 
 /** Contracts of LC protocol */
 export interface LCContracts {
-    LCManagement?: LCManagement;
-    Mode?: Mode;
-    RouterService?: RouterService;
-    StandardLCFactory?: StandardLCFactory;
-    UPASLCFactory?: UPASLCFactory;
-    AmendRequest?: AmendRequest;
+    LCManagement: LCManagement;
+    Mode: Mode;
+    RouterService: RouterService;
+    StandardLCFactory: StandardLCFactory;
+    UPASLCFactory: UPASLCFactory;
+    AmendRequest: AmendRequest;
 }
 
 /** Content of LC contract */
@@ -49,4 +59,15 @@ export interface AmendStage {
 export interface MigrateStage {
     stage: BN;
     subStage: BN;
+}
+
+export interface PermissionContracts {
+    AccountManager: AccountManager;
+    PermissionsImplementation: PermissionsImplementation;
+    PermissionsInterface: PermissionsInterface;
+    NodeManager: NodeManager;
+    OrgManager: OrgManager;
+    PermissionsUpgradable: PermissionsUpgradable;
+    RoleManager: RoleManager;
+    VoterManager: VoterManager;
 }

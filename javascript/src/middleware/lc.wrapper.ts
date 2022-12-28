@@ -2,12 +2,12 @@ import BN from "bn.js";
 import Web3 from "web3";
 import { AbiItem } from "web3-utils";
 import { LCContractABIs } from "../abi/lc";
-import { PermissionContractABIs } from "../abi/permission";
 import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, UPASLC, StandardLC } from "../bindings/lc";
 import { OrgManager } from "../bindings/permission";
 import { DEFAULT_CONFIG } from "../config";
 import { StageContent, MigrateStage } from "./interfaces";
 import { LC } from "./lc";
+import { Permission } from "./permission";
 import { Utils } from "./utils";
 
 export class LCWrapper {
@@ -19,34 +19,25 @@ export class LCWrapper {
     private readonly OrgManager: OrgManager;
 
     constructor(web3: Web3, config = DEFAULT_CONFIG) {
-        if (!config.lCContractAddresses.LCManagement ||
+        if (
+            !config.lCContractAddresses.LCManagement ||
             !config.lCContractAddresses.RouterService ||
             !config.lCContractAddresses.StandardLCFactory ||
             !config.lCContractAddresses.UPASLCFactory ||
-            !config.permissionContractAddresses.OrgManager) {
-                throw new Error (`required LCManagement RouterService StandardLCFactory UPASLCFactory OrgManager to be defined`)
-            }
-        this.LCManagement = new web3.eth.Contract(
-            LCContractABIs.LCManagement as any as AbiItem[],
-            config.lCContractAddresses.LCManagement
-        ) as any as LCManagement;
-        this.RouterService = new web3.eth.Contract(
-            LCContractABIs.RouterService as any as AbiItem[],
-            config.lCContractAddresses.RouterService
-        ) as any as RouterService;
-        this.StandardLCFactory = new web3.eth.Contract(
-            LCContractABIs.StandardLCFactory as any as AbiItem[],
-            config.lCContractAddresses.StandardLCFactory
-        ) as any as StandardLCFactory;
-        this.UPASLCFactory = new web3.eth.Contract(
-            LCContractABIs.UPASLCFactory as any as AbiItem[],
-            config.lCContractAddresses.UPASLCFactory
-        ) as any as UPASLCFactory;
-        this.OrgManager = new web3.eth.Contract(
-            PermissionContractABIs.OrgManager as any[] as AbiItem[],
-            config.permissionContractAddresses.OrgManager
-        ) as any as OrgManager;
+            !config.permissionContractAddresses.OrgManager
+        ) {
+            throw new Error(`required LCManagement RouterService StandardLCFactory UPASLCFactory OrgManager to be defined`);
+        }
+
+        const { LCManagement, RouterService, StandardLCFactory, UPASLCFactory } = LC.loadContract(web3, config);
+        const { OrgManager } = Permission.loadContract(web3, config);
+
         this.web3 = web3;
+        this.LCManagement = LCManagement;
+        this.RouterService = RouterService;
+        this.StandardLCFactory = StandardLCFactory;
+        this.UPASLCFactory = UPASLCFactory;
+        this.OrgManager = OrgManager;
     }
 
     async createStandardLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, from: string) {
@@ -57,7 +48,7 @@ export class LCWrapper {
 
         // Get approval message hash
         const approvalMessageHash = LC.generateApprovalMessageHash({
-            rootHash: LC.DEFAULT_ROOT_HASH,
+            rootHash: Utils.DEFAULT_ROOT_HASH,
             prevHash: content.prevHash,
             contentHash: content.contentHash,
             url: content.url,
@@ -68,7 +59,7 @@ export class LCWrapper {
         const approvalSignature = await this.web3.eth.personal.sign(approvalMessageHash, from, "");
 
         const _content = {
-            rootHash: LC.DEFAULT_ROOT_HASH,
+            rootHash: Utils.DEFAULT_ROOT_HASH,
             prevHash: content.prevHash,
             contentHash: content.contentHash,
             url: content.url,
@@ -148,7 +139,7 @@ export class LCWrapper {
 
         // Get approval message hash
         const approvalMessageHash = LC.generateApprovalMessageHash({
-            rootHash: LC.DEFAULT_ROOT_HASH,
+            rootHash: Utils.DEFAULT_ROOT_HASH,
             prevHash: content.prevHash,
             contentHash: content.contentHash,
             url: content.url,
@@ -159,7 +150,7 @@ export class LCWrapper {
         const approvalSignature = await this.web3.eth.personal.sign(approvalMessageHash, from, "");
 
         const _content = {
-            rootHash: LC.DEFAULT_ROOT_HASH,
+            rootHash: Utils.DEFAULT_ROOT_HASH,
             prevHash: content.prevHash,
             contentHash: content.contentHash,
             url: content.url,
