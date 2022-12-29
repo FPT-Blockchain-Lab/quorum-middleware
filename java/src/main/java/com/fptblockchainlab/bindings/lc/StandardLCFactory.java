@@ -1,4 +1,4 @@
-package com.fptblockchainlab.bindings.lc;
+package lc;
 
 import io.reactivex.Flowable;
 import io.reactivex.functions.Function;
@@ -44,6 +44,8 @@ import org.web3j.tx.gas.ContractGasProvider;
 @SuppressWarnings("rawtypes")
 public class StandardLCFactory extends Contract {
     public static final String BINARY = "Bin file was not provided";
+
+    public static final String FUNC_STANDARD_WRAPPER = "STANDARD_WRAPPER";
 
     public static final String FUNC_AMEND = "amend";
 
@@ -110,6 +112,13 @@ public class StandardLCFactory extends Contract {
         EthFilter filter = new EthFilter(startBlock, endBlock, getContractAddress());
         filter.addSingleTopic(EventEncoder.encode(NEWSTANDARDLC_EVENT));
         return newStandardLCEventFlowable(filter);
+    }
+
+    public RemoteFunctionCall<String> STANDARD_WRAPPER() {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_STANDARD_WRAPPER, 
+                Arrays.<Type>asList(), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+        return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> amend(String _executor, BigInteger _documentId, List<String> _parties) {

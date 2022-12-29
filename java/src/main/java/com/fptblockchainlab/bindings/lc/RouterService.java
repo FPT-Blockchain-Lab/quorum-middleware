@@ -1,4 +1,4 @@
-package com.fptblockchainlab.bindings.lc;
+package lc;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -49,7 +49,11 @@ public class RouterService extends Contract {
 
     public static final String FUNC_GETADDRESS = "getAddress";
 
+    public static final String FUNC_GETAMENDMENTCOUNT = "getAmendmentCount";
+
     public static final String FUNC_GETAMENDMENTREQUEST = "getAmendmentRequest";
+
+    public static final String FUNC_GETINVOLVEDPARTIES = "getInvolvedParties";
 
     public static final String FUNC_GETROOTHASH = "getRootHash";
 
@@ -135,12 +139,43 @@ public class RouterService extends Contract {
                 });
     }
 
+    public RemoteFunctionCall<Tuple2<BigInteger, BigInteger>> getAmendmentCount(BigInteger _documentId) {
+        final Function function = new Function(FUNC_GETAMENDMENTCOUNT, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}));
+        return new RemoteFunctionCall<Tuple2<BigInteger, BigInteger>>(function,
+                new Callable<Tuple2<BigInteger, BigInteger>>() {
+                    @Override
+                    public Tuple2<BigInteger, BigInteger> call() throws Exception {
+                        List<Type> results = executeCallMultipleValueReturn(function);
+                        return new Tuple2<BigInteger, BigInteger>(
+                                (BigInteger) results.get(0).getValue(), 
+                                (BigInteger) results.get(1).getValue());
+                    }
+                });
+    }
+
     public RemoteFunctionCall<Request> getAmendmentRequest(BigInteger _documentId, BigInteger _requestId) {
         final Function function = new Function(FUNC_GETAMENDMENTREQUEST, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_requestId)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Request>() {}));
         return executeRemoteCallSingleValueReturn(function, Request.class);
+    }
+
+    public RemoteFunctionCall<List> getInvolvedParties(BigInteger _documentId) {
+        final Function function = new Function(FUNC_GETINVOLVEDPARTIES, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<Utf8String>>() {}));
+        return new RemoteFunctionCall<List>(function,
+                new Callable<List>() {
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public List call() throws Exception {
+                        List<Type> result = (List<Type>) executeCallSingleValueReturn(function, List.class);
+                        return convertToNative(result);
+                    }
+                });
     }
 
     public RemoteFunctionCall<byte[]> getRootHash(BigInteger _documentId) {

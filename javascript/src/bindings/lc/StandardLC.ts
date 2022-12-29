@@ -44,6 +44,15 @@ export interface StandardLC extends BaseContract {
   ): StandardLC;
   clone(): StandardLC;
   methods: {
+    _hashToStage(arg0: string | number[]): NonPayableTransactionObject<{
+      stage: string;
+      subStage: string;
+      0: string;
+      1: string;
+    }>;
+
+    _owner(): NonPayableTransactionObject<string>;
+
     amend(): NonPayableTransactionObject<void>;
 
     amended(): NonPayableTransactionObject<boolean>;
@@ -71,7 +80,7 @@ export interface StandardLC extends BaseContract {
 
     close(): NonPayableTransactionObject<void>;
 
-    closed(): NonPayableTransactionObject<boolean>;
+    factory(): NonPayableTransactionObject<string>;
 
     getContent(
       _stage: number | string | BN,
@@ -103,16 +112,15 @@ export interface StandardLC extends BaseContract {
 
     getRootList(): NonPayableTransactionObject<string[]>;
 
-    hashToStage(arg0: string | number[]): NonPayableTransactionObject<{
-      stage: string;
-      subStage: string;
-      0: string;
-      1: string;
-    }>;
+    hashToStage(
+      _hash: string | number[]
+    ): NonPayableTransactionObject<[string, string]>;
 
     isClosed(): NonPayableTransactionObject<boolean>;
 
-    owner(): NonPayableTransactionObject<string>;
+    numOfSubStage(
+      _stage: number | string | BN
+    ): NonPayableTransactionObject<string>;
 
     setCounter(
       _newValue: number | string | BN

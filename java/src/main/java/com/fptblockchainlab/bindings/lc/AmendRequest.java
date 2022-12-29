@@ -1,4 +1,4 @@
-package com.fptblockchainlab.bindings.lc;
+package lc;
 
 import io.reactivex.Flowable;
 import io.reactivex.functions.Function;
@@ -230,10 +230,10 @@ public class AmendRequest extends Contract {
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> setLCManagement(String management_) {
+    public RemoteFunctionCall<TransactionReceipt> setLCManagement(String _management) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
                 FUNC_SETLCMANAGEMENT, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, management_)), 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _management)), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
