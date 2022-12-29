@@ -67,6 +67,15 @@ export interface RouterService extends BaseContract {
       1: string;
     }>;
 
+    getAmendmentCount(
+      _documentId: number | string | BN
+    ): NonPayableTransactionObject<{
+      _totalAmendment: string;
+      _numOfRootAmendment: string;
+      0: string;
+      1: string;
+    }>;
+
     getAmendmentRequest(
       _documentId: number | string | BN,
       _requestId: number | string | BN
@@ -84,6 +93,10 @@ export interface RouterService extends BaseContract {
         boolean
       ]
     >;
+
+    getInvolvedParties(
+      _documentId: number | string | BN
+    ): NonPayableTransactionObject<string[]>;
 
     getRootHash(
       _documentId: number | string | BN

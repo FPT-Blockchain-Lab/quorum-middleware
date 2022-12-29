@@ -38,6 +38,8 @@ export interface UPASLCFactory extends BaseContract {
   ): UPASLCFactory;
   clone(): UPASLCFactory;
   methods: {
+    UPAS_WRAPPER(): NonPayableTransactionObject<string>;
+
     amend(
       _executor: string,
       _documentId: number | string | BN,

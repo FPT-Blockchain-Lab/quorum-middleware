@@ -98,7 +98,7 @@ export interface AmendRequest extends BaseContract {
 
     nonces(arg0: string): NonPayableTransactionObject<string>;
 
-    setLCManagement(management_: string): NonPayableTransactionObject<void>;
+    setLCManagement(_management: string): NonPayableTransactionObject<void>;
 
     submit(
       _documentId: number | string | BN,

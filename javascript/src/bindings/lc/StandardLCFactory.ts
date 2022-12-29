@@ -38,6 +38,8 @@ export interface StandardLCFactory extends BaseContract {
   ): StandardLCFactory;
   clone(): StandardLCFactory;
   methods: {
+    STANDARD_WRAPPER(): NonPayableTransactionObject<string>;
+
     amend(
       _executor: string,
       _documentId: number | string | BN,

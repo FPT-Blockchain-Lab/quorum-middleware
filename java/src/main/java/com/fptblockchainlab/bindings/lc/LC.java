@@ -1,4 +1,4 @@
-package com.fptblockchainlab.bindings.lc;
+package lc;
 
 import io.reactivex.Flowable;
 import io.reactivex.functions.Function;
@@ -48,6 +48,10 @@ import org.web3j.tx.gas.ContractGasProvider;
 public class LC extends Contract {
     public static final String BINARY = "Bin file was not provided";
 
+    public static final String FUNC__HASHTOSTAGE = "_hashToStage";
+
+    public static final String FUNC__OWNER = "_owner";
+
     public static final String FUNC_AMEND = "amend";
 
     public static final String FUNC_AMENDED = "amended";
@@ -58,7 +62,7 @@ public class LC extends Contract {
 
     public static final String FUNC_CLOSE = "close";
 
-    public static final String FUNC_CLOSED = "closed";
+    public static final String FUNC_FACTORY = "factory";
 
     public static final String FUNC_GETCONTENT = "getContent";
 
@@ -76,7 +80,7 @@ public class LC extends Contract {
 
     public static final String FUNC_ISCLOSED = "isClosed";
 
-    public static final String FUNC_OWNER = "owner";
+    public static final String FUNC_NUMOFSUBSTAGE = "numOfSubStage";
 
     public static final String FUNC_SETCOUNTER = "setCounter";
 
@@ -143,6 +147,29 @@ public class LC extends Contract {
         return approvedEventFlowable(filter);
     }
 
+    public RemoteFunctionCall<Tuple2<BigInteger, BigInteger>> _hashToStage(byte[] param0) {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC__HASHTOSTAGE, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(param0)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}));
+        return new RemoteFunctionCall<Tuple2<BigInteger, BigInteger>>(function,
+                new Callable<Tuple2<BigInteger, BigInteger>>() {
+                    @Override
+                    public Tuple2<BigInteger, BigInteger> call() throws Exception {
+                        List<Type> results = executeCallMultipleValueReturn(function);
+                        return new Tuple2<BigInteger, BigInteger>(
+                                (BigInteger) results.get(0).getValue(), 
+                                (BigInteger) results.get(1).getValue());
+                    }
+                });
+    }
+
+    public RemoteFunctionCall<String> _owner() {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC__OWNER, 
+                Arrays.<Type>asList(), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+        return executeRemoteCallSingleValueReturn(function, String.class);
+    }
+
     public RemoteFunctionCall<TransactionReceipt> amend() {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
                 FUNC_AMEND, 
@@ -185,11 +212,11 @@ public class LC extends Contract {
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteFunctionCall<Boolean> closed() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_CLOSED, 
+    public RemoteFunctionCall<String> factory() {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_FACTORY, 
                 Arrays.<Type>asList(), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
-        return executeRemoteCallSingleValueReturn(function, Boolean.class);
+                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+        return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<Content> getContent(BigInteger _stage, BigInteger _subStage) {
@@ -262,20 +289,11 @@ public class LC extends Contract {
                 });
     }
 
-    public RemoteFunctionCall<Tuple2<BigInteger, BigInteger>> hashToStage(byte[] param0) {
+    public RemoteFunctionCall<Stage> hashToStage(byte[] _hash) {
         final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_HASHTOSTAGE, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(param0)), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}));
-        return new RemoteFunctionCall<Tuple2<BigInteger, BigInteger>>(function,
-                new Callable<Tuple2<BigInteger, BigInteger>>() {
-                    @Override
-                    public Tuple2<BigInteger, BigInteger> call() throws Exception {
-                        List<Type> results = executeCallMultipleValueReturn(function);
-                        return new Tuple2<BigInteger, BigInteger>(
-                                (BigInteger) results.get(0).getValue(), 
-                                (BigInteger) results.get(1).getValue());
-                    }
-                });
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(_hash)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Stage>() {}));
+        return executeRemoteCallSingleValueReturn(function, Stage.class);
     }
 
     public RemoteFunctionCall<Boolean> isClosed() {
@@ -285,11 +303,11 @@ public class LC extends Contract {
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
-    public RemoteFunctionCall<String> owner() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_OWNER, 
-                Arrays.<Type>asList(), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
-        return executeRemoteCallSingleValueReturn(function, String.class);
+    public RemoteFunctionCall<BigInteger> numOfSubStage(BigInteger _stage) {
+        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_NUMOFSUBSTAGE, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_stage)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
+        return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> setCounter(BigInteger _newValue) {

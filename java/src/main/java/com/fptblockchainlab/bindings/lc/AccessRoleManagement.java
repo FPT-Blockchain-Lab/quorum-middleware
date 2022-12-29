@@ -1,4 +1,4 @@
-package com.fptblockchainlab.bindings.lc;
+package lc;
 
 import io.reactivex.Flowable;
 import io.reactivex.functions.Function;
