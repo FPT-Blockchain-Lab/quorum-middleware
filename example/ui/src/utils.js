@@ -1,5 +1,7 @@
 import { DEFAULT_CONFIG } from "quorum-middleware";
 
+export const CHAIN_ID =  DEFAULT_CONFIG.chainId;
+
 export const setupDefaultNetwork = async () => {
   const provider = window.ethereum;
   if (provider) {

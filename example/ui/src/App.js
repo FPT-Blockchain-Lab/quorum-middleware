@@ -4,7 +4,7 @@ import { Layout, Menu, Form, Input, Button } from "antd";
 import Web3 from "web3";
 import { CHAIN_ID, setupDefaultNetwork } from "./utils";
 import BN from "bn.js";
-import { Middleware, Permission, Utils } from "quorum-middleware";
+import { LCWrapper, LC, Permission, Utils } from "quorum-middleware";
 const { Header, Content } = Layout;
 
 const labelCreateLCList = [
@@ -79,7 +79,7 @@ function App() {
 	};
 
 	const getStageInfo = async (values) => {
-		const routerService = Middleware.LC.loadContract(
+		const routerService = LC.loadContract(
 			new Web3("http://1.54.89.229:32278")
 		).RouterService;
 		// Generate documentId
@@ -146,7 +146,7 @@ function App() {
 				numOfDocuments: numOfDocument,
 			};
 
-			const wrapperContract = new Middleware.LCWrapper(web3);
+			const wrapperContract = new LCWrapper(web3);
 			const tx = await wrapperContract.createStandardLC(
 				parties,
 				content,
@@ -188,7 +188,7 @@ function App() {
 			const _subStage = new BN(values.subStage);
 			const numOfDocument = new BN(values.numOfDocument);
 			const url = values.url;
-			const wrapperContract = new Middleware.LCWrapper(web3);
+			const wrapperContract = new LCWrapper(web3);
 			const tx = await wrapperContract.approveLC(
 				documentId,
 				_stage,
@@ -220,7 +220,7 @@ function App() {
 
 			// Generate documentId
 			const documentId = Utils.keccak256Utf8(values.documentId);
-			const wrapperContract = new Middleware.LCWrapper(web3);
+			const wrapperContract = new LCWrapper(web3);
 			const tx = await wrapperContract.closeLC(documentId, account);
 
 			console.log(tx);
@@ -258,7 +258,7 @@ function App() {
 			const numOfDocuments = 3;
 			const url = "https://fpt.com.vn/LCPlatform/standardLC/";
 
-			const wrapperContract = new Middleware.LCWrapper(web3);
+			const wrapperContract = new LCWrapper(web3);
 			// MUST STORE nonce TO APPROVE AND FULLFILL AMEND LC
 			const tx = await wrapperContract.submitAmendment(
 				documentId,
@@ -294,7 +294,7 @@ function App() {
 			}
 
 			const documentId = Utils.keccak256Utf8(values.documentId);
-			const wrapperContract = new Middleware.LCWrapper(web3);
+			const wrapperContract = new LCWrapper(web3);
 			const tx = await wrapperContract.approveAmendment(
 				documentId,
 				new BN(values.nonce),
@@ -320,7 +320,7 @@ function App() {
 			}
 
 			const documentId = Utils.keccak256Utf8(values.documentId);
-			const wrapperContract = new Middleware.LCWrapper(web3);
+			const wrapperContract = new LCWrapper(web3);
 			const tx = await wrapperContract.fulfillAmendment(
 				documentId,
 				new BN(values.nonce),
