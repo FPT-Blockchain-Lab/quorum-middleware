@@ -1,4 +1,5 @@
 import BN from "bn.js";
+import Web3 from "web3";
 import { encodePacked, keccak256 } from "web3-utils";
 
 export namespace Utils {
@@ -20,5 +21,16 @@ export namespace Utils {
         }
 
         return keccak256(encodePackedValue);
+    }
+
+    /**
+     * Get current block timestamp
+     * @param web3 an instance of Web3
+     * @returns current block timestamp
+     */
+    export async function getCurrentBlockTimestamp(web3: Web3) {
+        const blockNumber = await web3.eth.getBlockNumber();
+        const block = await web3.eth.getBlock(blockNumber);
+        return block.timestamp;
     }
 }
