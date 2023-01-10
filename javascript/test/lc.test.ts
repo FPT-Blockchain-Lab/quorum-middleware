@@ -1,7 +1,7 @@
-import { asciiToHex, utf8ToHex, keccak256 } from "web3-utils";
+import BN from "bn.js";
 import { expect } from "chai";
 import Web3 from "web3";
-import BN from "bn.js";
+import { asciiToHex, keccak256, utf8ToHex } from "web3-utils";
 import { LC } from "../src/main";
 
 const ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
@@ -65,5 +65,14 @@ describe("Hash message testing", () => {
         });
 
         expect(messageHash).to.deep.eq("0x8f4d7d2917d64cf7009c8196071ba861ced910a491e05331d88ad5aa7cf4449b");
+    });
+
+    it("Timestamp", async () => {
+        const web3 = new Web3("https://lc-blockchain.dev.etradevn.com/");
+        const timestamp = await LC.getCurrentBlockTimestamp(web3);
+        const blockNumber = await web3.eth.getBlockNumber();
+        const block = await web3.eth.getBlock(blockNumber);
+
+        expect(timestamp).to.deep.eq(block.timestamp);
     });
 });

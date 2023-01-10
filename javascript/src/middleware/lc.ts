@@ -151,4 +151,15 @@ export class LC {
                 return "";
         }
     }
+
+    /**
+     * Get current block timestamp
+     * @param web3 an instance of Web3
+     * @returns current block timestamp
+     */
+    static async getCurrentBlockTimestamp(web3: Web3) {
+        const blockNumber = await web3.eth.getBlockNumber();
+        const block = await web3.eth.getBlock(blockNumber);
+        return block.timestamp;
+    }
 }
