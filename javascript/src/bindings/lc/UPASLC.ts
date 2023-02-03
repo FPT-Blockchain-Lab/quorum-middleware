@@ -112,6 +112,8 @@ export interface UPASLC extends BaseContract {
 
     getRootList(): NonPayableTransactionObject<string[]>;
 
+    getStatus(): NonPayableTransactionObject<string[]>;
+
     hashToStage(
       _hash: string | number[]
     ): NonPayableTransactionObject<[string, string]>;

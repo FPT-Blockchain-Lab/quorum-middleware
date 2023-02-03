@@ -5,7 +5,7 @@ import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
 import { StageContent, AmendStage, LCContracts } from "./interfaces";
 import { DEFAULT_CONFIG } from "../config";
 import { LCContractABIs } from "../abi/lc";
-import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, Mode, AmendRequest } from "../bindings/lc";
+import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
 
 /** LC protocol */
 export class LC {
@@ -14,7 +14,6 @@ export class LC {
             LCContractABIs.LCManagement as any as AbiItem[],
             config.lCContractAddresses.LCManagement
         ) as any as LCManagement;
-        const Mode = new web3.eth.Contract(LCContractABIs.Mode as any as AbiItem[], config.lCContractAddresses.Mode) as any as Mode;
         const RouterService = new web3.eth.Contract(
             LCContractABIs.RouterService as any as AbiItem[],
             config.lCContractAddresses.RouterService
@@ -34,7 +33,6 @@ export class LC {
 
         return {
             LCManagement,
-            Mode,
             RouterService,
             StandardLCFactory,
             UPASLCFactory,

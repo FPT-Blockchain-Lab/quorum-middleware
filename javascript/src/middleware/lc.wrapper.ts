@@ -5,7 +5,7 @@ import { LCContractABIs } from "../abi/lc";
 import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, UPASLC, StandardLC } from "../bindings/lc";
 import { OrgManager } from "../bindings/permission";
 import { DEFAULT_CONFIG } from "../config";
-import { StageContent, MigrateStage } from "./interfaces";
+import { StageContent, Stage } from "./interfaces";
 import { LC } from "./lc";
 import { Permission } from "./permission";
 import { Utils } from "./utils";
@@ -359,7 +359,7 @@ export class LCWrapper {
         stage: number | string | BN,
         subStage: number | string | BN,
         content: Omit<StageContent, "approvalSignature" | "rootHash" | "prevHash">,
-        migrateStages: MigrateStage[],
+        migrateStages: Stage[],
         from: string
     ) {
         const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
@@ -490,9 +490,9 @@ export class LCWrapper {
         return this.RouterService.methods.submitAmendment(...data).send({ from, gas });
     }
 
-    async approveAmendment(documentId: number | string | BN, nonce: BN, from: string) {
+    async approveAmendment(documentId: number | string | BN, proposer: string, nonce: BN, from: string) {
         // Generate requestId
-        const requestId = LC.generateRequestId(from, nonce);
+        const requestId = LC.generateRequestId(proposer, nonce);
 
         const [amendmentRequest, isApproved] = await Promise.all([
             this.RouterService.methods.getAmendmentRequest(documentId, requestId).call(),
@@ -526,9 +526,9 @@ export class LCWrapper {
         return this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).send({ from, gas });
     }
 
-    async fulfillAmendment(documentId: number | string | BN, nonce: BN, from: string) {
+    async fulfillAmendment(documentId: number | string | BN, proposer: string, nonce: BN, from: string) {
         // Generate requestId
-        const requestId = LC.generateRequestId(from, nonce);
+        const requestId = LC.generateRequestId(proposer, nonce);
 
         const request = await this.RouterService.methods.getAmendmentRequest(documentId, requestId).call();
         if (!request) throw new Error("Amend request not found.");
@@ -536,5 +536,33 @@ export class LCWrapper {
         const gas = await this.RouterService.methods.fulfillAmendment(documentId, requestId).estimateGas({ from });
 
         return this.RouterService.methods.fulfillAmendment(documentId, requestId).send({ from, gas });
+    }
+
+    async getLCStatus(documentId: number | string | BN) {
+        const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
+        if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
+
+        const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+        const counter = await StandardLC.methods.getCounter().call();
+        const lcStatus = await StandardLC.methods.getStatus().call();
+        let currentStage: Stage[] = [{ stage: new BN(1), subStage: new BN(counter).add(new BN(1)) }];
+        const lcStage = LCWrapper.calculateStages(lcStatus.map((stage) => new BN(stage)));
+
+        currentStage = [...currentStage, ...lcStage];
+
+        return currentStage;
+    }
+
+    static calculateStages(lastestStages: number[] | BN[]): Stage[] {
+        let res: Stage[] = [];
+
+        for (let i = 0; i < lastestStages.length; i++) {
+            for (let j = new BN(1); j.lt(new BN(lastestStages[i])); ) {
+                res = [...res, { stage: new BN(j).add(new BN(1)), subStage: new BN(i).add(new BN(1)) }];
+                j = j.add(new BN(1));
+            }
+        }
+
+        return res;
     }
 }
