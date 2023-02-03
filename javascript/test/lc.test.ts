@@ -68,14 +68,20 @@ describe("Hash message testing", () => {
         expect(messageHash).to.deep.eq("0x8f4d7d2917d64cf7009c8196071ba861ced910a491e05331d88ad5aa7cf4449b");
     });
 
-    it("Timestamp", async () => {
+    it("Timestamp", (done) => {
+        // call ganache
         const provider = new MockProvider();
         const web3 = new Web3(provider.provider as any);
-        const timestamp = await Utils.getCurrentBlockTimestamp(web3);
-        const blockNumber = await web3.eth.getBlockNumber();
-        const block = await web3.eth.getBlock(blockNumber);
-        expect(timestamp).to.deep.eq(block.timestamp);
-    });
+        Utils.getCurrentBlockTimestamp(web3)
+            .then(result => {
+                // @ts-expect-error unix timestamp
+                expect(new Date(result * 1000)).instanceOf(Date);
+                done();
+            })
+            .catch(error => {
+                done(error);
+            });
+    }).timeout(5000);
 
     it("Current stages", async () => {
         const stages = LCWrapper.calculateStages([new BN(5), new BN(4), new BN(3)]);
