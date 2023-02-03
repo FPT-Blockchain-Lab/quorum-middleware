@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { LCManagement, Mode, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
+import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
 import {
     AccountManager,
     NodeManager,
@@ -14,7 +14,6 @@ import {
 /** Contracts of LC protocol */
 export interface LCContracts {
     LCManagement: LCManagement;
-    Mode: Mode;
     RouterService: RouterService;
     StandardLCFactory: StandardLCFactory;
     UPASLCFactory: UPASLCFactory;
@@ -56,7 +55,7 @@ export interface AmendStage {
     content: StageContent;
 }
 
-export interface MigrateStage {
+export interface Stage {
     stage: BN;
     subStage: BN;
 }

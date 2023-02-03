@@ -2,7 +2,8 @@ import BN from "bn.js";
 import { expect } from "chai";
 import Web3 from "web3";
 import { asciiToHex, keccak256, utf8ToHex } from "web3-utils";
-import { LC, Utils } from "../src/main";
+import { LC, LCWrapper, Utils } from "../src/main";
+import { MockProvider } from "@ethereum-waffle/provider";
 
 const ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 const documentId = keccak256(asciiToHex("Document 1"));
@@ -68,11 +69,28 @@ describe("Hash message testing", () => {
     });
 
     it("Timestamp", async () => {
-        const web3 = new Web3("https://lc-blockchain.dev.etradevn.com/");
+        const provider = new MockProvider();
+        const web3 = new Web3(provider.provider as any);
         const timestamp = await Utils.getCurrentBlockTimestamp(web3);
         const blockNumber = await web3.eth.getBlockNumber();
         const block = await web3.eth.getBlock(blockNumber);
-
         expect(timestamp).to.deep.eq(block.timestamp);
+    });
+
+    it("Current stages", async () => {
+        const stages = LCWrapper.calculateStages([new BN(5), new BN(4), new BN(3)]);
+        const expectedStages = [
+            { stage: new BN(2), subStage: new BN(1) },
+            { stage: new BN(3), subStage: new BN(1) },
+            { stage: new BN(4), subStage: new BN(1) },
+            { stage: new BN(5), subStage: new BN(1) },
+            { stage: new BN(2), subStage: new BN(2) },
+            { stage: new BN(3), subStage: new BN(2) },
+            { stage: new BN(4), subStage: new BN(2) },
+            { stage: new BN(2), subStage: new BN(3) },
+            { stage: new BN(3), subStage: new BN(3) },
+        ];
+
+        expect(expectedStages).to.deep.eq(stages);
     });
 });

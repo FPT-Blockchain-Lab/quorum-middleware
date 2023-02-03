@@ -8,7 +8,6 @@ export interface config {
 
 export interface LCContractAddresses {
     LCManagement: string;
-    Mode: string;
     RouterService: string;
     StandardLCFactory: string;
     UPASLCFactory: string;
@@ -28,12 +27,11 @@ export interface PermissionContractAddresses {
 
 export const TESTNET_CONFIG: config = {
     lCContractAddresses: {
-        LCManagement: "0x05d54558021C8b26E080435257B7F1f2dA8FdFbC",
-        Mode: "0x2d90566c65B8e7720608D0aA11d307d5B1beE760",
-        RouterService: "0x00B45eDd16A9f480C681A15e78b35b2713F99602",
-        StandardLCFactory: "0x86364F74eb62EC25754968653dd9E2009B87eca3",
-        UPASLCFactory: "0xcF9a3d3ce772Dc63504193e5a10A3BE106F0447b",
-        AmendRequest: "0x221F17Ef214044bD37a73dE5c2804F2AB2602Bc4",
+        LCManagement: "0x9fe96403440c397B4508aB6f96defC7c2C46BeC9",
+        RouterService: "0x13612cdD40DE0becB742e7C006BD34A89FDe68D0",
+        StandardLCFactory: "0xF3AAA8ABfAabf43c527208Eff7177dE9E86ac572",
+        UPASLCFactory: "0x31EBbe37B3473870d8A6Bc5223c235Ad918202C2",
+        AmendRequest: "0xa7A7A05A703e26530B31c43694edB0e5028AD323",
     },
     permissionContractAddresses: {
         OrgManager: "0xf5B2c0829f9485EEB114B11a7C1cb3227B8749Ee",
@@ -52,12 +50,11 @@ export const TESTNET_CONFIG: config = {
 
 export const STAGING_CONFIG: config = {
     lCContractAddresses: {
-        LCManagement: "0x795C2DeEf13e6D49dF73Ca194250c97511796255",
-        Mode: "0x9c2ccBf987b9DC2144ae2c6767475017AeBF42b3",
-        RouterService: "0x0B3b181264f97b005e2ceB1Acac082E4ec883d86",
-        StandardLCFactory: "0x452EEfa90c9628Df5421e5E1A3fB8F044F2F364b",
-        UPASLCFactory: "0x5692c93c784ef84711E6b460CF40577Fc95Bd039",
-        AmendRequest: "0xD92cFf94741C78153190f9A060005653f9410d95",
+        LCManagement: "0x3aC08FcA1a5503518E6CD40f740713c4F3b30df7",
+        RouterService: "0x8f6a93F56927FFaA8c804487C65871A2C132Ea7c",
+        StandardLCFactory: "0x0acC5603ee0311630B4Bd7f55aFc1a1f96179323",
+        UPASLCFactory: "0x7eD07d2fff53E0a3709D925597116126D1dc937E",
+        AmendRequest: "0xEFf48f68A7f38E09412C4fC0C357531834CA7445",
     },
     permissionContractAddresses: {
         OrgManager: "0xf5B2c0829f9485EEB114B11a7C1cb3227B8749Ee",

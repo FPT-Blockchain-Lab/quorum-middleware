@@ -98,6 +98,10 @@ export interface RouterService extends BaseContract {
       _documentId: number | string | BN
     ): NonPayableTransactionObject<string[]>;
 
+    getLCStatus(
+      _documentId: number | string | BN
+    ): NonPayableTransactionObject<string[]>;
+
     getRootHash(
       _documentId: number | string | BN
     ): NonPayableTransactionObject<string>;

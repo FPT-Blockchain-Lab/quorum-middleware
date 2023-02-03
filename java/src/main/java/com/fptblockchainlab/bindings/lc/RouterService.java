@@ -55,6 +55,8 @@ public class RouterService extends Contract {
 
     public static final String FUNC_GETINVOLVEDPARTIES = "getInvolvedParties";
 
+    public static final String FUNC_GETLCSTATUS = "getLCStatus";
+
     public static final String FUNC_GETROOTHASH = "getRootHash";
 
     public static final String FUNC_GETSTAGECONTENT = "getStageContent";
@@ -167,6 +169,21 @@ public class RouterService extends Contract {
         final Function function = new Function(FUNC_GETINVOLVEDPARTIES, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<Utf8String>>() {}));
+        return new RemoteFunctionCall<List>(function,
+                new Callable<List>() {
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public List call() throws Exception {
+                        List<Type> result = (List<Type>) executeCallSingleValueReturn(function, List.class);
+                        return convertToNative(result);
+                    }
+                });
+    }
+
+    public RemoteFunctionCall<List> getLCStatus(BigInteger _documentId) {
+        final Function function = new Function(FUNC_GETLCSTATUS, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId)), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<Uint256>>() {}));
         return new RemoteFunctionCall<List>(function,
                 new Callable<List>() {
                     @Override
