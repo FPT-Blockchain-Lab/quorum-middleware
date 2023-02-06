@@ -35,7 +35,7 @@ const labelAmendLCList = ["documentId", "stage", "subStage"];
 const labelApproveAmendLCList = ["documentId", "nonce"];
 const labelFullfillAmendLCList = ["documentId", "nonce"];
 const labelCloseLCList = ["documentId"];
-const addAccountToOrgList = ["accountId", "orgId", "roleId"];
+const addAccountToOrgList = ["orgId"];
 
 function App() {
   const [lc, setLC] = useState(undefined);
@@ -79,9 +79,7 @@ function App() {
   };
 
   const getStageInfo = async (values) => {
-    const routerService = LC.loadContract(
-      new Web3("http://1.54.89.229:32278")
-    ).RouterService;
+    const routerService = LC.loadContract(web3).RouterService;
     // Generate documentId
     const documentId = Utils.keccak256Utf8(values.documentId);
     const tx = await routerService.methods
@@ -138,12 +136,18 @@ function App() {
         values.beneficiary,
       ];
 
+      const ackMsg = LC.generateAcknowledgeMessageHash(
+        contentHash.slice(1, numOfDocument.add(new BN(1)).toNumber())
+      );
+      const ackSig = await web3.eth.personal.sign(ackMsg, account, "");
+
       const content = {
         prevHash: documentId,
         contentHash: contentHash,
         url: url,
         signedTime: signedTime,
         numOfDocuments: numOfDocument,
+        acknowledgeSignature: ackSig,
       };
 
       /**
@@ -210,7 +214,7 @@ function App() {
         Utils.keccak256Utf8("Hash of LC Document Number"),
         Utils.keccak256Utf8("Hash of LC 1"),
         Utils.keccak256Utf8("Hash of LC 2"),
-        Utils.keccak256Utf8("Hash of LC 3"),
+        Utils.keccak256Utf8("Hash of LC as78dfas45fg65s5asf5as5fas"),
         Utils.keccak256Utf8("Hash of LC information"),
       ];
       // Generate documentId
@@ -220,6 +224,10 @@ function App() {
       const _subStage = new BN(values.subStage);
       const numOfDocument = new BN(values.numOfDocument);
       const url = values.url;
+      const ackMsg = LC.generateAcknowledgeMessageHash(
+        contentHash.slice(1, numOfDocument.add(new BN(1)).toNumber())
+      );
+      const ackSig = await web3.eth.personal.sign(ackMsg, account, "");
       const wrapperContract = new LCWrapper(web3);
       const tx = await wrapperContract.approveLC(
         documentId,
@@ -230,6 +238,7 @@ function App() {
           numOfDocuments: numOfDocument,
           contentHash,
           url,
+          acknowledgeSignature: ackSig,
         },
         account
       );
@@ -273,7 +282,12 @@ function App() {
       }
       // Generate documentId
       const documentId = Utils.keccak256Utf8(values.documentId);
-      const migrateStages = [{ stage: 1, subStage: 1 }];
+      const migrateStages = [
+        { stage: 1, subStage: 1 },
+        { stage: 2, subStage: 1 },
+        { stage: 3, subStage: 1 },
+        { stage: 2, subStage: 2 },
+      ];
 
       /**
        * example content hash
@@ -290,7 +304,13 @@ function App() {
       const numOfDocuments = 3;
       const url = "https://fpt.com.vn/LCPlatform/standardLC/";
 
+      const ackMsg = LC.generateAcknowledgeMessageHash(
+        contentHash.slice(1, numOfDocuments + 1)
+      );
+      const ackSig = await web3.eth.personal.sign(ackMsg, account, "");
+
       const wrapperContract = new LCWrapper(web3);
+      const stages = await wrapperContract.getLCStatus(documentId);
       // MUST STORE nonce TO APPROVE AND FULLFILL AMEND LC
       const tx = await wrapperContract.submitAmendment(
         documentId,
@@ -301,8 +321,9 @@ function App() {
           numOfDocuments,
           url,
           contentHash,
+          acknowledgeSignature: ackSig,
         },
-        migrateStages,
+        stages,
         account
       );
       console.log(tx);
@@ -329,6 +350,7 @@ function App() {
       const wrapperContract = new LCWrapper(web3);
       const tx = await wrapperContract.approveAmendment(
         documentId,
+        account,
         new BN(values.nonce),
         account
       );
@@ -355,6 +377,7 @@ function App() {
       const wrapperContract = new LCWrapper(web3);
       const tx = await wrapperContract.fulfillAmendment(
         documentId,
+        account,
         new BN(values.nonce),
         account
       );
@@ -376,19 +399,14 @@ function App() {
       if (chainId !== CHAIN_ID) {
         await setupDefaultNetwork();
       }
-      console.log(values);
 
-      const { PermissionsInterface } = new Permission.loadContract(web3);
-
-      await PermissionsInterface.methods
-        .assignAccountRole(values.accountId, values.orgId, values.roleId)
-        .estimateGas({ from: account });
-      const tx = await PermissionsInterface.methods
-        .assignAccountRole(values.accountId, values.orgId, values.roleId)
-        .send({ from: account });
-
-      console.log(tx);
-      alert("Add account to org success!");
+      const documentId = Utils.keccak256Utf8(values.orgId);
+      const wrapperContract = new LCWrapper(web3);
+      const res = await wrapperContract.getLCStatus(documentId);
+      console.log(res);
+      for (let i = 0; i < res.length; i++) {
+        console.log(res[i].stage.toString(), res[i].subStage.toString());
+      }
     } catch (error) {
       console.log(error);
       error.message && alert(error.message);

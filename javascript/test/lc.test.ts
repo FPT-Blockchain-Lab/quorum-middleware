@@ -1,9 +1,11 @@
 import BN from "bn.js";
 import { expect } from "chai";
 import Web3 from "web3";
-import { asciiToHex, keccak256, utf8ToHex } from "web3-utils";
+import { asciiToHex, keccak256, utf8ToHex, AbiItem } from "web3-utils";
 import { LC, LCWrapper, Utils } from "../src/main";
 import { MockProvider } from "@ethereum-waffle/provider";
+import { LCContractABIs } from "../src/abi/lc";
+import { StandardLC } from "../src/bindings/lc";
 
 const ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 const documentId = keccak256(asciiToHex("Document 1"));
@@ -73,12 +75,12 @@ describe("Hash message testing", () => {
         const provider = new MockProvider();
         const web3 = new Web3(provider.provider as any);
         Utils.getCurrentBlockTimestamp(web3)
-            .then(result => {
+            .then((result) => {
                 // @ts-expect-error unix timestamp
                 expect(new Date(result * 1000)).instanceOf(Date);
                 done();
             })
-            .catch(error => {
+            .catch((error) => {
                 done(error);
             });
     }).timeout(5000);
@@ -98,5 +100,29 @@ describe("Hash message testing", () => {
         ];
 
         expect(expectedStages).to.deep.eq(stages);
+    });
+
+    it("Current stages", async () => {
+        const web3 = new Web3("https://lc-blockchain.dev.etradevn.com/");
+        const { RouterService } = LC.loadContract(web3);
+        const documentId = Utils.keccak256Utf8("123456");
+        console.log(documentId);
+
+        const { _contract } = await RouterService.methods.getAddress(documentId).call();
+
+        const StandardLC = new web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+        const counter = await StandardLC.methods
+            .getMigrateInfo([
+                "0x700159da29ed2b81a63673082f56f86a17109a4868d7d4e921e81ae66f3fa886",
+                "0x2d78861583b23e07be3ec96e7f2e9d24399113de384dbaf3dae4ef3344d762da",
+                "0x3850a5a99a5a6f29698f313bee5ab38bf6a6f71eea48d6b3bfbaee8baf93424c",
+                "0x973d99955ca42426d5c40300fe1a6464ddb890d5c2ad68cb306ae8cfe5a0f76c",
+                "0x2d78861583b23e07be3ec96e7f2e9d24399113de384dbaf3dae4ef3344d762da",
+                "0x3850a5a99a5a6f29698f313bee5ab38bf6a6f71eea48d6b3bfbaee8baf93424c",
+                "0x2d78861583b23e07be3ec96e7f2e9d24399113de384dbaf3dae4ef3344d762da",
+                "0x3850a5a99a5a6f29698f313bee5ab38bf6a6f71eea48d6b3bfbaee8baf93424c",
+            ])
+            .call();
+        console.log(counter);
     });
 });

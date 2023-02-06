@@ -377,7 +377,8 @@ export class LCWrapper {
         } else {
             prevStage = prevStage.sub(new BN(1));
         }
-
+        console.log("submitAmendment", amendStage.toString(), amendSubStage.toString());
+        StandardLC.methods.numOfSubStage(amendStage).call().then(console.log);
         if (amendStage.eq(new BN(2))) {
             prevSubStage = new BN(counter).add(new BN(1));
         }
@@ -401,7 +402,9 @@ export class LCWrapper {
 
         const migrating_stages = await Promise.all(
             migrateStages.map(async (s) => {
+                console.log("migrating_stage", s.stage.toString(), s.subStage.toString());
                 const content = await this.RouterService.methods.getStageContent(documentId, s.stage, s.subStage).call();
+                console.log(content);
                 return LC.generateStageHash({
                     rootHash: content[0],
                     prevHash: content[2],
