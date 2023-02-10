@@ -85,28 +85,6 @@ public class LC {
     /** The hash of empty bytes */
     public static String DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
 
-    public static String checkStage(BigInteger stage) {
-        String _stage = stage.toString();
-        switch (_stage) {
-            case "1":
-                return "Letter Of Credit";
-            case "2":
-                return "Presentation Document";
-            case "3":
-                return "Documentation Result Notification";
-            case "4":
-                return "LC Payment Acceptance";
-            case "5":
-                return "LC Issuance Bank To Advising Bank Payment";
-            case "6":
-                return "LC Advising Bank To Beneficiary Payment";
-            case "7":
-                return "UpasLC Payment Acceptance";
-            default:
-                return "";
-        }
-    }
-
     /**
      * Compute the hash of content array
      * @param contentHash the hashes of content

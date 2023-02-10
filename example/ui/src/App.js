@@ -273,7 +273,7 @@ function App() {
       }
       // Generate documentId
       const documentId = Utils.keccak256Utf8(values.documentId);
-      const migrateStages = [{ stage: 1, subStage: 1 }];
+      const migrateStages = [{ stage: LC.Stage.PHAT_HANH_LC, subStage: 1 }];
 
       /**
        * example content hash
