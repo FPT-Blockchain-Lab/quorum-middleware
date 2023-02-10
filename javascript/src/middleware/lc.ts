@@ -128,25 +128,23 @@ export class LC {
 
         return keccak256(encodePacked(...content) ?? "");
     }
+}
 
-    static checkStage(stage: BN): string {
-        switch (stage.toString()) {
-            case "1":
-                return "Letter Of Credit";
-            case "2":
-                return "Presentation Document";
-            case "3":
-                return "Documentation Result Notification";
-            case "4":
-                return "LC Payment Acceptance";
-            case "5":
-                return "LC Issuance Bank To Advising Bank Payment";
-            case "6":
-                return "LC Advising Bank To Beneficiary Payment";
-            case "7":
-                return "UpasLC Payment Acceptance";
-            default:
-                return "";
-        }
+export namespace LC {
+    export enum Stage {
+        // BLC_03
+        PHAT_HANH_LC = 1, // phát hành LC
+        // BLC_04
+        XUAT_TRINH_TCD_BCT = 2, // xuất trình thư chỉ dẫn bộ chứng từ
+        // BLC_05
+        THONG_BAO_BCT_MH = 3, // thông báo bộ chứng từ mua hàng
+        // BLC_06
+        CHAP_NHAN_THANH_TOAN = 4, // chấp nhận thanh toán
+        //BLC_07_08
+        LC_NHPH_NHXT = 5, // lc thường: ngân hàng phát hành - ngân hàng xuất trình
+        LC_NHXT_BTH = 6, // lc thường: ngân hàng xuất trình - bên thụ hưởng
+        UPAS_NHTT_NHXT = 5, // lc upas: ngân hàng tài trợ - ngân hàng xuất trình
+        UPAS_NHXT_BTH = 6, // lc upas: ngân hàng xuất trình - bên thụ hưởng
+        UPAS_NHPH_NHTT = 7, // lc upas: ngân hàng phát hành - ngân hàng tài trợ
     }
 }
