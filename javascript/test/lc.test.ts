@@ -1,7 +1,7 @@
 import BN from "bn.js";
 import { expect } from "chai";
 import Web3 from "web3";
-import { asciiToHex, keccak256, utf8ToHex } from "web3-utils";
+import { asciiToHex, keccak256 } from "web3-utils";
 import { LC, LCWrapper, Utils } from "../src/main";
 import { MockProvider } from "@ethereum-waffle/provider";
 
@@ -73,30 +73,32 @@ describe("Hash message testing", () => {
         const provider = new MockProvider();
         const web3 = new Web3(provider.provider as any);
         Utils.getCurrentBlockTimestamp(web3)
-            .then(result => {
+            .then((result) => {
                 // @ts-expect-error unix timestamp
                 expect(new Date(result * 1000)).instanceOf(Date);
                 done();
             })
-            .catch(error => {
+            .catch((error) => {
                 done(error);
             });
     }).timeout(5000);
 
-    it("Current stages", async () => {
-        const stages = LCWrapper.calculateStages([new BN(5), new BN(4), new BN(3)]);
+    it("LC Status", async () => {
+        const web3 = new Web3("https://lc-blockchain.dev.etradevn.com/");
+        const wrapper = new LCWrapper(web3);
+        const documentId = Utils.keccak256Utf8("123456");
+        const status = await wrapper.getLCStatus(documentId);
         const expectedStages = [
-            { stage: new BN(2), subStage: new BN(1) },
-            { stage: new BN(3), subStage: new BN(1) },
-            { stage: new BN(4), subStage: new BN(1) },
-            { stage: new BN(5), subStage: new BN(1) },
-            { stage: new BN(2), subStage: new BN(2) },
-            { stage: new BN(3), subStage: new BN(2) },
-            { stage: new BN(4), subStage: new BN(2) },
-            { stage: new BN(2), subStage: new BN(3) },
-            { stage: new BN(3), subStage: new BN(3) },
+            { stage: 1, subStage: 1 },
+            { stage: 2, subStage: 1 },
+            { stage: 3, subStage: 1 },
+            { stage: 4, subStage: 1 },
+            { stage: 2, subStage: 2 },
+            { stage: 3, subStage: 2 },
+            { stage: 2, subStage: 3 },
+            { stage: 3, subStage: 3 },
         ];
 
-        expect(expectedStages).to.deep.eq(stages);
-    });
+        expect(expectedStages).to.deep.eq(status);
+    }).timeout(5000);
 });
