@@ -74,7 +74,7 @@ const permissionWrapper = new PermissionWrapper(web3, customConfig);
     | contentHash | string[] |
     | url | string |
     | signedTime | BN |
-    | numOfDocuments | BN |
+    | numOfDocuments | _number_ |
     | acknowledgeSignature | string |
 -   `from`: _string_ - account send transaction
 
@@ -90,7 +90,7 @@ Return transaction receipt
     | contentHash | string[] |
     | url | string |
     | signedTime | BN |
-    | numOfDocuments | BN |
+    | numOfDocuments | _number_ |
     | acknowledgeSignature | string |
 -   `from`: _string_ - account send transaction
 
@@ -99,15 +99,15 @@ Return transaction receipt
 #### LCWrapper.approveLC(documentId, stage, subStage, content, from)
 
 -   `documentId`: _string_ - hash of documentId
--   `stage`: _BN_
--   `subStage`: _BN_
+-   `stage`: _number_
+-   `subStage`: _number_
 -   `content`: _object_
     | Name | Type |
     |----------------------|----------|
     | contentHash | string[] |
     | url | string |
     | signedTime | BN |
-    | numOfDocuments | BN |
+    | numOfDocuments | number |
     | acknowledgeSignature | string |
 -   `from`: _string_ - account send transaction
 
@@ -123,15 +123,15 @@ Return transaction receipt
 #### LCWrapper.submitAmendment(documentId, stage, subStage, content, migrateStages, from)
 
 -   `documentId`: _string_ - hash of documentId
--   `stage`: _BN_
--   `subStage`: _BN_
+-   `stage`: _number_
+-   `subStage`: _number_
 -   `content`: _object_
     | Name | Type |
     |----------------------|----------|
     | contentHash | string[] |
     | url | string |
     | signedTime | BN |
-    | numOfDocuments | BN |
+    | numOfDocuments | _number_ |
     | acknowledgeSignature | string |
 -   `migrateStages`:
 -   `from`: _string_ - account send transaction
@@ -141,6 +141,7 @@ Return transaction receipt
 #### LCWrapper.approveAmendment(documentId, nonce, from)
 
 -   `documentId`: _string_ - hash of documentId
+-   `proposer`: _string_ - account submit amend request
 -   `nonce`: _BN_ - nonce when approve LC
 -   `from`: _string_ - account send transaction
 

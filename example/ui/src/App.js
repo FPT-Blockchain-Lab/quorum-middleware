@@ -24,14 +24,10 @@ const labelUpdateLCList = [
   "subStage",
   "signedTime",
   "numOfDocument",
-  "applicant",
-  "beneficiary",
-  "issuanceBank",
-  "advisingBank",
   "url",
 ];
 
-const labelAmendLCList = ["documentId", "stage", "subStage"];
+const labelAmendLCList = ["documentId"];
 const labelApproveAmendLCList = ["documentId", "nonce"];
 const labelFullfillAmendLCList = ["documentId", "nonce"];
 const labelCloseLCList = ["documentId"];
@@ -207,7 +203,7 @@ function App() {
        * example content hash
        */
       const contentHash = [
-        Utils.keccak256Utf8("Hash of LC Document Number"),
+        Utils.keccak256Utf8("Hash of LC Document"),
         Utils.keccak256Utf8("Hash of LC 1"),
         Utils.keccak256Utf8("Hash of LC 2"),
         Utils.keccak256Utf8("Hash of LC 3"),
@@ -216,20 +212,29 @@ function App() {
       // Generate documentId
       const documentId = Utils.keccak256Utf8(values.documentId);
       const signedTime = new BN(values.signedTime);
-      const _stage = new BN(values.stage);
-      const _subStage = new BN(values.subStage);
-      const numOfDocument = new BN(values.numOfDocument);
+
+      const numOfDocument = +values.numOfDocument;
       const url = values.url;
+      const acknowledgeMessage = LC.generateAcknowledgeMessageHash(
+        contentHash.slice(1, numOfDocument + 1)
+      );
+      const acknowledgeSignature = await web3.eth.personal.sign(
+        acknowledgeMessage,
+        account,
+        ""
+      );
+
       const wrapperContract = new LCWrapper(web3);
       const tx = await wrapperContract.approveLC(
         documentId,
-        _stage,
-        _subStage,
+        values.stage,
+        values.subStage,
         {
           signedTime,
           numOfDocuments: numOfDocument,
           contentHash,
           url,
+          acknowledgeSignature,
         },
         account
       );
@@ -273,40 +278,49 @@ function App() {
       }
       // Generate documentId
       const documentId = Utils.keccak256Utf8(values.documentId);
-      const migrateStages = [{ stage: LC.Stage.PHAT_HANH_LC, subStage: 1 }];
 
       /**
-       * example content hash
+       * example content hash of stage after fulfilll amend
        */
       const contentHash = [
-        Utils.keccak256Utf8("Hash of LC Document Number"),
+        Utils.keccak256Utf8("Hash of LC Document"),
         Utils.keccak256Utf8("Hash of LC 1"),
         Utils.keccak256Utf8("Hash of LC 2"),
         Utils.keccak256Utf8("Hash of LC 3"),
-        Utils.keccak256Utf8("Hash of LC information"),
+        Utils.keccak256Utf8("Hash of LC Information"),
       ];
       // mock data
       const signedTime = Math.floor(Date.now() / 1000);
       const numOfDocuments = 3;
       const url = "https://fpt.com.vn/LCPlatform/standardLC/";
 
+      // Only for example (acknowledge signature get from FIS backend)
+      const acknowledgeMsg = LC.generateAcknowledgeMessageHash(
+        contentHash.slice(1, numOfDocuments + 1)
+      );
+      const acknowledgeSignature = await web3.eth.personal.sign(
+        acknowledgeMsg,
+        account,
+        ""
+      );
+      // Only for example (acknowledge signature get from FIS backend)
+
       const wrapperContract = new LCWrapper(web3);
       // MUST STORE nonce TO APPROVE AND FULLFILL AMEND LC
-      const tx = await wrapperContract.submitAmendment(
+      const tx = await wrapperContract.submitRootAmendment(
         documentId,
-        +values.stage,
-        +values.subStage,
         {
           signedTime,
           numOfDocuments,
           url,
           contentHash,
+          acknowledgeSignature,
         },
-        migrateStages,
-        account
+        account // proposer
       );
       console.log(tx);
       // MUST STORE nonce TO APPROVE AND FULLFILL AMEND LC
+      // requestId = hash(proposer + nonce)
       console.log(tx.events[0].raw.topics[3]); // MUST convert nonce in heximal number to decimal number
       alert("Submit Amend Success");
     } catch (error) {
@@ -329,8 +343,9 @@ function App() {
       const wrapperContract = new LCWrapper(web3);
       const tx = await wrapperContract.approveAmendment(
         documentId,
-        new BN(values.nonce),
-        account
+        account, // proposer address
+        new BN(values.nonce), // nonce from submit amend
+        account // approver
       );
 
       console.log(tx);
@@ -353,10 +368,18 @@ function App() {
 
       const documentId = Utils.keccak256Utf8(values.documentId);
       const wrapperContract = new LCWrapper(web3);
+
+      /**
+       * Amend request should been approved by all organization in involved parties
+       * Amend request only fulfill by proposer
+       * Amend request is not fulfill
+       * LC is not closed
+       */
       const tx = await wrapperContract.fulfillAmendment(
         documentId,
-        new BN(values.nonce),
-        account
+        account, // proposer address
+        new BN(values.nonce), // nonce from submit amend
+        account // approver
       );
 
       console.log(tx);

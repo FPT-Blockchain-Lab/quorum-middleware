@@ -40,6 +40,13 @@ export class LCWrapper {
         this.OrgManager = OrgManager;
     }
 
+    /**
+     *
+     * @param parties an array of involved parties
+     * @param content content of LC
+     * @param from executor
+     * @returns
+     */
     async createStandardLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, from: string) {
         // Check acknowledge signature
         if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
@@ -131,6 +138,13 @@ export class LCWrapper {
         return this.StandardLCFactory.methods.create(...data).send({ from, gas });
     }
 
+    /**
+     *
+     * @param parties an array of involved parties
+     * @param content content of LC
+     * @param from executor
+     * @returns
+     */
     async createUPASLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, from: string) {
         // Check acknowledge signature
         if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
@@ -221,6 +235,15 @@ export class LCWrapper {
         return this.UPASLCFactory.methods.create(...data).send({ from, gas });
     }
 
+    /**
+     *
+     * @param documentId hash of LC number
+     * @param stage
+     * @param subStage
+     * @param content
+     * @param from executor
+     * @returns
+     */
     async approveLC(
         documentId: number | string | BN,
         stage: number,
@@ -228,15 +251,12 @@ export class LCWrapper {
         content: Omit<StageContent, "approvalSignature" | "rootHash" | "prevHash">,
         from: string
     ) {
-        const { _contract, _typeOf } = await this.RouterService.methods.getAddress(documentId).call();
-        if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
-
-        const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+        const { lcContract: StandardLC, type: _typeOf } = await this.getLCContract(documentId);
         let prevStage = stage,
             prevSubStage = subStage;
         const counter = +(await StandardLC.methods.getCounter().call());
 
-        if (stage == 1) {
+        if (stage != 1) {
             prevStage = prevStage - 1;
         }
 
@@ -276,21 +296,16 @@ export class LCWrapper {
         });
 
         const approval_sig = await this.web3.eth.personal.sign(messageHash, from, "");
+        const parties = await StandardLC.methods.getInvolvedParties().call();
         let org = "";
 
         if (_typeOf == "1") {
-            const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
-            const parties = await StandardLC.methods.getInvolvedParties().call();
-
             if (stage == 2 || stage == 6) {
                 org = parties[1];
             } else {
                 org = parties[0];
             }
         } else if (_typeOf == "2") {
-            const UPASLC = new this.web3.eth.Contract(LCContractABIs.UPASLC as any[] as AbiItem[], _contract) as any as UPASLC;
-            const parties = await UPASLC.methods.getInvolvedParties().call();
-
             if (stage == 2 || stage == 6) {
                 org = parties[1];
             } else if (stage == 5) {
@@ -348,12 +363,28 @@ export class LCWrapper {
         return this.RouterService.methods.approve(...data).send({ from, gas });
     }
 
+    /**
+     *
+     * @param documentId hash of LC number
+     * @param from executor
+     * @returns transaction result
+     */
     async closeLC(documentId: number | string | BN, from: string) {
         const gas = await this.RouterService.methods.closeLC(documentId).estimateGas({ from });
 
         return this.RouterService.methods.closeLC(documentId).send({ from, gas });
     }
 
+    /**
+     * Submit amend request
+     * @param documentId hash of LC number
+     * @param stage amend stage
+     * @param subStage amend sub stage
+     * @param content amend stage content
+     * @param migrateStages an array of migrating stages
+     * @param from address of proposer
+     * @returns transaction result
+     */
     async submitAmendment(
         documentId: number | string | BN,
         stage: number,
@@ -362,10 +393,7 @@ export class LCWrapper {
         migrateStages: Stage[],
         from: string
     ) {
-        const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
-        if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
-
-        const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+        const { lcContract: StandardLC } = await this.getLCContract(documentId);
         const amendStage = stage;
         let amendSubStage = subStage;
         let prevStage = amendStage,
@@ -490,6 +518,14 @@ export class LCWrapper {
         return this.RouterService.methods.submitAmendment(...data).send({ from, gas });
     }
 
+    /**
+     * Approve amend request
+     * @param documentId hash of LC number
+     * @param proposer address of proposer
+     * @param nonce
+     * @param from address of approver
+     * @returns transaction result
+     */
     async approveAmendment(documentId: number | string | BN, proposer: string, nonce: BN, from: string) {
         // Generate requestId
         const requestId = LC.generateRequestId(proposer, nonce);
@@ -499,7 +535,8 @@ export class LCWrapper {
             this.RouterService.methods.isAmendApproved(documentId, requestId).call(),
         ]);
 
-        if (isApproved) return alert("Amend request has been approved!");
+        if (!amendmentRequest) throw new Error("Amend request not found.");
+        if (isApproved) throw new Error("Amend request has been approved.");
 
         const content = Object.assign({}, amendmentRequest[3][2]);
         // Format amendmentRequest
@@ -526,9 +563,16 @@ export class LCWrapper {
         return this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).send({ from, gas });
     }
 
-    async fulfillAmendment(documentId: number | string | BN, proposer: string, nonce: BN, from: string) {
+    /**
+     * Only execute by proposer of amend request
+     * @param documentId hash of LC number
+     * @param nonce
+     * @param from address of proposer
+     * @returns transaction result
+     */
+    async fulfillAmendment(documentId: number | string | BN, nonce: BN, from: string) {
         // Generate requestId
-        const requestId = LC.generateRequestId(proposer, nonce);
+        const requestId = LC.generateRequestId(from, nonce);
 
         const request = await this.RouterService.methods.getAmendmentRequest(documentId, requestId).call();
         if (!request) throw new Error("Amend request not found.");
@@ -538,14 +582,11 @@ export class LCWrapper {
         return this.RouterService.methods.fulfillAmendment(documentId, requestId).send({ from, gas });
     }
 
-    // async getLCStatus(documentId: number | string | BN) {
-    //     const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
-    //     if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
-
-    //     const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
-    //     return this._getLCStatus(StandardLC)
-    // }
-
+    /**
+     * calculate LC general stages
+     * @param lastestStages array of lastest general stage
+     * @returns LC general stages
+     */
     private _calculateStages(lastestStages: number[]): Stage[] {
         let res: Stage[] = [];
 
@@ -558,6 +599,11 @@ export class LCWrapper {
         return res;
     }
 
+    /**
+     * get LC stages (included general and root stage)
+     * @param standardLC instance of LC contract
+     * @returns LC stages
+     */
     private async _getLCStatus(standardLC: StandardLC) {
         const counter = +(await standardLC.methods.getCounter().call());
         const lcStatus = await standardLC.methods.getStatus().call();
@@ -570,23 +616,33 @@ export class LCWrapper {
         return [...rootStages, ...lcStages];
     }
 
-    private async _getLCContract(documentId: number | string | BN) {
-        const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
+    /**
+     * get LC contract
+     * @param documentId hash of LC number
+     * @returns instance of LC contract
+     */
+    async getLCContract(documentId: number | string | BN) {
+        const { _contract, _typeOf } = await this.RouterService.methods.getAddress(documentId).call();
         if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
 
-        return new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+        return { lcContract: new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC, type: _typeOf };
     }
 
-    async getLCStatus(documentId: number | string | BN) {
-        const LCContract = await this._getLCContract(documentId);
-        const stages = await this._getLCStatus(LCContract);
+    /**
+     * get LC status sort by root hash
+     * @param documentId hash of LC number
+     * @param lcContract instance of LC contract
+     * @returns array of LC status sort by root hash
+     */
+    async getLCStatus(documentId: number | string | BN, lcContract: StandardLC) {
+        const stages = await this._getLCStatus(lcContract);
         const stageContents = await Promise.all(
             stages.map(async (stage) => {
                 const content = await this.RouterService.methods.getStageContent(documentId, stage.stage, stage.subStage).call();
                 return { stage, rootHash: content[0] };
             })
         );
-        const rootList = await LCContract.methods.getRootList().call();
+        const rootList = await lcContract.methods.getRootList().call();
         let roots: Mixed[] = [];
         let migrateStages: Stage[] = [{ stage: 1, subStage: 1 }];
 
@@ -609,5 +665,48 @@ export class LCWrapper {
         }
 
         return migrateStages;
+    }
+
+    /**
+     * Submit root amend
+     * @param documentId hash of LC number
+     * @param content amend stage content
+     * @param from address of proposer
+     * @returns transaction result
+     */
+    async submitRootAmendment(documentId: number | string | BN, content: Omit<StageContent, "approvalSignature" | "rootHash" | "prevHash">, from: string) {
+        const { lcContract: LCContract } = await this.getLCContract(documentId);
+        const rootSubStage = +(await LCContract.methods.getCounter().call()) + 1;
+        const migrateStages = await this.getLCStatus(documentId, LCContract);
+
+        return this.submitAmendment(documentId, 1, rootSubStage, content, migrateStages, from);
+    }
+
+    /**
+     * Submit amend another stage in LC
+     * Not allowed to submit root stage
+     * @param documentId hash of LC number
+     * @param stage amend stage
+     * @param subStage amend sub stage
+     * @param content amend stage content
+     * @param from address of proposer
+     * @returns transaction result
+     */
+    async submitGeneralAmendment(
+        documentId: number | string | BN,
+        stage: number,
+        subStage: number,
+        content: Omit<StageContent, "approvalSignature" | "rootHash" | "prevHash">,
+        from: string
+    ) {
+        if (stage == 1) {
+            throw new Error("Not allowed to submit root stage.");
+        }
+
+        const { lcContract: LCContract } = await this.getLCContract(documentId);
+        const lcStatus = await this.getLCStatus(documentId, LCContract);
+        const migrateStages = lcStatus.filter((item) => !(item.subStage == subStage && item.stage >= stage));
+
+        return this.submitAmendment(documentId, stage, subStage, content, migrateStages, from);
     }
 }
