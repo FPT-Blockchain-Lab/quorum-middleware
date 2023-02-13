@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import Web3 from "web3";
-import { AbiItem } from "web3-utils";
+import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
 import { LCContractABIs } from "../abi/lc";
 import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, UPASLC, StandardLC } from "../bindings/lc";
 import { OrgManager } from "../bindings/permission";
@@ -92,7 +92,7 @@ export class LCWrapper {
             throw new Error("Account not belong to organization.");
         }
 
-        if (_content.numOfDocuments.toNumber() > _content.contentHash.length) {
+        if (_content.numOfDocuments > _content.contentHash.length) {
             throw new Error("The number of documents cannot greater than the length of content hash.");
         }
 
@@ -118,7 +118,7 @@ export class LCWrapper {
                 _content.rootHash,
                 _content.signedTime.toString(),
                 _content.prevHash,
-                _content.numOfDocuments.toString(),
+                _content.numOfDocuments,
                 _content.contentHash,
                 _content.url,
                 _content.acknowledgeSignature,
@@ -183,7 +183,7 @@ export class LCWrapper {
             throw new Error("Account not belong to organization.");
         }
 
-        if (_content.numOfDocuments.toNumber() > _content.contentHash.length) {
+        if (_content.numOfDocuments > _content.contentHash.length) {
             throw new Error("The number of documents cannot greater than the length of content hash.");
         }
 
@@ -209,7 +209,7 @@ export class LCWrapper {
                 _content.rootHash,
                 _content.signedTime.toString(),
                 _content.prevHash,
-                _content.numOfDocuments.toString(),
+                _content.numOfDocuments,
                 _content.contentHash,
                 _content.url,
                 _content.acknowledgeSignature,
@@ -223,28 +223,28 @@ export class LCWrapper {
 
     async approveLC(
         documentId: number | string | BN,
-        stage: number | string | BN,
-        subStage: number | string | BN,
+        stage: number,
+        subStage: number,
         content: Omit<StageContent, "approvalSignature" | "rootHash" | "prevHash">,
         from: string
     ) {
         const { _contract, _typeOf } = await this.RouterService.methods.getAddress(documentId).call();
         if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
 
-        let prevStage = new BN(stage),
-            prevSubStage = new BN(subStage);
         const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
-        const counter = await StandardLC.methods.getCounter().call();
+        let prevStage = stage,
+            prevSubStage = subStage;
+        const counter = +(await StandardLC.methods.getCounter().call());
 
-        if (!new BN(stage).eq(new BN(1))) {
-            prevStage = prevStage.sub(new BN(1));
+        if (stage == 1) {
+            prevStage = prevStage - 1;
         }
 
-        if (new BN(stage).eq(new BN(2))) {
-            prevSubStage = new BN(counter).add(new BN(1));
+        if (stage == 2) {
+            prevSubStage = counter + 1;
         }
 
-        const stageInfo = await this.RouterService.methods.getStageContent(documentId, prevStage.toString(), prevSubStage.toString()).call();
+        const stageInfo = await this.RouterService.methods.getStageContent(documentId, prevStage, prevSubStage).call();
 
         // Get message hash
         const prevHash = LC.generateStageHash({
@@ -257,7 +257,7 @@ export class LCWrapper {
             approvalSignature: stageInfo[7],
         });
 
-        if (new BN(stage).eq(new BN(1)) || new BN(stage).eq(new BN(4)) || new BN(stage).eq(new BN(5))) {
+        if (stage == 1 || stage == 4 || stage == 5) {
             if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
                 throw new Error("Invalid acknowledge signature.");
             }
@@ -335,7 +335,7 @@ export class LCWrapper {
                 ROOT_HASH,
                 content.signedTime.toString(),
                 prevHash,
-                content.numOfDocuments.toString(),
+                content.numOfDocuments,
                 content.contentHash,
                 content.url,
                 content.acknowledgeSignature,
@@ -356,8 +356,8 @@ export class LCWrapper {
 
     async submitAmendment(
         documentId: number | string | BN,
-        stage: number | string | BN,
-        subStage: number | string | BN,
+        stage: number,
+        subStage: number,
         content: Omit<StageContent, "approvalSignature" | "rootHash" | "prevHash">,
         migrateStages: Stage[],
         from: string
@@ -365,21 +365,21 @@ export class LCWrapper {
         const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
         if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
 
-        const amendStage = new BN(stage);
-        let amendSubStage = new BN(subStage);
+        const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+        const amendStage = stage;
+        let amendSubStage = subStage;
         let prevStage = amendStage,
             prevSubStage = amendSubStage;
-        const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
         const counter = await StandardLC.methods.getCounter().call();
 
-        if (amendStage.eq(new BN(1))) {
-            amendSubStage = new BN(counter).add(new BN(2));
+        if (amendStage == 1) {
+            amendSubStage = parseInt(counter, 10) + 2;
         } else {
-            prevStage = prevStage.sub(new BN(1));
+            prevStage = prevStage - 1;
         }
 
-        if (amendStage.eq(new BN(2))) {
-            prevSubStage = new BN(counter).add(new BN(1));
+        if (amendStage == 2) {
+            prevSubStage = parseInt(counter, 10) + 1;
         }
 
         const amendStageContent = await this.RouterService.methods.getStageContent(documentId, prevStage.toString(), prevSubStage.toString()).call();
@@ -414,7 +414,7 @@ export class LCWrapper {
             })
         );
 
-        if (amendStage.eq(new BN(1)) || amendStage.eq(new BN(4)) || amendStage.eq(new BN(5))) {
+        if (amendStage == 1 || amendStage == 4 || amendStage == 5) {
             if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
                 throw new Error("Invalid acknowledge signature.");
             }
@@ -440,7 +440,7 @@ export class LCWrapper {
                 contentHash: content.contentHash,
                 url: content.url,
                 signedTime: new BN(content.signedTime),
-                numOfDocuments: new BN(content.numOfDocuments),
+                numOfDocuments: content.numOfDocuments,
                 acknowledgeSignature: content.acknowledgeSignature,
                 approvalSignature: approval_sig,
             },
@@ -470,13 +470,13 @@ export class LCWrapper {
             documentId,
             migrating_stages,
             [
-                amendStage.toString(),
-                amendSubStage.toString(),
+                amendStage,
+                amendSubStage,
                 [
                     rootHash,
                     content.signedTime.toString(),
                     prevHash,
-                    content.numOfDocuments.toString(),
+                    content.numOfDocuments,
                     content.contentHash,
                     content.url,
                     content.acknowledgeSignature,
@@ -504,14 +504,14 @@ export class LCWrapper {
         const content = Object.assign({}, amendmentRequest[3][2]);
         // Format amendmentRequest
         const amendStage = {
-            stage: new BN(amendmentRequest[3][0]),
-            subStage: new BN(amendmentRequest[3][1]),
+            stage: parseInt(amendmentRequest[3][0], 10),
+            subStage: parseInt(amendmentRequest[3][1], 10),
             content: {
                 rootHash: content[0],
                 prevHash: content[2],
                 contentHash: content[4],
                 url: content[5],
-                numOfDocuments: new BN(content[3]),
+                numOfDocuments: parseInt(content[3], 10),
                 signedTime: new BN(content[1]),
                 acknowledgeSignature: content[6],
                 approvalSignature: content[7],
@@ -538,31 +538,76 @@ export class LCWrapper {
         return this.RouterService.methods.fulfillAmendment(documentId, requestId).send({ from, gas });
     }
 
-    async getLCStatus(documentId: number | string | BN) {
-        const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
-        if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
+    // async getLCStatus(documentId: number | string | BN) {
+    //     const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
+    //     if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
 
-        const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
-        const counter = await StandardLC.methods.getCounter().call();
-        const lcStatus = await StandardLC.methods.getStatus().call();
-        let currentStage: Stage[] = [{ stage: new BN(1), subStage: new BN(counter).add(new BN(1)) }];
-        const lcStage = LCWrapper.calculateStages(lcStatus.map((stage) => new BN(stage)));
+    //     const StandardLC = new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+    //     return this._getLCStatus(StandardLC)
+    // }
 
-        currentStage = [...currentStage, ...lcStage];
-
-        return currentStage;
-    }
-
-    static calculateStages(lastestStages: number[] | BN[]): Stage[] {
+    private _calculateStages(lastestStages: number[]): Stage[] {
         let res: Stage[] = [];
 
         for (let i = 0; i < lastestStages.length; i++) {
-            for (let j = new BN(1); j.lt(new BN(lastestStages[i])); ) {
-                res = [...res, { stage: new BN(j).add(new BN(1)), subStage: new BN(i).add(new BN(1)) }];
-                j = j.add(new BN(1));
+            for (let j = 1; j < lastestStages[i]; j++) {
+                res = [...res, { stage: j + 1, subStage: i + 1 }];
             }
         }
 
         return res;
+    }
+
+    private async _getLCStatus(standardLC: StandardLC) {
+        const counter = +(await standardLC.methods.getCounter().call());
+        const lcStatus = await standardLC.methods.getStatus().call();
+        let rootStages: Stage[] = [];
+        for (let i = 1; i <= counter + 1; i++) {
+            rootStages = [...rootStages, { stage: 1, subStage: i }];
+        }
+        const lcStages = this._calculateStages(lcStatus.map((stage) => parseInt(stage, 10)));
+
+        return [...rootStages, ...lcStages];
+    }
+
+    private async _getLCContract(documentId: number | string | BN) {
+        const { _contract } = await this.RouterService.methods.getAddress(documentId).call();
+        if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
+
+        return new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC;
+    }
+
+    async getLCStatus(documentId: number | string | BN) {
+        const LCContract = await this._getLCContract(documentId);
+        const stages = await this._getLCStatus(LCContract);
+        const stageContents = await Promise.all(
+            stages.map(async (stage) => {
+                const content = await this.RouterService.methods.getStageContent(documentId, stage.stage, stage.subStage).call();
+                return { stage, rootHash: content[0] };
+            })
+        );
+        const rootList = await LCContract.methods.getRootList().call();
+        let roots: Mixed[] = [];
+        let migrateStages: Stage[] = [{ stage: 1, subStage: 1 }];
+
+        for (let i = 0; i < rootList.length; i++) {
+            roots = [
+                ...roots,
+                {
+                    v: rootList[i],
+                    t: "bytes32",
+                },
+            ];
+
+            const hash = keccak256(encodePacked(...roots) ?? "");
+            const generalStages = stageContents.filter((stageContent) => stageContent.rootHash == hash && stageContent.stage.stage != 1);
+
+            migrateStages = [...migrateStages, ...generalStages.map((i) => i.stage)];
+            if (i != rootList.length - 1) {
+                migrateStages.push({ stage: 1, subStage: i + 2 });
+            }
+        }
+
+        return migrateStages;
     }
 }
