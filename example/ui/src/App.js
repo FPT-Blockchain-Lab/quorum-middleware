@@ -377,9 +377,8 @@ function App() {
        */
       const tx = await wrapperContract.fulfillAmendment(
         documentId,
-        account, // proposer address
         new BN(values.nonce), // nonce from submit amend
-        account // approver
+        account // proposer address
       );
 
       console.log(tx);
