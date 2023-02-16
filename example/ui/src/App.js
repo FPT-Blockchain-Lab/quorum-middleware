@@ -100,7 +100,7 @@ function App() {
 
       const signedTime = new BN(values.signedTime);
 
-      const numOfDocument = new BN(values.numOfDocument);
+      const numOfDocument = parseInt(values.numOfDocument, 10);
       // Generate documentId
       const documentId = Utils.keccak256Utf8(values.documentId);
       const url = values.url;
@@ -123,7 +123,7 @@ function App() {
           "0x5bac6b7287fd56f459d23e62797ff954588ef68cc8dabdce6a0e319f2883ac1a",
           "0x5bac6b7287fd56f459d23e62797ff954588ef68cc8dabdce6a0e319f2883ac1a",
           "0x5bac6b7287fd56f459d23e62797ff954588ef68cc8dabdce6a0e319f2883ac1a",
-          "0x5bac6b7287fd56f459d23e62797ff954588ef68cc8dabdce6a0e319f2883ac1a",
+          "0x7286bc0ec3e95fdd8e7dcdd39efa6ef38828d7534212edd7b9e0261d71873bcb.0x07d3a835b7da54a87369f388a79a1d1e00d6d3261a7157023011a6534faf86d8.0x9771c9869f152cccb560e8c2622ff06d0714f1503f4b32b771fe42e595fad0ce.0x044a15937354c7c6f38f2a5f1ffdd9102ea1c4691cea9a5fc6aa63d18f77bd25",
         ];
        */
 
@@ -134,12 +134,22 @@ function App() {
         values.beneficiary,
       ];
 
+      const acknowledgeMessage = LC.generateAcknowledgeMessageHash(
+        contentHash.slice(1, numOfDocument + 1)
+      );
+      const acknowledgeSignature = await web3.eth.personal.sign(
+        acknowledgeMessage,
+        account,
+        ""
+      );
+
       const content = {
         prevHash: documentId,
         contentHash: contentHash,
         url: url,
         signedTime: signedTime,
         numOfDocuments: numOfDocument,
+        acknowledgeSignature,
       };
 
       /**
@@ -295,11 +305,11 @@ function App() {
       const url = "https://fpt.com.vn/LCPlatform/standardLC/";
 
       // Only for example (acknowledge signature get from FIS backend)
-      const acknowledgeMsg = LC.generateAcknowledgeMessageHash(
+      const acknowledgeMessage = LC.generateAcknowledgeMessageHash(
         contentHash.slice(1, numOfDocuments + 1)
       );
       const acknowledgeSignature = await web3.eth.personal.sign(
-        acknowledgeMsg,
+        acknowledgeMessage,
         account,
         ""
       );

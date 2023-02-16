@@ -254,14 +254,14 @@ export class LCWrapper {
         const { lcContract: StandardLC, type: _typeOf } = await this.getLCContract(documentId);
         let prevStage = stage,
             prevSubStage = subStage;
-        const counter = +(await StandardLC.methods.getCounter().call());
+        const rootSubStage = +(await StandardLC.methods.numOfSubStage(1).call());
 
         if (stage != 1) {
             prevStage = prevStage - 1;
         }
 
         if (stage == 2) {
-            prevSubStage = counter + 1;
+            prevSubStage = rootSubStage;
         }
 
         const stageInfo = await this.RouterService.methods.getStageContent(documentId, prevStage, prevSubStage).call();
@@ -398,16 +398,16 @@ export class LCWrapper {
         let amendSubStage = subStage;
         let prevStage = amendStage,
             prevSubStage = amendSubStage;
-        const counter = await StandardLC.methods.getCounter().call();
+        const rootSubStage = +(await StandardLC.methods.numOfSubStage(1).call());
 
         if (amendStage == 1) {
-            amendSubStage = parseInt(counter, 10) + 2;
+            amendSubStage = rootSubStage + 1;
         } else {
             prevStage = prevStage - 1;
         }
 
         if (amendStage == 2) {
-            prevSubStage = parseInt(counter, 10) + 1;
+            prevSubStage = rootSubStage;
         }
 
         const amendStageContent = await this.RouterService.methods.getStageContent(documentId, prevStage.toString(), prevSubStage.toString()).call();
@@ -605,10 +605,10 @@ export class LCWrapper {
      * @returns LC stages
      */
     private async _getLCStatus(standardLC: StandardLC) {
-        const counter = +(await standardLC.methods.getCounter().call());
+        const rootSubStage = +(await standardLC.methods.numOfSubStage(1).call());
         const lcStatus = await standardLC.methods.getStatus().call();
         let rootStages: Stage[] = [];
-        for (let i = 1; i <= counter + 1; i++) {
+        for (let i = 1; i <= rootSubStage; i++) {
             rootStages = [...rootStages, { stage: 1, subStage: i }];
         }
         const lcStages = this._calculateStages(lcStatus.map((stage) => parseInt(stage, 10)));
@@ -676,7 +676,7 @@ export class LCWrapper {
      */
     async submitRootAmendment(documentId: number | string | BN, content: Omit<StageContent, "approvalSignature" | "rootHash" | "prevHash">, from: string) {
         const { lcContract: LCContract } = await this.getLCContract(documentId);
-        const rootSubStage = +(await LCContract.methods.getCounter().call()) + 1;
+        const rootSubStage = +(await LCContract.methods.numOfSubStage(1).call());
         const migrateStages = await this.getLCStatus(documentId, LCContract);
 
         return this.submitAmendment(documentId, 1, rootSubStage, content, migrateStages, from);

@@ -107,6 +107,7 @@ describe("Hash message testing", () => {
             { stage: 1, subStage: 7 },
             { stage: 3, subStage: 3 },
             { stage: 1, subStage: 8 },
+            { stage: 1, subStage: 9 },
         ];
 
         expect(expectedStages).to.deep.eq(status);
