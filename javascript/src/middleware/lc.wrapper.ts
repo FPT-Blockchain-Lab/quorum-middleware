@@ -256,6 +256,10 @@ export class LCWrapper {
             prevSubStage = subStage;
         const counter = +(await StandardLC.methods.getCounter().call());
 
+        if (+(await StandardLC.methods.numOfSubStage(stage).call()) != subStage - 1) {
+            throw new Error("Invalid sub stage");
+        }
+
         if (stage != 1) {
             prevStage = prevStage - 1;
         }
