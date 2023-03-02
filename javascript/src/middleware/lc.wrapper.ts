@@ -256,7 +256,16 @@ export class LCWrapper {
             prevSubStage = subStage;
         const rootSubStage = +(await StandardLC.methods.numOfSubStage(1).call());
 
-        if (+(await StandardLC.methods.numOfSubStage(stage).call()) != subStage - 1) {
+        //  Stage and Sub-stage must follow order constraints:
+        //  - Row:
+        //      Example: Stage 1.1 <- Stage 2.1 <- Stage 3.1
+        //                         <- Stage 2.2 <- Stage 3.2
+        //  - Column: only apply on Stage 2 (Stage 3 and other are exceptional)
+        //      Example: Stage 1.1 <- Stage 2.1 <- Stage 3.1
+        //                         <- Stage 2.2 <- Stage 3.2 <- Stage 4.2
+        //      It means that Stage 2.1 must be submitted before Stage 2.2
+        //      However, Stage 3.2 could be submitted before Stage 3.1 as long as the row constraint is qualified
+        if (stage < 3 && +(await StandardLC.methods.numOfSubStage(stage).call()) != subStage - 1) {
             throw new Error("Invalid sub stage");
         }
 
