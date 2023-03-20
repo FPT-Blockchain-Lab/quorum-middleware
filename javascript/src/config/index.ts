@@ -50,11 +50,11 @@ export const TESTNET_CONFIG: config = {
 
 export const STAGING_CONFIG: config = {
     lCContractAddresses: {
-        LCManagement: "0x3aC08FcA1a5503518E6CD40f740713c4F3b30df7",
-        RouterService: "0x8f6a93F56927FFaA8c804487C65871A2C132Ea7c",
-        StandardLCFactory: "0x0acC5603ee0311630B4Bd7f55aFc1a1f96179323",
-        UPASLCFactory: "0x7eD07d2fff53E0a3709D925597116126D1dc937E",
-        AmendRequest: "0xEFf48f68A7f38E09412C4fC0C357531834CA7445",
+        LCManagement: "0xC5D01957d696d1b70615324f16DC6bd4f8904aF8",
+        RouterService: "0x53b24F8D986308Bc5B79ee7dbf34f4e5cfb97a89",
+        StandardLCFactory: "0xeE09B702a39eE2CF084f374E965Be7BfFB7b5CD3",
+        UPASLCFactory: "0x64238c100c74f4927637B27be445982f9E4211c7",
+        AmendRequest: "0xeFF968303ac676908e565F52B161262a2dF301FC",
     },
     permissionContractAddresses: {
         OrgManager: "0xf5B2c0829f9485EEB114B11a7C1cb3227B8749Ee",
@@ -67,8 +67,8 @@ export const STAGING_CONFIG: config = {
         VoterManager: "0xF5E507788E7eaa9Dbf8f24a5D24C2de1F9192416",
     },
     chainId: 6788,
-    chainName: "FPT Quorum Testnet FIS Gateway",
-    url: "https://lc-blockchain.dev.etradevn.com/",
+    chainName: "FPT Quorum Testnet FIS Staging Gateway",
+    url: "https://lc-blockchain.staging.etradevn.com/",
 };
 
 // Suppose we have PROD_CONFIG || STAGING_CONFIG || TESTNET_CONFIG
