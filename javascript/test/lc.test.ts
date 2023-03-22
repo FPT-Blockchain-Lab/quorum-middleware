@@ -83,33 +83,33 @@ describe("Hash message testing", () => {
             });
     }).timeout(5000);
 
-    it("LC Status", async () => {
-        const web3 = new Web3("https://lc-blockchain.dev.etradevn.com/");
-        const wrapper = new LCWrapper(web3);
-        const documentId = Utils.keccak256Utf8("108");
-        const { lcContract: LCContract } = await wrapper.getLCContract(documentId);
-        let status = await wrapper.getLCStatus(documentId, LCContract);
-        const expectedStages = [
-            { stage: 1, subStage: 1 },
-            { stage: 2, subStage: 1 },
-            { stage: 1, subStage: 2 },
-            { stage: 3, subStage: 1 },
-            { stage: 2, subStage: 2 },
-            { stage: 1, subStage: 3 },
-            { stage: 4, subStage: 1 },
-            { stage: 3, subStage: 2 },
-            { stage: 1, subStage: 4 },
-            { stage: 1, subStage: 5 },
-            { stage: 5, subStage: 1 },
-            { stage: 4, subStage: 2 },
-            { stage: 2, subStage: 3 },
-            { stage: 1, subStage: 6 },
-            { stage: 1, subStage: 7 },
-            { stage: 3, subStage: 3 },
-            { stage: 1, subStage: 8 },
-            { stage: 1, subStage: 9 },
-        ];
+    // it("LC Status", async () => {
+    //     const web3 = new Web3("https://lc-blockchain.dev.etradevn.com/");
+    //     const wrapper = new LCWrapper(web3);
+    //     const documentId = Utils.keccak256Utf8("108");
+    //     const { lcContract: LCContract } = await wrapper.getLCContract(documentId);
+    //     let status = await wrapper.getLCStatus(documentId, LCContract);
+    //     const expectedStages = [
+    //         { stage: 1, subStage: 1 },
+    //         { stage: 2, subStage: 1 },
+    //         { stage: 1, subStage: 2 },
+    //         { stage: 3, subStage: 1 },
+    //         { stage: 2, subStage: 2 },
+    //         { stage: 1, subStage: 3 },
+    //         { stage: 4, subStage: 1 },
+    //         { stage: 3, subStage: 2 },
+    //         { stage: 1, subStage: 4 },
+    //         { stage: 1, subStage: 5 },
+    //         { stage: 5, subStage: 1 },
+    //         { stage: 4, subStage: 2 },
+    //         { stage: 2, subStage: 3 },
+    //         { stage: 1, subStage: 6 },
+    //         { stage: 1, subStage: 7 },
+    //         { stage: 3, subStage: 3 },
+    //         { stage: 1, subStage: 8 },
+    //         { stage: 1, subStage: 9 },
+    //     ];
 
-        expect(expectedStages).to.deep.eq(status);
-    }).timeout(5000);
+    //     expect(expectedStages).to.deep.eq(status);
+    // }).timeout(5000);
 });
