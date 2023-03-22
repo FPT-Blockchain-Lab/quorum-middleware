@@ -1,6 +1,6 @@
 {
     "name": "quorum-middleware",
-    "version": "0.5.12",
+    "version": "0.5.12-staging",
     "description": "Middleware between FPT Platform and Quorum Blockchain",
     "repository": {
         "type": "git",
