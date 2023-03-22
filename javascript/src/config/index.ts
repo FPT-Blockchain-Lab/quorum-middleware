@@ -72,4 +72,4 @@ export const STAGING_CONFIG: config = {
 };
 
 // Suppose we have PROD_CONFIG || STAGING_CONFIG || TESTNET_CONFIG
-export const DEFAULT_CONFIG = TESTNET_CONFIG;
+export const DEFAULT_CONFIG = STAGING_CONFIG;
