@@ -5,7 +5,7 @@ import { LCContractABIs } from "../abi/lc";
 import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, UPASLC, StandardLC } from "../bindings/lc";
 import { OrgManager } from "../bindings/permission";
 import { DEFAULT_CONFIG } from "../config";
-import { StageContent, Stage } from "./interfaces";
+import { StageContent, Stage, AmendStage } from "./interfaces";
 import { LC } from "./lc";
 import { Permission } from "./permission";
 import { Utils } from "./utils";
@@ -42,7 +42,7 @@ export class LCWrapper {
 
     /**
      *
-     * @param parties an array of involved parties
+     * @param parties involved parties in LC contract
      * @param content content of LC
      * @param from executor
      * @returns
@@ -53,17 +53,18 @@ export class LCWrapper {
             throw new Error("Invalid acknowledge signature.");
         }
 
-        // Get approval message hash
-        const approvalMessageHash = LC.generateApprovalMessageHash({
+        // Format approval content to create approval message hash
+        const approvalContent = {
             rootHash: Utils.DEFAULT_ROOT_HASH,
             prevHash: content.prevHash,
             contentHash: content.contentHash,
             url: content.url,
             signedTime: content.signedTime,
             acknowledgeSignature: content.acknowledgeSignature,
-        });
+        };
 
-        const approvalSignature = await this.web3.eth.personal.sign(approvalMessageHash, from, "");
+        // Get approval signature
+        const approvalSignature = await this.approvalSignature(approvalContent, from);
 
         const _content = {
             rootHash: Utils.DEFAULT_ROOT_HASH,
@@ -76,62 +77,11 @@ export class LCWrapper {
             approvalSignature: approvalSignature,
         };
 
-        if (parties.length != 4) {
-            throw new Error("The number of involved parties does not match. Expected 4.");
-        }
+        // Validate data
+        await this.validateData("1", parties, _content, from);
 
-        const orgs = await Promise.all([0, 1].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call()));
-
-        if (!orgs.every((org) => org)) {
-            throw new Error("Organization at index 0 or 1 does not exsist.");
-        }
-
-        const [isWhitelist, isVerifyIdentity] = await Promise.all([
-            this.LCManagement.methods.whitelistOrgs(parties[0]).call(),
-            this.LCManagement.methods.verifyIdentity(from, parties[0]).call(),
-        ]);
-
-        if (!isWhitelist) {
-            throw new Error("Organization does not whitelist.");
-        }
-
-        if (!isVerifyIdentity) {
-            throw new Error("Account not belong to organization.");
-        }
-
-        if (_content.numOfDocuments > _content.contentHash.length) {
-            throw new Error("The number of documents cannot greater than the length of content hash.");
-        }
-
-        if (_content.prevHash != _content.contentHash[0]) {
-            throw new Error("Unlink to previous");
-        }
-
-        const data: [
-            string[],
-            [
-                string | number[],
-                number | string | BN,
-                string | number[],
-                number | string | BN,
-                (string | number[])[],
-                string,
-                string | number[],
-                string | number[]
-            ]
-        ] = [
-            parties,
-            [
-                _content.rootHash,
-                _content.signedTime.toString(),
-                _content.prevHash,
-                _content.numOfDocuments,
-                _content.contentHash,
-                _content.url,
-                _content.acknowledgeSignature,
-                _content.approvalSignature,
-            ],
-        ];
+        // Generate data to create LC
+        const data = await this.generateDataForCreateLC(parties, _content);
 
         const gas = await this.StandardLCFactory.methods.create(...data).estimateGas({ from });
 
@@ -140,7 +90,7 @@ export class LCWrapper {
 
     /**
      *
-     * @param parties an array of involved parties
+     * @param parties involved parties in LC contract
      * @param content content of LC
      * @param from executor
      * @returns
@@ -151,17 +101,18 @@ export class LCWrapper {
             throw new Error("Invalid acknowledge signature.");
         }
 
-        // Get approval message hash
-        const approvalMessageHash = LC.generateApprovalMessageHash({
+        // Format approval content to create approval message hash
+        const approvalContent = {
             rootHash: Utils.DEFAULT_ROOT_HASH,
             prevHash: content.prevHash,
             contentHash: content.contentHash,
             url: content.url,
             signedTime: content.signedTime,
             acknowledgeSignature: content.acknowledgeSignature,
-        });
+        };
 
-        const approvalSignature = await this.web3.eth.personal.sign(approvalMessageHash, from, "");
+        // Get approval signature
+        const approvalSignature = await this.approvalSignature(approvalContent, from);
 
         const _content = {
             rootHash: Utils.DEFAULT_ROOT_HASH,
@@ -174,62 +125,12 @@ export class LCWrapper {
             approvalSignature: approvalSignature,
         };
 
-        if (parties.length != 5) {
-            throw new Error("The number of involved parties does not match. Expected 5.");
-        }
+        // Validate data
+        await this.validateData("2", parties, _content, from);
 
-        const orgs = await Promise.all([0, 1, 2].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call()));
+        // Generate data to create LC
+        const data = await this.generateDataForCreateLC(parties, _content);
 
-        if (!orgs.every((org) => org)) {
-            throw new Error("Organization at index 0 or 1 or 2 does not exsist.");
-        }
-
-        const [isWhitelist, isVerifyIdentity] = await Promise.all([
-            this.LCManagement.methods.whitelistOrgs(parties[0]).call(),
-            this.LCManagement.methods.verifyIdentity(from, parties[0]).call(),
-        ]);
-
-        if (!isWhitelist) {
-            throw new Error("Organization does not whitelist.");
-        }
-
-        if (!isVerifyIdentity) {
-            throw new Error("Account not belong to organization.");
-        }
-
-        if (_content.numOfDocuments > _content.contentHash.length) {
-            throw new Error("The number of documents cannot greater than the length of content hash.");
-        }
-
-        if (_content.prevHash != _content.contentHash[0]) {
-            throw new Error("Unlink to previous");
-        }
-
-        const data: [
-            string[],
-            [
-                string | number[],
-                number | string | BN,
-                string | number[],
-                number | string | BN,
-                (string | number[])[],
-                string,
-                string | number[],
-                string | number[]
-            ]
-        ] = [
-            parties,
-            [
-                _content.rootHash,
-                _content.signedTime.toString(),
-                _content.prevHash,
-                _content.numOfDocuments,
-                _content.contentHash,
-                _content.url,
-                _content.acknowledgeSignature,
-                _content.approvalSignature,
-            ],
-        ];
         const gas = await this.UPASLCFactory.methods.create(...data).estimateGas({ from });
 
         return this.UPASLCFactory.methods.create(...data).send({ from, gas });
@@ -240,7 +141,7 @@ export class LCWrapper {
      * @param documentId hash of LC number
      * @param stage
      * @param subStage
-     * @param content
+     * @param content content of stage
      * @param from executor
      * @returns
      */
@@ -252,32 +153,9 @@ export class LCWrapper {
         from: string
     ) {
         const { lcContract: StandardLC, type: _typeOf } = await this.getLCContract(documentId);
-        let prevStage = stage,
-            prevSubStage = subStage;
-        const rootSubStage = +(await StandardLC.methods.numOfSubStage(1).call());
 
-        //  Stage and Sub-stage must follow order constraints:
-        //  - Row:
-        //      Example: Stage 1.1 <- Stage 2.1 <- Stage 3.1
-        //                         <- Stage 2.2 <- Stage 3.2
-        //  - Column: only apply on Stage 2 (Stage 3 and other are exceptional)
-        //      Example: Stage 1.1 <- Stage 2.1 <- Stage 3.1
-        //                         <- Stage 2.2 <- Stage 3.2 <- Stage 4.2
-        //      It means that Stage 2.1 must be submitted before Stage 2.2
-        //      However, Stage 3.2 could be submitted before Stage 3.1 as long as the row constraint is qualified
-        if (stage < 3 && +(await StandardLC.methods.numOfSubStage(stage).call()) != subStage - 1) {
-            throw new Error("Invalid sub stage");
-        }
-
-        if (stage != 1) {
-            prevStage = prevStage - 1;
-        }
-
-        if (stage == 2) {
-            prevSubStage = rootSubStage;
-        }
-
-        const stageInfo = await this.RouterService.methods.getStageContent(documentId, prevStage, prevSubStage).call();
+        // Validate stage and sub-stage order and get stage content
+        const stageInfo = await this.getStageInfo(StandardLC, documentId, stage, subStage, "approve");
 
         // Get message hash
         const prevHash = LC.generateStageHash({
@@ -298,48 +176,24 @@ export class LCWrapper {
 
         const ROOT_HASH = await this.RouterService.methods.getRootHash(documentId).call();
 
-        // Get approval message hash
-        const messageHash = LC.generateApprovalMessageHash({
+        // Format approval content to create approval message hash
+        const approvalContent = {
             rootHash: ROOT_HASH,
             prevHash: prevHash,
             contentHash: content.contentHash,
             url: content.url,
             signedTime: content.signedTime,
             acknowledgeSignature: content.acknowledgeSignature,
-        });
+        };
 
-        const approval_sig = await this.web3.eth.personal.sign(messageHash, from, "");
-        const parties = await StandardLC.methods.getInvolvedParties().call();
-        let org = "";
+        // Get approval signature
+        const approvalSignature = await this.approvalSignature(approvalContent, from);
 
-        if (_typeOf == "1") {
-            if (stage == 2 || stage == 6) {
-                org = parties[1];
-            } else {
-                org = parties[0];
-            }
-        } else if (_typeOf == "2") {
-            if (stage == 2 || stage == 6) {
-                org = parties[1];
-            } else if (stage == 5) {
-                org = parties[2];
-            } else {
-                org = parties[0];
-            }
-        }
+        // Get org by stage
+        const org = await this.checkOrgByStage(StandardLC, stage, _typeOf);
 
-        const [isWhitelist, isVerifyIdentity] = await Promise.all([
-            this.LCManagement.methods.whitelistOrgs(org).call(),
-            this.LCManagement.methods.verifyIdentity(from, org).call(),
-        ]);
-
-        if (!isWhitelist) {
-            throw new Error("Organization does not whitelist.");
-        }
-
-        if (!isVerifyIdentity) {
-            throw new Error("Account not belong to organization.");
-        }
+        // Check is org whitelist and account belong to org
+        await this.validateAccountOrg(org, from);
 
         const data: [
             number | string | BN,
@@ -367,7 +221,7 @@ export class LCWrapper {
                 content.contentHash,
                 content.url,
                 content.acknowledgeSignature,
-                approval_sig,
+                approvalSignature,
             ],
         ];
 
@@ -407,53 +261,20 @@ export class LCWrapper {
         from: string
     ) {
         const { lcContract: StandardLC } = await this.getLCContract(documentId);
-        const amendStage = stage;
-        let amendSubStage = subStage;
-        let prevStage = amendStage,
-            prevSubStage = amendSubStage;
-        const rootSubStage = +(await StandardLC.methods.numOfSubStage(1).call());
 
-        if (amendStage == 1) {
-            amendSubStage = rootSubStage + 1;
-        } else {
-            prevStage = prevStage - 1;
-        }
+        // get stage content for amend
+        const amendStageContent = await this.getAmendInfo(StandardLC, documentId, stage, subStage);
+        const amendStageInfo = amendStageContent.stageInfo;
+        const amendStage = amendStageContent.amendStage;
+        const amendSubStage = amendStageContent.amendSubStage;
 
-        if (amendStage == 2) {
-            prevSubStage = rootSubStage;
-        }
+        if (amendStageInfo[7] === Utils.EMPTY_BYTES) throw new Error("Stage Amend not found");
 
-        const amendStageContent = await this.RouterService.methods.getStageContent(documentId, prevStage.toString(), prevSubStage.toString()).call();
+        // Get root hash and prevHash
+        const { rootHash, prevHash } = await this.getRoothashAndPrevhash(documentId, amendStageInfo);
 
-        if (amendStageContent[7] === Utils.EMPTY_BYTES) throw new Error("Stage Amend not found");
-
-        const rootHash = await this.RouterService.methods.getRootHash(documentId).call();
-
-        // get prevHash
-        const prevHash = LC.generateStageHash({
-            rootHash: amendStageContent[0],
-            prevHash: amendStageContent[2],
-            contentHash: amendStageContent[4],
-            url: amendStageContent[5],
-            signedTime: new BN(amendStageContent[1]),
-            acknowledgeSignature: amendStageContent[6],
-            approvalSignature: amendStageContent[7],
-        });
-
-        const migrating_stages = await Promise.all(
-            migrateStages.map(async (s) => {
-                const content = await this.RouterService.methods.getStageContent(documentId, s.stage, s.subStage).call();
-                return LC.generateStageHash({
-                    rootHash: content[0],
-                    prevHash: content[2],
-                    url: content[5],
-                    contentHash: content[4],
-                    signedTime: new BN(content[1]),
-                    acknowledgeSignature: content[6],
-                    approvalSignature: content[7],
-                });
-            })
-        );
+        // Get content of migrate stage
+        const migrating_stages = await this.calMigrateStages(documentId, migrateStages);
 
         if (amendStage == 1 || amendStage == 4 || amendStage == 5) {
             if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
@@ -461,33 +282,37 @@ export class LCWrapper {
             }
         }
 
-        // get approval signature
-        const messageHash = LC.generateApprovalMessageHash({
-            rootHash,
-            prevHash,
+        // Format approval content to create approval message hash
+        const approvalContent = {
+            rootHash: rootHash,
+            prevHash: prevHash,
             contentHash: content.contentHash,
             url: content.url,
-            signedTime: new BN(content.signedTime),
+            signedTime: content.signedTime,
             acknowledgeSignature: content.acknowledgeSignature,
-        });
-        const approval_sig = await this.web3.eth.personal.sign(messageHash, from, "");
-        //get amend message hash
-        const amendHash = LC.generateAmendMessageHash(migrating_stages, {
+        };
+
+        // Get approval signature
+        const approvalSignature = await this.approvalSignature(approvalContent, from);
+
+        // Format amendment data to create amend message
+        const amendStageFormat = {
             stage: amendStage,
             subStage: amendSubStage,
             content: {
-                rootHash,
-                prevHash,
+                rootHash: rootHash,
+                prevHash: prevHash,
                 contentHash: content.contentHash,
                 url: content.url,
-                signedTime: new BN(content.signedTime),
                 numOfDocuments: content.numOfDocuments,
+                signedTime: content.signedTime,
                 acknowledgeSignature: content.acknowledgeSignature,
-                approvalSignature: approval_sig,
+                approvalSignature: approvalSignature,
             },
-        });
+        };
 
-        const amend_sig = await this.web3.eth.personal.sign(amendHash, from, "");
+        // Get amend signature
+        const amendSignature = await this.amendSingature(migrating_stages, amendStageFormat, from);
 
         const data: [
             number | string | BN,
@@ -521,10 +346,10 @@ export class LCWrapper {
                     content.contentHash,
                     content.url,
                     content.acknowledgeSignature,
-                    approval_sig,
+                    approvalSignature,
                 ],
             ],
-            amend_sig,
+            amendSignature,
         ];
         const gas = await this.RouterService.methods.submitAmendment(...data).estimateGas({ from });
 
@@ -567,9 +392,8 @@ export class LCWrapper {
                 approvalSignature: content[7],
             },
         };
-        const amendMessageHash = LC.generateAmendMessageHash(amendmentRequest[2], amendStage);
-
-        const amendSig = await this.web3.eth.personal.sign(amendMessageHash, from, "");
+        // Get amend signature
+        const amendSig = await this.amendSingature(amendmentRequest[2], amendStage, from);
 
         const gas = await this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).estimateGas({ from });
 
@@ -721,5 +545,316 @@ export class LCWrapper {
         const migrateStages = lcStatus.filter((item) => !(item.subStage == subStage && item.stage >= stage));
 
         return this.submitAmendment(documentId, stage, subStage, content, migrateStages, from);
+    }
+
+    /**
+     *
+     * @param rootHash a hash of `rootList` array
+     * @param prevHash a hash of previous stage
+     * @param contentHash hash of content of LC
+     * @param url
+     * @param signedTime sign time
+     * @param acknowledgeSignature message confirm SWIFT is correct format
+     * @param from executor
+     * @returns approval signature after sign
+     */
+    async approvalSignature(
+        content: {
+            rootHash: string;
+            prevHash: string;
+            contentHash: string[];
+            url: string;
+            signedTime: BN;
+            acknowledgeSignature: string;
+        },
+        from: string
+    ) {
+        // Get approval message hash
+        const approvalMessageHash = LC.generateApprovalMessageHash({
+            rootHash: content.rootHash,
+            prevHash: content.prevHash,
+            contentHash: content.contentHash,
+            url: content.url,
+            signedTime: content.signedTime,
+            acknowledgeSignature: content.acknowledgeSignature,
+        });
+
+        const approvalSignature = await this.web3.eth.personal.sign(approvalMessageHash, from, "");
+
+        return approvalSignature;
+    }
+
+    /**
+     *
+     * @param typeOf type of LC contract
+     * @param parties involved parties in LC contract
+     * @param content content of LC contract
+     * @param from executor
+     * @returns
+     */
+    async validateData(typeOf: string, parties: string[], content: StageContent, from: string) {
+        if (typeOf === "1") {
+            if (parties.length != 4) {
+                throw new Error("The number of involved parties does not match. Expected 4.");
+            }
+
+            const orgs = await Promise.all([0, 1].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call()));
+
+            if (!orgs.every((org) => org)) {
+                throw new Error("Organization at index 0 or 1 does not exsist.");
+            }
+        } else {
+            if (parties.length != 5) {
+                throw new Error("The number of involved parties does not match. Expected 5.");
+            }
+
+            const orgs = await Promise.all([0, 1, 2].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call()));
+
+            if (!orgs.every((org) => org)) {
+                throw new Error("Organization at index 0 or 1 or 2 does not exsist.");
+            }
+        }
+        await this.validateAccountOrg(parties[0], from);
+
+        if (content.numOfDocuments > content.contentHash.length) {
+            throw new Error("The number of documents cannot greater than the length of content hash.");
+        }
+
+        if (content.prevHash != content.contentHash[0]) {
+            throw new Error("Unlink to previous");
+        }
+    }
+
+    /**
+     *
+     * @param org an org in involved parties
+     * @param from executor
+     * @returns
+     */
+    async validateAccountOrg(org: string, from: string) {
+        const [isWhitelist, isVerifyIdentity] = await Promise.all([
+            this.LCManagement.methods.whitelistOrgs(org).call(),
+            this.LCManagement.methods.verifyIdentity(from, org).call(),
+        ]);
+
+        if (!isWhitelist) {
+            throw new Error("Organization does not whitelist.");
+        }
+
+        if (!isVerifyIdentity) {
+            throw new Error("Account not belong to organization.");
+        }
+    }
+
+    /**
+     * @param lcContract type of LC contract
+     * @param documentId hash of LC number
+     * @param stage
+     * @param subStage
+     * @param typeOf type of LC contract
+     * @returns content of stage
+     */
+    async getStageInfo(lcContract: StandardLC, documentId: number | string | BN, stage: number, subStage: number, typeOf: string) {
+        let prevStage = stage,
+            prevSubStage = subStage;
+        const rootSubStage = +(await lcContract.methods.numOfSubStage(1).call());
+        //  Stage and Sub-stage must follow order constraints:
+        //  - Row:
+        //      Example: Stage 1.1 <- Stage 2.1 <- Stage 3.1
+        //                         <- Stage 2.2 <- Stage 3.2
+        //  - Column: only apply on Stage 2 (Stage 3 and other are exceptional)
+        //      Example: Stage 1.1 <- Stage 2.1 <- Stage 3.1
+        //                         <- Stage 2.2 <- Stage 3.2 <- Stage 4.2
+        //      It means that Stage 2.1 must be submitted before Stage 2.2
+        //      However, Stage 3.2 could be submitted before Stage 3.1 as long as the row constraint is qualified
+        if (stage < 3 && +(await lcContract.methods.numOfSubStage(stage).call()) != subStage - 1) {
+            throw new Error("Invalid sub stage");
+        }
+        if (stage != 1) {
+            prevStage = prevStage - 1;
+        }
+
+        if (stage == 2) {
+            prevSubStage = rootSubStage;
+        }
+        const stageInfo = await this.RouterService.methods.getStageContent(documentId, prevStage, prevSubStage).call();
+
+        return stageInfo;
+    }
+
+    /**
+     * @param lcContract type of LC contract
+     * @param documentId hash of LC number
+     * @param stage
+     * @param subStage
+     * @returns content of stage, number of stage and sub-stage amend
+     */
+    async getAmendInfo(lcContract: StandardLC, documentId: number | string | BN, stage: number, subStage: number) {
+        const amendStage = stage;
+        let amendSubStage = subStage;
+        let prevStage = amendStage,
+            prevSubStage = amendSubStage;
+        const rootSubStage = +(await lcContract.methods.numOfSubStage(1).call());
+
+        if (amendStage == 1) {
+            amendSubStage = rootSubStage + 1;
+        } else {
+            prevStage = prevStage - 1;
+        }
+
+        if (amendStage == 2) {
+            prevSubStage = rootSubStage;
+        }
+
+        const stageInfo = await this.RouterService.methods.getStageContent(documentId, prevStage, prevSubStage).call();
+        return { stageInfo, amendStage, amendSubStage };
+    }
+
+    /**
+     * @param lcContract type of LC contract
+     * @param migrateStages number of stage and sub-stage to migrate
+     * @returns array content of each stage and sub-stage to migrate
+     */
+    async calMigrateStages(documentId: string | number | BN, migrateStages: Stage[]) {
+        const migrating_stages = await Promise.all(
+            migrateStages.map(async (s) => {
+                const content = await this.RouterService.methods.getStageContent(documentId, s.stage, s.subStage).call();
+                return LC.generateStageHash({
+                    rootHash: content[0],
+                    prevHash: content[2],
+                    url: content[5],
+                    contentHash: content[4],
+                    signedTime: new BN(content[1]),
+                    acknowledgeSignature: content[6],
+                    approvalSignature: content[7],
+                });
+            })
+        );
+        return migrating_stages;
+    }
+
+    /**
+     * @param documentId hash of LC number
+     * @param stageContent content of stage
+     * @returns rootHash of LC and prevHash of stage
+     */
+    async getRoothashAndPrevhash(documentId: string | number | BN, stageContent: [string, string, string, string, string[], string, string, string]) {
+        const rootHash = await this.RouterService.methods.getRootHash(documentId).call();
+        // get prevHash
+        const prevHash = LC.generateStageHash({
+            rootHash: stageContent[0],
+            prevHash: stageContent[2],
+            contentHash: stageContent[4],
+            url: stageContent[5],
+            signedTime: new BN(stageContent[1]),
+            acknowledgeSignature: stageContent[6],
+            approvalSignature: stageContent[7],
+        });
+        return { rootHash, prevHash };
+    }
+
+    /**
+     * @param migrateStages array content of each stage and sub-stage to migrate
+     * @param amendStage content of stage to amend
+     * @returns a signature is signed by a requestor to be amend
+     */
+    async amendSingature(
+        migrateStages: string[],
+        amendStage: {
+            stage: number;
+            subStage: number;
+            content: {
+                rootHash: string;
+                prevHash: string;
+                contentHash: string[];
+                url: string;
+                numOfDocuments: number;
+                signedTime: BN;
+                acknowledgeSignature: string;
+                approvalSignature: string;
+            };
+        },
+        from: string
+    ) {
+        // Get amend message hash
+        const amendMessageHash = LC.generateAmendMessageHash(migrateStages, amendStage);
+        // Get amend signature
+        const amendSignature = await this.web3.eth.personal.sign(amendMessageHash, from, "");
+        return amendSignature;
+    }
+
+    /**
+     * @param lcContract LC contract
+     * @param stage
+     * @param typeOf type of LC contract
+     * @returns an org in involved parties
+     */
+    async checkOrgByStage(lcContract: StandardLC, stage: number, typeOf: string) {
+        const parties = await lcContract.methods.getInvolvedParties().call();
+        let org = "";
+
+        if (typeOf == "1") {
+            if (stage == 2 || stage == 6) {
+                org = parties[1];
+            } else {
+                org = parties[0];
+            }
+        } else if (typeOf == "2") {
+            if (stage == 2 || stage == 6) {
+                org = parties[1];
+            } else if (stage == 5) {
+                org = parties[2];
+            } else {
+                org = parties[0];
+            }
+        }
+        return org;
+    }
+
+    /**
+     *
+     * @param parties involved parties in LC contract
+     * @param content content of LC contract
+     * @returns data to create LC
+     */
+    async generateDataForCreateLC(
+        parties: string[],
+        content: {
+            rootHash: string;
+            prevHash: string;
+            contentHash: string[];
+            url: string;
+            signedTime: BN;
+            numOfDocuments: number;
+            acknowledgeSignature: string;
+            approvalSignature: string;
+        }
+    ) {
+        const _data: [
+            string[],
+            [
+                string | number[],
+                number | string | BN,
+                string | number[],
+                number | string | BN,
+                (string | number[])[],
+                string,
+                string | number[],
+                string | number[]
+            ]
+        ] = [
+            parties,
+            [
+                content.rootHash,
+                content.signedTime.toString(),
+                content.prevHash,
+                content.numOfDocuments,
+                content.contentHash,
+                content.url,
+                content.acknowledgeSignature,
+                content.approvalSignature,
+            ],
+        ];
+        return _data;
     }
 }
