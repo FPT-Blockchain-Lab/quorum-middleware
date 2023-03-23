@@ -70,3 +70,20 @@ export interface PermissionContracts {
     RoleManager: RoleManager;
     VoterManager: VoterManager;
 }
+
+export interface AccessType {
+    baseAccess: number;
+    name: string;
+}
+
+export interface Role {
+    value: number;
+    accessType: AccessType["baseAccess"];
+    name: string;
+    isVoter: boolean;
+    isOrgAdmin: boolean;
+}
+
+export interface SpecialRole {
+    role: string;
+}
