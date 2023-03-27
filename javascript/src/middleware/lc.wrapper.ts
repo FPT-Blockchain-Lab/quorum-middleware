@@ -78,7 +78,7 @@ export class LCWrapper {
         };
 
         // Validate data
-        await this.validateData("1", parties, _content, from);
+        await this.validateData(LC.LCTYPE.STANDARD_LC.toString(), parties, _content, from);
 
         // Generate data to create LC
         const data = await this.generateDataForCreateLC(parties, _content);
@@ -126,7 +126,7 @@ export class LCWrapper {
         };
 
         // Validate data
-        await this.validateData("2", parties, _content, from);
+        await this.validateData(LC.LCTYPE.UPAS_LC.toString(), parties, _content, from);
 
         // Generate data to create LC
         const data = await this.generateDataForCreateLC(parties, _content);
@@ -168,7 +168,7 @@ export class LCWrapper {
             approvalSignature: stageInfo[7],
         });
 
-        if (stage == 1 || stage == 4 || stage == 5) {
+        if (stage == LC.Stage.PHAT_HANH_LC || stage == LC.Stage.CHAP_NHAN_THANH_TOAN || stage == LC.Stage.UPAS_NHTT_NHXT) {
             if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
                 throw new Error("Invalid acknowledge signature.");
             }
@@ -276,7 +276,7 @@ export class LCWrapper {
         // Get content of migrate stage
         const migrating_stages = await this.calMigrateStages(documentId, migrateStages);
 
-        if (amendStage == 1 || amendStage == 4 || amendStage == 5) {
+        if (amendStage == LC.Stage.PHAT_HANH_LC || amendStage == LC.Stage.CHAP_NHAN_THANH_TOAN || amendStage == LC.Stage.UPAS_NHTT_NHXT) {
             if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
                 throw new Error("Invalid acknowledge signature.");
             }
@@ -593,7 +593,7 @@ export class LCWrapper {
      * @returns
      */
     async validateData(typeOf: string, parties: string[], content: StageContent, from: string) {
-        if (typeOf === "1") {
+        if (typeOf === LC.LCTYPE.STANDARD_LC.toString()) {
             if (parties.length != 4) {
                 throw new Error("The number of involved parties does not match. Expected 4.");
             }
@@ -603,7 +603,7 @@ export class LCWrapper {
             if (!orgs.every((org) => org)) {
                 throw new Error("Organization at index 0 or 1 does not exsist.");
             }
-        } else {
+        } else if (typeOf === LC.LCTYPE.UPAS_LC.toString()) {
             if (parties.length != 5) {
                 throw new Error("The number of involved parties does not match. Expected 5.");
             }
@@ -667,14 +667,14 @@ export class LCWrapper {
         //                         <- Stage 2.2 <- Stage 3.2 <- Stage 4.2
         //      It means that Stage 2.1 must be submitted before Stage 2.2
         //      However, Stage 3.2 could be submitted before Stage 3.1 as long as the row constraint is qualified
-        if (stage < 3 && +(await lcContract.methods.numOfSubStage(stage).call()) != subStage - 1) {
+        if (stage < LC.Stage.THONG_BAO_BCT_MH && +(await lcContract.methods.numOfSubStage(stage).call()) != subStage - 1) {
             throw new Error("Invalid sub stage");
         }
-        if (stage != 1) {
+        if (stage != LC.Stage.PHAT_HANH_LC) {
             prevStage = prevStage - 1;
         }
 
-        if (stage == 2) {
+        if (stage == LC.Stage.XUAT_TRINH_TCD_BCT) {
             prevSubStage = rootSubStage;
         }
         const stageInfo = await this.RouterService.methods.getStageContent(documentId, prevStage, prevSubStage).call();
@@ -696,13 +696,13 @@ export class LCWrapper {
             prevSubStage = amendSubStage;
         const rootSubStage = +(await lcContract.methods.numOfSubStage(1).call());
 
-        if (amendStage == 1) {
+        if (amendStage == LC.Stage.PHAT_HANH_LC) {
             amendSubStage = rootSubStage + 1;
         } else {
             prevStage = prevStage - 1;
         }
 
-        if (amendStage == 2) {
+        if (amendStage == LC.Stage.XUAT_TRINH_TCD_BCT) {
             prevSubStage = rootSubStage;
         }
 
@@ -793,16 +793,16 @@ export class LCWrapper {
         const parties = await lcContract.methods.getInvolvedParties().call();
         let org = "";
 
-        if (typeOf == "1") {
-            if (stage == 2 || stage == 6) {
+        if (typeOf == LC.LCTYPE.STANDARD_LC.toString()) {
+            if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
                 org = parties[1];
             } else {
                 org = parties[0];
             }
-        } else if (typeOf == "2") {
-            if (stage == 2 || stage == 6) {
+        } else if (typeOf == LC.LCTYPE.UPAS_LC.toString()) {
+            if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
                 org = parties[1];
-            } else if (stage == 5) {
+            } else if (stage == LC.Stage.UPAS_NHTT_NHXT) {
                 org = parties[2];
             } else {
                 org = parties[0];
