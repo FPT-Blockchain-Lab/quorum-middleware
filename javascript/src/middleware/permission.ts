@@ -61,3 +61,16 @@ export class Permission {
         };
     }
 }
+
+export namespace Permission {
+    export enum BASE_ACCESS {
+        READ_ONLY,
+        VALUE_TRANSFER,
+        CONTRACT_DEPLOY,
+        FULL_ACCESS,
+        CONTRACT_CALL,
+        VALUE_TRANSFER_AND_CONTRACT_CALL,
+        VALUE_TRANSFER_AND_CONTRACT_DEPLOY,
+        CONTRACT_CALL_AND_DEPLOY,
+    }
+}

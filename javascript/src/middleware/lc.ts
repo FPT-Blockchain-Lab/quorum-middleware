@@ -2,10 +2,11 @@ import BN from "bn.js";
 import Web3 from "web3";
 import ethAbiEncoder from "web3-eth-abi";
 import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
-import { StageContent, AmendStage, LCContracts } from "./interfaces";
+import { StageContent, AmendStage, LCContracts, Role, SpecialRole } from "./interfaces";
 import { DEFAULT_CONFIG } from "../config";
 import { LCContractABIs } from "../abi/lc";
 import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
+import { Permission } from "./permission";
 
 /** LC protocol */
 export class LC {
@@ -147,4 +148,57 @@ export namespace LC {
         UPAS_NHXT_BTH = 6, // lc upas: ngân hàng xuất trình - bên thụ hưởng
         UPAS_NHPH_NHTT = 7, // lc upas: ngân hàng phát hành - ngân hàng tài trợ
     }
+
+    //Enum type of LC contract
+    export enum LCTYPE {
+        STANDARD_LC = 1,
+        UPAS_LC = 2,
+    }
+
+    const MEMBER: Role = {
+        value: 0,
+        accessType: Permission.BASE_ACCESS.VALUE_TRANSFER_AND_CONTRACT_CALL,
+        name: "MEMBER",
+        isVoter: false,
+        isOrgAdmin: false,
+    };
+
+    const ORGADMIN: Role = {
+        value: 0,
+        accessType: Permission.BASE_ACCESS.VALUE_TRANSFER_AND_CONTRACT_CALL,
+        name: "ORGADMIN",
+        isVoter: false,
+        isOrgAdmin: true,
+    };
+
+    // LC Protocol org role list
+    export const RoleEnum = {
+        MEMBER: MEMBER,
+        ORGADMIN: ORGADMIN,
+    };
+
+    // Special role has authority to execute LC Protocol's operations
+    // - DEFAULT_ADMIN_ROLE (Admin of LC Protocol):
+    //     - Grant/Revoke other special roles (including Admin)
+    //     - Has authority to manage special settings/operations in the LC Protocol
+    // - VERIFIER_ROLE:
+    //     - Has authority to sign acknowledge message
+    // - OPERATOR_ROLE:
+    //     - Has authority to close LC contracts
+    const DEFAULT_ADMIN_ROLE: SpecialRole = {
+        role: "0x0000000000000000000000000000000000000000000000000000000000000000",
+    };
+    const VERIFIER_ROLE: SpecialRole = {
+        role: "0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09",
+    };
+    const OPERATOR_ROLE: SpecialRole = {
+        role: "0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929",
+    };
+
+    // LC Protocol's special role list
+    export const SpecialRoleEnum = {
+        DEFAULT_ADMIN_ROLE: DEFAULT_ADMIN_ROLE,
+        VERIFIER_ROLE: VERIFIER_ROLE,
+        OPERATOR_ROLE: OPERATOR_ROLE,
+    };
 }
