@@ -2,11 +2,10 @@ import BN from "bn.js";
 import Web3 from "web3";
 import ethAbiEncoder from "web3-eth-abi";
 import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
-import { StageContent, AmendStage, LCContracts, Role, SpecialRole } from "./interfaces";
+import { StageContent, AmendStage, LCContracts, SpecialRole } from "./interfaces";
 import { DEFAULT_CONFIG } from "../config";
 import { LCContractABIs } from "../abi/lc";
 import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
-import { Permission } from "./permission";
 
 /** LC protocol */
 export class LC {
@@ -97,10 +96,10 @@ export class LC {
      */
     static generateStageHash({
         rootHash,
+        signedTime,
         prevHash,
         contentHash,
         url,
-        signedTime,
         acknowledgeSignature,
         approvalSignature,
     }: Omit<StageContent, "numOfDocuments">): string {
@@ -149,33 +148,24 @@ export namespace LC {
         UPAS_NHPH_NHTT = 7, // lc upas: ngân hàng phát hành - ngân hàng tài trợ
     }
 
-    //Enum type of LC contract
+    // Enum type of LC contract
     export enum LCTYPE {
-        STANDARD_LC = 1,
-        UPAS_LC = 2,
+        STANDARD_LC = 1, // lc thường
+        UPAS_LC = 2, // lc upas
     }
 
-    const MEMBER: Role = {
-        value: 0,
-        accessType: Permission.BASE_ACCESS.VALUE_TRANSFER_AND_CONTRACT_CALL,
-        name: "MEMBER",
-        isVoter: false,
-        isOrgAdmin: false,
-    };
+    // Enum the number of involved parties of each LC type
+    export enum NUMOFPARTIES {
+        STANDARD_LC_PARTIES = 4, // [0] = _issuingBank, [1] = _advisingBank, [2] = _applicantOrg, [3] = _beneficiaryOrg;
+        UPAS_LC_PARTIES = 5, // [0] = _issuingBank, [1] = _advisingBank, [2] = _reimbursingBank, [3] = _applicantOrg, [4] = _beneficiaryOrg;
+    }
 
-    const ORGADMIN: Role = {
-        value: 0,
-        accessType: Permission.BASE_ACCESS.VALUE_TRANSFER_AND_CONTRACT_CALL,
-        name: "ORGADMIN",
-        isVoter: false,
-        isOrgAdmin: true,
-    };
-
-    // LC Protocol org role list
-    export const RoleEnum = {
-        MEMBER: MEMBER,
-        ORGADMIN: ORGADMIN,
-    };
+    // Enum index of org in involved parties
+    export enum INDEXOFORG {
+        NHPH, // ngân hàng xuất trình
+        NHTB, // ngân hàng thông báo
+        NHTT, // ngân hàng tài trợ
+    }
 
     // Special role has authority to execute LC Protocol's operations
     // - DEFAULT_ADMIN_ROLE (Admin of LC Protocol):

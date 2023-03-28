@@ -12,7 +12,7 @@ import {
     VoterManager,
 } from "../bindings/permission";
 import { DEFAULT_CONFIG } from "../config";
-import { PermissionContracts } from "./interfaces";
+import { PermissionContracts, Role } from "./interfaces";
 
 export class Permission {
     static loadContract(web3: Web3, config = DEFAULT_CONFIG): PermissionContracts {
@@ -73,4 +73,24 @@ export namespace Permission {
         VALUE_TRANSFER_AND_CONTRACT_DEPLOY,
         CONTRACT_CALL_AND_DEPLOY,
     }
+
+    const MEMBER: Role = {
+        accessType: Permission.BASE_ACCESS.VALUE_TRANSFER_AND_CONTRACT_CALL,
+        name: "MEMBER",
+        isVoter: false,
+        isOrgAdmin: false,
+    };
+
+    const ORGADMIN: Role = {
+        accessType: Permission.BASE_ACCESS.VALUE_TRANSFER_AND_CONTRACT_CALL,
+        name: "ORGADMIN",
+        isVoter: false,
+        isOrgAdmin: true,
+    };
+
+    // Org permission role list
+    export const RoleEnum = {
+        MEMBER: MEMBER,
+        ORGADMIN: ORGADMIN,
+    };
 }
