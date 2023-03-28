@@ -77,7 +77,6 @@ export interface AccessType {
 }
 
 export interface Role {
-    value: number;
     accessType: AccessType["baseAccess"];
     name: string;
     isVoter: boolean;

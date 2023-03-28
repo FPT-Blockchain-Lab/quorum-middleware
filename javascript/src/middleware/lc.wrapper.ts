@@ -558,7 +558,7 @@ export class LCWrapper {
      * @param from executor
      * @returns approval signature after sign
      */
-    async approvalSignature(
+    private async approvalSignature(
         content: {
             rootHash: string;
             prevHash: string;
@@ -592,28 +592,33 @@ export class LCWrapper {
      * @param from executor
      * @returns
      */
-    async validateData(typeOf: string, parties: string[], content: StageContent, from: string) {
+    private async validateData(typeOf: string, parties: string[], content: StageContent, from: string) {
         if (typeOf === LC.LCTYPE.STANDARD_LC.toString()) {
-            if (parties.length != 4) {
+            if (parties.length != LC.NUMOFPARTIES.STANDARD_LC_PARTIES) {
                 throw new Error("The number of involved parties does not match. Expected 4.");
             }
 
-            const orgs = await Promise.all([0, 1].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call()));
+            const orgs = await Promise.all(
+                [LC.INDEXOFORG.NHPH, LC.INDEXOFORG.NHTB].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call())
+            );
 
             if (!orgs.every((org) => org)) {
                 throw new Error("Organization at index 0 or 1 does not exsist.");
             }
         } else if (typeOf === LC.LCTYPE.UPAS_LC.toString()) {
-            if (parties.length != 5) {
+            if (parties.length != LC.NUMOFPARTIES.UPAS_LC_PARTIES) {
                 throw new Error("The number of involved parties does not match. Expected 5.");
             }
 
-            const orgs = await Promise.all([0, 1, 2].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call()));
+            const orgs = await Promise.all(
+                [LC.INDEXOFORG.NHPH, LC.INDEXOFORG.NHTB, LC.INDEXOFORG.NHTT].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call())
+            );
 
             if (!orgs.every((org) => org)) {
                 throw new Error("Organization at index 0 or 1 or 2 does not exsist.");
             }
         }
+
         await this.validateAccountOrg(parties[0], from);
 
         if (content.numOfDocuments > content.contentHash.length) {
@@ -631,7 +636,7 @@ export class LCWrapper {
      * @param from executor
      * @returns
      */
-    async validateAccountOrg(org: string, from: string) {
+    private async validateAccountOrg(org: string, from: string) {
         const [isWhitelist, isVerifyIdentity] = await Promise.all([
             this.LCManagement.methods.whitelistOrgs(org).call(),
             this.LCManagement.methods.verifyIdentity(from, org).call(),
@@ -715,16 +720,16 @@ export class LCWrapper {
      * @param migrateStages number of stage and sub-stage to migrate
      * @returns array content of each stage and sub-stage to migrate
      */
-    async calMigrateStages(documentId: string | number | BN, migrateStages: Stage[]) {
+    private async calMigrateStages(documentId: string | number | BN, migrateStages: Stage[]) {
         const migrating_stages = await Promise.all(
             migrateStages.map(async (s) => {
                 const content = await this.RouterService.methods.getStageContent(documentId, s.stage, s.subStage).call();
                 return LC.generateStageHash({
                     rootHash: content[0],
-                    prevHash: content[2],
-                    url: content[5],
-                    contentHash: content[4],
                     signedTime: new BN(content[1]),
+                    prevHash: content[2],
+                    contentHash: content[4],
+                    url: content[5],
                     acknowledgeSignature: content[6],
                     approvalSignature: content[7],
                 });
@@ -738,15 +743,15 @@ export class LCWrapper {
      * @param stageContent content of stage
      * @returns rootHash of LC and prevHash of stage
      */
-    async getRoothashAndPrevhash(documentId: string | number | BN, stageContent: [string, string, string, string, string[], string, string, string]) {
+    private async getRoothashAndPrevhash(documentId: string | number | BN, stageContent: [string, string, string, string, string[], string, string, string]) {
         const rootHash = await this.RouterService.methods.getRootHash(documentId).call();
         // get prevHash
         const prevHash = LC.generateStageHash({
             rootHash: stageContent[0],
+            signedTime: new BN(stageContent[1]),
             prevHash: stageContent[2],
             contentHash: stageContent[4],
             url: stageContent[5],
-            signedTime: new BN(stageContent[1]),
             acknowledgeSignature: stageContent[6],
             approvalSignature: stageContent[7],
         });
@@ -758,7 +763,7 @@ export class LCWrapper {
      * @param amendStage content of stage to amend
      * @returns a signature is signed by a requestor to be amend
      */
-    async amendSingature(
+    private async amendSingature(
         migrateStages: string[],
         amendStage: {
             stage: number;
@@ -789,23 +794,23 @@ export class LCWrapper {
      * @param typeOf type of LC contract
      * @returns an org in involved parties
      */
-    async checkOrgByStage(lcContract: StandardLC, stage: number, typeOf: string) {
+    private async checkOrgByStage(lcContract: StandardLC, stage: number, typeOf: string) {
         const parties = await lcContract.methods.getInvolvedParties().call();
         let org = "";
 
         if (typeOf == LC.LCTYPE.STANDARD_LC.toString()) {
             if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
-                org = parties[1];
+                org = parties[LC.INDEXOFORG.NHTB];
             } else {
-                org = parties[0];
+                org = parties[LC.INDEXOFORG.NHPH];
             }
         } else if (typeOf == LC.LCTYPE.UPAS_LC.toString()) {
             if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
-                org = parties[1];
+                org = parties[LC.INDEXOFORG.NHTB];
             } else if (stage == LC.Stage.UPAS_NHTT_NHXT) {
-                org = parties[2];
+                org = parties[LC.INDEXOFORG.NHTT];
             } else {
-                org = parties[0];
+                org = parties[LC.INDEXOFORG.NHPH];
             }
         }
         return org;
@@ -817,7 +822,7 @@ export class LCWrapper {
      * @param content content of LC contract
      * @returns data to create LC
      */
-    async generateDataForCreateLC(
+    private async generateDataForCreateLC(
         parties: string[],
         content: {
             rootHash: string;
