@@ -160,10 +160,10 @@ export class LCWrapper {
         // Get message hash
         const prevHash = LC.generateStageHash({
             rootHash: stageInfo[0],
+            signedTime: new BN(stageInfo[1]),
             prevHash: stageInfo[2],
             contentHash: stageInfo[4],
             url: stageInfo[5],
-            signedTime: new BN(stageInfo[1]),
             acknowledgeSignature: stageInfo[6],
             approvalSignature: stageInfo[7],
         });
