@@ -1,3 +1,5 @@
+package com.fptblockchainlab.middleware;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
