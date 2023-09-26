@@ -18,14 +18,13 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 public class Permission {
+    private static Permission instance;
     private final OrgManager orgManager;
     private final RoleManager roleManager;
     private final LCManagement lcManagement;
     private final PermissionsInterface permissionInterface;
     private final AccountManager accountManager;
     private final String orgLevel1;
-
-    private static Permission instance;
 
     private Permission(
             OrgManager orgManager,
@@ -34,7 +33,7 @@ public class Permission {
             PermissionsInterface permissionInterface,
             AccountManager accountManager,
             String orgLevel1
-            ) {
+    ) {
         this.orgManager = orgManager;
         this.roleManager = roleManager;
         this.lcManagement = lcManagement;
@@ -56,6 +55,169 @@ public class Permission {
         }
 
         return instance;
+    }
+
+    /**
+     * get admin role from default roles
+     *
+     * @return
+     */
+    public static Permission.Role getAdminRole() {
+        return Role.ORGADMIN;
+    }
+
+    /**
+     * Get member role from default role
+     *
+     * @return
+     */
+    public static Permission.Role getMemberRole() {
+        return Role.MEMBER;
+    }
+
+    public void createSubOrgWithDefaultRoles(String orgFullId) throws NotParentOrgException, FailedTransactionException, IOException {
+        this.createSubOrgs(orgFullId);
+        this.createDefaultRolesForOrg(orgFullId);
+    }
+
+    public void addAdminForSubOrg(String subOrgFullId, String adminAddress) throws IOException, FailedTransactionException {
+        try {
+            this.permissionInterface.assignAccountRole(adminAddress, subOrgFullId, Permission.Role.ORGADMIN.getName()).send();
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+
+    public void whiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
+        TransactionReceipt transactionReceipt;
+        try {
+            transactionReceipt = this.lcManagement.whitelist(Arrays.asList(orgFullId)).send();
+        } catch (Exception e) {
+            throw new IOException("failed to whitelist org", e);
+        }
+
+        if (!transactionReceipt.isStatusOK()) {
+            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
+        }
+    }
+
+    public void unwhiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
+        TransactionReceipt transactionReceipt;
+        try {
+            transactionReceipt = this.lcManagement.unwhitelist(Arrays.asList(orgFullId)).send();
+        } catch (Exception e) {
+            throw new IOException("failed to unwhitelist org", e);
+        }
+
+        if (!transactionReceipt.isStatusOK()) {
+            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
+        }
+    }
+
+    public void suspendAdminSubOrg(String subOrgFullId, String adminAddress) throws FailedTransactionException, IOException {
+        // suspend requires account is in active status
+        if (!isAccountOnchainUnderLevel1Org(adminAddress)) {
+            throw new IOException(String.format("account %s is not active under %s", adminAddress, this.orgLevel1));
+        }
+        try {
+            this.permissionInterface.updateAccountStatus(subOrgFullId, adminAddress, BigInteger.ONE).send();
+        } catch (Exception e) {
+            throw new IOException("failed to unwhitelist org", e);
+        }
+    }
+
+    public boolean isAccountOnchainUnderLevel1Org(String account) throws IOException {
+        Tuple5<String, String, String, BigInteger, Boolean> accountDetails;
+        try {
+            accountDetails = this.accountManager.getAccountDetails(account).send();
+        } catch (Exception e) {
+            throw new IOException("failed to get account details", e);
+        }
+        String[] fullOrgIdAsArr = accountDetails.component2().split("\\.");
+        // Account is active state and ultimate parent org is FIS org
+        return accountDetails.component4().compareTo(BigInteger.valueOf(2)) == 0 && this.orgLevel1.equals(fullOrgIdAsArr[0]);
+    }
+
+    private boolean isOrgExist(String fullOrgId) throws IOException {
+        String[] orgHierarchyList = fullOrgId.split("\\.");
+        String ultimateParentOrg = orgHierarchyList[0];
+        String orgId = orgHierarchyList[orgHierarchyList.length - 1];
+        String parentOrg = orgHierarchyList.length > 1 ? String.join(".", Arrays.copyOfRange(orgHierarchyList, 0, orgHierarchyList.length - 1)) : null;
+
+        Tuple5<String, String, String, BigInteger, BigInteger> orgDetails = null;
+        try {
+            orgDetails = this.orgManager.getOrgDetails(fullOrgId).send();
+        } catch (Exception e) {
+            throw new IOException("failed to get org details", e);
+        }
+        return orgDetails.component1().equals(orgId) && orgDetails.component2().equals(parentOrg) && orgDetails.component3().equals(ultimateParentOrg);
+    }
+
+    private void createSubOrgs(String subOrgFullId) throws NotParentOrgException, IOException, FailedTransactionException {
+        String[] orgHierachyList = subOrgFullId.split("\\.");
+        if (!this.orgLevel1.equals(orgHierachyList[0])) {
+            throw new NotParentOrgException(String.format("{} is not child org of {}", subOrgFullId, this.orgLevel1));
+        }
+
+        for (int i = 1; i < orgHierachyList.length; i++) {
+            String parentOrg = String.join(".", Arrays.copyOfRange(orgHierachyList, 0, i));
+            String currSubOrgFullId = parentOrg.concat(".").concat(orgHierachyList[i]);
+            if (!this.isOrgExist(currSubOrgFullId)) {
+
+                try {
+                    this.permissionInterface.addSubOrg(parentOrg, orgHierachyList[i], "", "", BigInteger.valueOf(0), BigInteger.valueOf(0)).send();
+                } catch (Exception e) {
+                    throw new IOException("failed to add subOrg");
+                }
+            } else {
+                throw new IOException(String.format("subOrg exists %s", currSubOrgFullId));
+            }
+        }
+    }
+
+    private void createDefaultRolesForOrg(String orgFullId) throws FailedTransactionException, IOException {
+        // Can optimize with sendAsync -> CompletableFuture
+
+        if (isRoleExist(Permission.Role.ORGADMIN.getName(), orgFullId)) {
+            System.out.printf("%s already exists under %s%n", Permission.Role.ORGADMIN.getName(), orgFullId);
+        } else {
+            try {
+                this.permissionInterface.addNewRole(
+                        Permission.Role.ORGADMIN.getName(),
+                        orgFullId, BigInteger.valueOf(Permission.Role.ORGADMIN.getAccessType().getBaseAccess()),
+                        Permission.Role.ORGADMIN.getIsVoter(),
+                        Permission.Role.ORGADMIN.getIsOrgAdmin()
+                ).send();
+            } catch (Exception e) {
+                throw new IOException("failed to create ORGADMIN role", e);
+            }
+        }
+
+        if (isRoleExist(Permission.Role.MEMBER.getName(), orgFullId)) {
+            System.out.printf("%s already exists under %s%n", Permission.Role.MEMBER.getName(), orgFullId);
+            ;
+        } else {
+            try {
+                this.permissionInterface.addNewRole(
+                        Permission.Role.MEMBER.getName(),
+                        orgFullId, BigInteger.valueOf(Permission.Role.MEMBER.getAccessType().getBaseAccess()),
+                        Permission.Role.MEMBER.getIsVoter(),
+                        Permission.Role.MEMBER.getIsOrgAdmin()
+                ).send();
+            } catch (Exception e) {
+                throw new IOException("failed to create MEMBER role", e);
+            }
+        }
+    }
+
+    private boolean isRoleExist(String roleName, String fullOrgId) throws IOException {
+        Tuple6<String, String, BigInteger, Boolean, Boolean, Boolean> roleDetails = null;
+        try {
+            roleDetails = this.roleManager.getRoleDetails(roleName, fullOrgId).send();
+        } catch (Exception e) {
+            throw new IOException("failed to get role details", e);
+        }
+        return roleDetails.component1().equals(roleName) && roleDetails.component2().equals(fullOrgId);
     }
 
     @Getter
@@ -112,165 +274,5 @@ public class Permission {
             }
             return null;
         }
-    }
-
-    /**
-     * get admin role from default roles
-     * @return
-     */
-    public static Permission.Role getAdminRole() {
-        return Role.ORGADMIN;
-    }
-
-    /**
-     * Get member role from default role
-     * @return
-     */
-    public static Permission.Role getMemberRole() {
-        return Role.MEMBER;
-    }
-
-    public void createSubOrgWithDefaultRoles(String orgFullId) throws NotParentOrgException, FailedTransactionException, IOException {
-        this.createSubOrgs(orgFullId);
-        this.createDefaultRolesForOrg(orgFullId);
-    }
-
-    public void addAdminForSubOrg(String subOrgFullId, String adminAddress) throws IOException, FailedTransactionException {
-        try {
-            this.permissionInterface.assignAccountRole(adminAddress, subOrgFullId, Permission.Role.ORGADMIN.getName()).send();
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
-
-    public void whiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
-        TransactionReceipt transactionReceipt;
-        try {
-            transactionReceipt = this.lcManagement.whitelist(Arrays.asList(orgFullId)).send();
-        } catch (Exception e) {
-            throw new IOException("failed to whitelist org", e);
-        }
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
-    }
-
-    public void unwhiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
-        TransactionReceipt transactionReceipt;
-        try {
-            transactionReceipt = this.lcManagement.unwhitelist(Arrays.asList(orgFullId)).send();
-        } catch (Exception e) {
-            throw new IOException("failed to unwhitelist org", e);
-        }
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
-    }
-
-    public void suspendAdminSubOrg(String subOrgFullId, String adminAddress) throws FailedTransactionException, IOException {
-        // suspend requires account is in active status
-        if (!isAccountOnchainUnderLevel1Org(adminAddress)) {
-            throw new IOException(String.format("account %s is not active under %s", adminAddress, this.orgLevel1));
-        }
-        try{
-            this.permissionInterface.updateAccountStatus(subOrgFullId, adminAddress, BigInteger.ONE).send();
-        } catch (Exception e) {
-            throw new IOException("failed to unwhitelist org", e);
-        }
-    }
-
-    public boolean isAccountOnchainUnderLevel1Org(String account) throws IOException {
-        Tuple5<String, String, String, BigInteger, Boolean> accountDetails;
-        try {
-            accountDetails = this.accountManager.getAccountDetails(account).send();
-        } catch (Exception e) {
-            throw new IOException("failed to get account details", e);
-        }
-        String[] fullOrgIdAsArr = accountDetails.component2().split("\\.");
-        // Account is active state and ultimate parent org is FIS org
-        return accountDetails.component4().compareTo(BigInteger.valueOf(2)) == 0 && this.orgLevel1.equals(fullOrgIdAsArr[0]);
-    }
-
-    private boolean isOrgExist(String fullOrgId) throws IOException {
-        String[] orgHierarchyList = fullOrgId.split("\\.");
-        String ultimateParentOrg = orgHierarchyList[0];
-        String orgId = orgHierarchyList[orgHierarchyList.length - 1];
-        String parentOrg = orgHierarchyList.length > 1 ? String.join(".", Arrays.copyOfRange(orgHierarchyList, 0, orgHierarchyList.length - 1)) : null;
-
-        Tuple5<String, String, String, BigInteger, BigInteger> orgDetails = null;
-        try {
-            orgDetails = this.orgManager.getOrgDetails(fullOrgId).send();
-        } catch (Exception e) {
-            throw new IOException("failed to get org details", e);
-        }
-        return orgDetails.component1().equals(orgId) && orgDetails.component2().equals(parentOrg) && orgDetails.component3().equals(ultimateParentOrg);
-    }
-
-    private void createSubOrgs(String subOrgFullId) throws NotParentOrgException, IOException, FailedTransactionException {
-        String[] orgHierachyList = subOrgFullId.split("\\.");
-        if (!this.orgLevel1.equals(orgHierachyList[0])) {
-            throw new NotParentOrgException(String.format("{} is not child org of {}", subOrgFullId, this.orgLevel1));
-        }
-
-        for (int i = 1; i < orgHierachyList.length ; i++) {
-            String parentOrg = String.join(".", Arrays.copyOfRange(orgHierachyList, 0, i));
-            String currSubOrgFullId = parentOrg.concat (".").concat(orgHierachyList[i]);
-            if (!this.isOrgExist(currSubOrgFullId)) {
-
-                try {
-                    this.permissionInterface.addSubOrg(parentOrg, orgHierachyList[i], "", "", BigInteger.valueOf(0), BigInteger.valueOf(0)).send();
-                } catch (Exception e) {
-                    throw new IOException("failed to add subOrg");
-                }
-            } else {
-                throw new IOException(String.format("subOrg exists %s", currSubOrgFullId));
-            }
-        }
-    }
-
-    private void createDefaultRolesForOrg(String orgFullId) throws FailedTransactionException, IOException {
-        // Can optimize with sendAsync -> CompletableFuture
-
-        if (isRoleExist(Permission.Role.ORGADMIN.getName(), orgFullId)) {
-            System.out.printf("%s already exists under %s%n",Permission.Role.ORGADMIN.getName(), orgFullId);
-        } else {
-            try {
-                this.permissionInterface.addNewRole(
-                        Permission.Role.ORGADMIN.getName(),
-                        orgFullId, BigInteger.valueOf(Permission.Role.ORGADMIN.getAccessType().getBaseAccess()),
-                        Permission.Role.ORGADMIN.getIsVoter(),
-                        Permission.Role.ORGADMIN.getIsOrgAdmin()
-                ).send();
-            } catch (Exception e) {
-                throw new IOException("failed to create ORGADMIN role", e);
-            }
-        }
-
-        if (isRoleExist(Permission.Role.MEMBER.getName(), orgFullId)) {
-            System.out.printf("%s already exists under %s%n", Permission.Role.MEMBER.getName(), orgFullId);;
-        } else {
-            try {
-                this.permissionInterface.addNewRole(
-                        Permission.Role.MEMBER.getName(),
-                        orgFullId, BigInteger.valueOf(Permission.Role.MEMBER.getAccessType().getBaseAccess()),
-                        Permission.Role.MEMBER.getIsVoter(),
-                        Permission.Role.MEMBER.getIsOrgAdmin()
-                ).send();
-            } catch (Exception e) {
-                throw new IOException("failed to create MEMBER role", e);
-            }
-        }
-    }
-
-    private boolean isRoleExist(String roleName, String fullOrgId) throws IOException {
-        Tuple6<String, String, BigInteger, Boolean, Boolean, Boolean> roleDetails = null;
-        try {
-            roleDetails = this.roleManager.getRoleDetails(roleName, fullOrgId).send();
-        } catch (Exception e) {
-            throw new IOException("failed to get role details", e);
-        }
-        return roleDetails.component1().equals(roleName) && roleDetails.component2().equals(fullOrgId);
     }
 }

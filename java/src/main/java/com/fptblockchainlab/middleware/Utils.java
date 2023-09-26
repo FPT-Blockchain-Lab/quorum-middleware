@@ -1,5 +1,8 @@
 package com.fptblockchainlab.middleware;
 
+import com.fptblockchainlab.bindings.lc.LC;
+import com.fptblockchainlab.bindings.lc.StandardLC;
+import lombok.Getter;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeEncoder;
 import org.web3j.abi.datatypes.DynamicArray;
@@ -17,6 +20,74 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Utils {
+    public static final String EMPTY_BYTES = "0x";
+    public static String DEFAULT_ROOT_HASH = "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
+
+    public enum Stage {
+        // BLC_03
+        PHAT_HANH_LC(1), // phát hành LC
+        // BLC_04
+        XUAT_TRINH_TCD_BCT(2), // xuất trình thư chỉ dẫn bộ chứng từ
+        // BLC_05
+        THONG_BAO_BCT_MH(3), // thông báo bộ chứng từ mua hàng
+        // BLC_06
+        CHAP_NHAN_THANH_TOAN(4), // chấp nhận thanh toán
+        //BLC_07_08
+        LC_NHPH_NHXT(5), // lc thường: ngân hàng phát hành - ngân hàng xuất trình
+        LC_NHXT_BTH(6), // lc thường: ngân hàng xuất trình - bên thụ hưởng
+        UPAS_NHTT_NHXT(5), // lc upas: ngân hàng tài trợ - ngân hàng xuất trình
+        UPAS_NHXT_BTH(6), // lc upas: ngân hàng xuất trình - bên thụ hưởng
+        UPAS_NHPH_NHTT(7),
+        ; // lc upas: ngân hàng phát hành - ngân hàng tài trợ
+
+        @Getter
+        private final int value;
+
+        Stage(int value) {
+            this.value = value;
+        }
+    }
+
+    public static class StageContent {
+        public LC.Stage stage;
+
+        public String rootHash;
+
+        public StageContent(LC.Stage stage, String rootHash) {
+            this.stage = stage;
+            this.rootHash = rootHash;
+        }
+    }
+
+    public static List<LC.Stage> getLcStatus(StandardLC lc) throws Exception {
+        BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();
+        List<BigInteger> lcStatus = lc.getStatus().send();
+        List<LC.Stage> rootStages = new ArrayList<>();
+
+        for (int i = 0; i < rootSubStage.intValue(); i++) {
+            rootStages.add(new LC.Stage(BigInteger.ONE, BigInteger.valueOf(i)));
+        }
+
+        List<LC.Stage> lcStages = calculateStages(lcStatus);
+        List<LC.Stage> allStatus = new ArrayList<>();
+        allStatus.addAll(rootStages);
+        allStatus.addAll(lcStages);
+
+        return allStatus;
+    }
+
+    private static List<LC.Stage> calculateStages(List<BigInteger> lastestStages) {
+        List<LC.Stage> res = new ArrayList<>();
+
+        for (int i = 0; i < lastestStages.size(); i++) {
+            for (int j = 0; j < lastestStages.get(i).intValue(); j++) {
+                res.add(new LC.Stage(BigInteger.valueOf(j + 1), BigInteger.valueOf(i + 1)));
+            }
+        }
+
+        return res;
+    }
+
     public static String signMessage(String messageHash, Credentials credentials) {
         byte[] messageBytes = Numeric.hexStringToByteArray(messageHash);
         Sign.SignatureData signatureData = Sign.signPrefixedMessage(messageBytes, credentials.getEcKeyPair());
@@ -96,7 +167,7 @@ public class Utils {
                                                         .toArray(Bytes32[]::new)
                                         )
                                 ) +
-                                urlEncoded.substring(64, urlEncoded.length()) + // remove offset
+                                urlEncoded.substring(64) + // remove offset
                                 _encodeSignature(acknowledge) // signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
                 );
     }
@@ -185,7 +256,7 @@ public class Utils {
                                                 .toArray(Bytes32[]::new)
                                 )
                         ) +
-                        urlEncoded.substring(64, urlEncoded.length()) + // remove offset
+                        urlEncoded.substring(64) + // remove offset
                         _encodeSignature(acknowledge) + // signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
                         _encodeSignature(signature) // approval signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
         );
