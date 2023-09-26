@@ -1,9 +1,6 @@
 package com.fptblockchainlab.middleware;
 
-import com.fptblockchainlab.bindings.lc.RouterService;
-import com.fptblockchainlab.bindings.lc.StandardLC;
-import com.fptblockchainlab.bindings.lc.StandardLCFactory;
-import com.fptblockchainlab.bindings.lc.UPASLCFactory;
+import com.fptblockchainlab.bindings.lc.*;
 import com.fptblockchainlab.exceptions.FailedTransactionException;
 import org.web3j.abi.TypeEncoder;
 import org.web3j.abi.datatypes.DynamicArray;
@@ -25,17 +22,13 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class LCWrapper {
+    private static LCWrapper instance;
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
     private final Quorum quorum;
-
     private final StandardLCFactory standardLCFactory;
-
     private final UPASLCFactory upaslcFactory;
-
     private final RouterService routerService;
-
-    private static LCWrapper instance;
 
     private LCWrapper(ContractGasProvider contractGasProvider,
                       Credentials credentials,
@@ -67,7 +60,6 @@ public class LCWrapper {
     }
 
     /**
-     *
      * @param parties
      * @param prevHash
      * @param contentHash
@@ -80,19 +72,13 @@ public class LCWrapper {
      * @throws IOException
      */
     public void createStandardLC(List<String> parties, String prevHash, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws FailedTransactionException, IOException {
-        String approvalSignature = approvalSignature(LCUtils.DEFAULT_ROOT_HASH, prevHash, contentHash, url, signedTime, acknowledge, privateKey);
-        List<byte[]> bytesParties = new ArrayList<>();
-
-        for (int i = 0; i < parties.size(); i++) {
-            bytesParties.add(parties.get(i).getBytes());
-        }
-
+        String approvalSignature = approvalSignature(Utils.DEFAULT_ROOT_HASH, prevHash, contentHash, url, signedTime, acknowledge, privateKey);
         StandardLCFactory.Content content = new StandardLCFactory.Content(
-                LCUtils.DEFAULT_ROOT_HASH.getBytes(),
+                Utils.DEFAULT_ROOT_HASH.getBytes(),
                 signedTime,
                 prevHash.getBytes(),
                 BigInteger.valueOf(numOfDocuments),
-                bytesParties,
+                parties.stream().map(String::getBytes).collect(Collectors.toList()),
                 url,
                 acknowledge.getBytes(),
                 approvalSignature.getBytes()
@@ -111,7 +97,6 @@ public class LCWrapper {
     }
 
     /**
-     *
      * @param parties
      * @param prevHash
      * @param contentHash
@@ -124,19 +109,13 @@ public class LCWrapper {
      * @throws IOException
      */
     public void createUPASLC(List<String> parties, String prevHash, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws FailedTransactionException, IOException {
-        String approvalSignature = approvalSignature(LCUtils.DEFAULT_ROOT_HASH, prevHash, contentHash, url, signedTime, acknowledge, privateKey);
-        List<byte[]> bytesParties = new ArrayList<>();
-
-        for (int i = 0; i < parties.size(); i++) {
-            bytesParties.add(parties.get(i).getBytes());
-        }
-
+        String approvalSignature = approvalSignature(Utils.DEFAULT_ROOT_HASH, prevHash, contentHash, url, signedTime, acknowledge, privateKey);
         UPASLCFactory.Content content = new UPASLCFactory.Content(
-                LCUtils.DEFAULT_ROOT_HASH.getBytes(),
+                Utils.DEFAULT_ROOT_HASH.getBytes(),
                 signedTime,
                 prevHash.getBytes(),
                 BigInteger.valueOf(numOfDocuments),
-                bytesParties,
+                parties.stream().map(String::getBytes).collect(Collectors.toList()),
                 url,
                 acknowledge.getBytes(),
                 approvalSignature.getBytes()
@@ -155,7 +134,6 @@ public class LCWrapper {
     }
 
     /**
-     *
      * @param documentId
      * @param stage
      * @param subStage
@@ -185,12 +163,12 @@ public class LCWrapper {
         TransactionReceipt transactionReceipt = this.routerService.approve(documentId, BigInteger.valueOf(stage), BigInteger.valueOf(subStage),
                 new RouterService.Content(
                         rootHash.getBytes(),
-                        content.signedTime,
+                        signedTime,
                         prevHash.getBytes(),
-                        content.numOfDocuments,
-                        content.contentHash,
-                        content.url,
-                        content.acknowledge,
+                        BigInteger.valueOf(numOfDocuments),
+                        Arrays.stream(contentHash).map(String::getBytes).collect(Collectors.toList()),
+                        url,
+                        acknowledge.getBytes(),
                         approvalSignature.getBytes())
         ).send();
 
@@ -200,7 +178,6 @@ public class LCWrapper {
     }
 
     /**
-     *
      * @param documentId
      * @throws FailedTransactionException
      * @throws IOException
@@ -219,7 +196,6 @@ public class LCWrapper {
     }
 
     /**
-     *
      * @param documentId
      * @param stage
      * @param subStage
@@ -241,7 +217,7 @@ public class LCWrapper {
             BigInteger signedTime,
             int numOfDocuments,
             String acknowledge,
-            com.fptblockchainlab.bindings.lc.LC.Stage[] migrateStages,
+            List<LC.Stage> migrateStages,
             String privateKey
     ) throws Exception {
         StandardLC lc = getLCContract(documentId);
@@ -250,7 +226,7 @@ public class LCWrapper {
         BigInteger amendStage = amendStageContent.component2();
         BigInteger amendSubStage = amendStageContent.component3();
 
-        if (Arrays.toString(amendStageInfo.signature).equals(LCUtils.EMPTY_BYTES)) {
+        if (Arrays.toString(amendStageInfo.signature).equals(Utils.EMPTY_BYTES)) {
             throw new Exception("Stage Amend not found");
         }
 
@@ -266,7 +242,7 @@ public class LCWrapper {
         );
         List<byte[]> migrating_stages = calMigrateStages(documentId, migrateStages);
 
-        if (amendStage.intValue() == LCUtils.Stage.PHAT_HANH_LC.ordinal() || amendStage.intValue() == LCUtils.Stage.CHAP_NHAN_THANH_TOAN.ordinal() || amendStage.intValue() == LCUtils.Stage.UPAS_NHTT_NHXT.ordinal()) {
+        if (amendStage.intValue() == Utils.Stage.PHAT_HANH_LC.getValue() || amendStage.intValue() == Utils.Stage.CHAP_NHAN_THANH_TOAN.getValue() || amendStage.intValue() == Utils.Stage.UPAS_NHTT_NHXT.getValue()) {
 
         }
 
@@ -319,7 +295,6 @@ public class LCWrapper {
     }
 
     /**
-     *
      * @param documentId
      * @param proposer
      * @param nonce
@@ -355,14 +330,12 @@ public class LCWrapper {
     }
 
     /**
-     *
      * @param documentId
      * @param proposer
      * @param nonce
-     * @param privateKey
      * @throws Exception
      */
-    public void fulfillAmendment(BigInteger documentId, String proposer, BigInteger nonce, String privateKey) throws Exception {
+    public void fulfillAmendment(BigInteger documentId, String proposer, BigInteger nonce) throws Exception {
         BigInteger requestId = new BigInteger(Utils.generateRequestId(proposer, nonce), 16);
         TransactionReceipt transactionReceipt = this.routerService.fulfillAmendment(documentId, requestId).send();
 
@@ -372,7 +345,6 @@ public class LCWrapper {
     }
 
     /**
-     *
      * @param documentId
      * @param contentHash
      * @param url
@@ -385,13 +357,12 @@ public class LCWrapper {
     public void submitRootAmendment(BigInteger documentId, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws Exception {
         StandardLC lc = getLCContract(documentId);
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> migrateStages = this.getLCStatus(documentId, lc);
+        List<LC.Stage> migrateStages = this.getLCStatus(documentId, lc);
 
-        this.submitAmendment(documentId, 1, rootSubStage.intValue(), contentHash, url, signedTime, numOfDocuments, acknowledge, (com.fptblockchainlab.bindings.lc.LC.Stage[]) migrateStages.toArray(), privateKey);
+        this.submitAmendment(documentId, 1, rootSubStage.intValue(), contentHash, url, signedTime, numOfDocuments, acknowledge, migrateStages, privateKey);
     }
 
     /**
-     *
      * @param documentId
      * @param stage
      * @param subStage
@@ -404,39 +375,38 @@ public class LCWrapper {
      * @throws Exception
      */
     public void submitGeneralAmendment(BigInteger documentId, int stage, int subStage, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws Exception {
-        if (stage == 1) {
+        if (stage == Utils.Stage.PHAT_HANH_LC.getValue()) {
             throw new Exception("Not allowed to submit root stage.");
         }
         StandardLC lc = getLCContract(documentId);
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> lcStatus = this.getLCStatus(documentId, lc);
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> migrateStages = lcStatus.stream().filter(
+        List<LC.Stage> lcStatus = this.getLCStatus(documentId, lc);
+        List<LC.Stage> migrateStages = lcStatus.stream().filter(
                 item -> !(item.subStage.intValue() == subStage && item.stage.intValue() == stage
                 )).collect(Collectors.toList());
 
-        this.submitAmendment(documentId, stage, subStage, contentHash, url, signedTime, numOfDocuments, acknowledge, (com.fptblockchainlab.bindings.lc.LC.Stage[]) migrateStages.toArray(), privateKey);
+        this.submitAmendment(documentId, stage, subStage, contentHash, url, signedTime, numOfDocuments, acknowledge, migrateStages, privateKey);
     }
 
     /**
-     *
      * @param documentId
      * @param lc
      * @return
      * @throws Exception
      */
-    private List<com.fptblockchainlab.bindings.lc.LC.Stage> getLCStatus(BigInteger documentId, StandardLC lc) throws Exception {
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> stages = LCUtils.getLcStatus(lc);
-        List<LCUtils.StageContent> stageContents = new ArrayList<>();
+    private List<LC.Stage> getLCStatus(BigInteger documentId, StandardLC lc) throws Exception {
+        List<LC.Stage> stages = Utils.getLcStatus(lc);
+        List<Utils.StageContent> stageContents = new ArrayList<>();
 
-        for (com.fptblockchainlab.bindings.lc.LC.Stage stage: stages) {
+        for (LC.Stage stage : stages) {
             RouterService.Content content = this.routerService.getStageContent(documentId, stage.stage, stage.subStage).send();
-            stageContents.add(new LCUtils.StageContent(stage, Arrays.toString(content.rootHash)));
+            stageContents.add(new Utils.StageContent(stage, Arrays.toString(content.rootHash)));
         }
 
         List<byte[]> rootList = lc.getRootList().send();
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> migrateStages = new ArrayList<>();
+        List<LC.Stage> migrateStages = new ArrayList<>();
         List<Bytes32> roots = new ArrayList<>();
 
-        migrateStages.add(new com.fptblockchainlab.bindings.lc.LC.Stage(BigInteger.ONE, BigInteger.ONE));
+        migrateStages.add(new LC.Stage(BigInteger.ONE, BigInteger.ONE));
 
         for (int i = 0; i < rootList.size(); i++) {
             roots.add(new Bytes32(rootList.get(i)));
@@ -447,13 +417,13 @@ public class LCWrapper {
                     )
             );
 
-            List<LCUtils.StageContent> generalStages = stageContents.stream().filter(
+            List<Utils.StageContent> generalStages = stageContents.stream().filter(
                     stageContent -> Objects.equals(stageContent.rootHash, hash) && stageContent.stage.stage.intValue() != 1
             ).collect(Collectors.toList());
             migrateStages.addAll(generalStages.stream().map(stage -> stage.stage).collect(Collectors.toList()));
 
             if (i != rootList.size() - 1) {
-                migrateStages.add(new com.fptblockchainlab.bindings.lc.LC.Stage(BigInteger.ONE, BigInteger.valueOf(i + 2)));
+                migrateStages.add(new LC.Stage(BigInteger.ONE, BigInteger.valueOf(i + 2)));
             }
         }
 
@@ -494,9 +464,9 @@ public class LCWrapper {
         return Utils.signMessage(amendMessageHash, credentials);
     }
 
-    private List<byte[]> calMigrateStages(BigInteger documentId, com.fptblockchainlab.bindings.lc.LC.Stage[] migrateStages) throws Exception {
+    private List<byte[]> calMigrateStages(BigInteger documentId, List<LC.Stage> migrateStages) throws Exception {
         List<byte[]> migrating_stages = new ArrayList<>();
-        for (com.fptblockchainlab.bindings.lc.LC.Stage migrateStage : migrateStages) {
+        for (LC.Stage migrateStage : migrateStages) {
             RouterService.Content content = this.routerService.getStageContent(documentId, migrateStage.stage, migrateStage.subStage).send();
             String prevHash = Utils.generateStageHash(
                     (String[]) content.contentHash.stream().map(Object::toString).toArray(),
@@ -523,13 +493,13 @@ public class LCWrapper {
         BigInteger amendStage = stage, amendSubStage = subStage, prevStage = amendStage, prevSubStage = amendSubStage;
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();
 
-        if (amendStage.intValue() == LCUtils.Stage.PHAT_HANH_LC.ordinal()) {
+        if (amendStage.intValue() == Utils.Stage.PHAT_HANH_LC.getValue()) {
             amendSubStage = rootSubStage.add(BigInteger.ONE);
         } else {
             prevStage = prevStage.add(BigInteger.ONE);
         }
 
-        if (amendStage.intValue() == LCUtils.Stage.XUAT_TRINH_TCD_BCT.ordinal()) {
+        if (amendStage.intValue() == Utils.Stage.XUAT_TRINH_TCD_BCT.getValue()) {
             prevSubStage = rootSubStage;
         }
 
@@ -542,14 +512,14 @@ public class LCWrapper {
         int prevStage = stage, prevSubStage = subStage;
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.valueOf(1)).send();
 
-        if (stage < LCUtils.Stage.THONG_BAO_BCT_MH.ordinal() && (lc.numOfSubStage(BigInteger.valueOf(stage)).send().equals(BigInteger.valueOf(subStage - 1)))) {
+        if (stage < Utils.Stage.THONG_BAO_BCT_MH.getValue() && (lc.numOfSubStage(BigInteger.valueOf(stage)).send().equals(BigInteger.valueOf(subStage - 1)))) {
             throw new Error("Invalid sub stage");
         }
-        if (stage != LCUtils.Stage.PHAT_HANH_LC.ordinal()) {
+        if (stage != Utils.Stage.PHAT_HANH_LC.getValue()) {
             prevStage = prevStage - 1;
         }
 
-        if (stage == LCUtils.Stage.XUAT_TRINH_TCD_BCT.ordinal()) {
+        if (stage == Utils.Stage.XUAT_TRINH_TCD_BCT.getValue()) {
             prevSubStage = rootSubStage.intValue();
         }
 
