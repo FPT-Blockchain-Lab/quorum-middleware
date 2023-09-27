@@ -1,6 +1,9 @@
 package com.fptblockchainlab.middleware;
 
-import com.fptblockchainlab.bindings.lc.*;
+import com.fptblockchainlab.bindings.lc.RouterService;
+import com.fptblockchainlab.bindings.lc.StandardLC;
+import com.fptblockchainlab.bindings.lc.StandardLCFactory;
+import com.fptblockchainlab.bindings.lc.UPASLCFactory;
 import com.fptblockchainlab.exceptions.FailedTransactionException;
 import org.web3j.abi.TypeEncoder;
 import org.web3j.abi.datatypes.DynamicArray;
@@ -15,10 +18,7 @@ import org.web3j.tx.gas.ContractGasProvider;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class LCWrapper {
@@ -30,11 +30,11 @@ public class LCWrapper {
     private final RouterService routerService;
 
     public LCWrapper(ContractGasProvider contractGasProvider,
-                      Credentials credentials,
-                      Quorum quorum,
-                      StandardLCFactory standardLCFactory,
-                      UPASLCFactory upaslcFactory,
-                      RouterService routerService
+                     Credentials credentials,
+                     Quorum quorum,
+                     StandardLCFactory standardLCFactory,
+                     UPASLCFactory upaslcFactory,
+                     RouterService routerService
     ) {
         this.routerService = routerService;
         this.quorum = quorum;
@@ -45,15 +45,25 @@ public class LCWrapper {
     }
 
     /**
-     *
      * @param parties
      * @param content
-     * @param privateKey
-     * @throws FailedTransactionException
-     * @throws IOException
+     * @param credentials
+     * @throws Exception
      */
-    public void createStandardLC(List<String> parties, LC.Content content, String privateKey) throws FailedTransactionException, IOException {
-        String approvalSignature = approvalSignature(LC.DEFAULT_ROOT_HASH, content.prevHash, content.contentHash, content.url, content.signedTime, content.acknowledge, privateKey);
+    public TransactionReceipt createStandardLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
+        String approvalSignature = getApprovalSignature(
+                new LC.Content(
+                        LC.DEFAULT_ROOT_HASH,
+                        content.signedTime,
+                        content.prevHash,
+                        0,
+                        content.contentHash,
+                        content.url,
+                        content.acknowledge,
+                        ""
+                ),
+                credentials
+        );
         StandardLCFactory.Content lcContent = new StandardLCFactory.Content(
                 LC.DEFAULT_ROOT_HASH.getBytes(),
                 content.signedTime,
@@ -65,28 +75,30 @@ public class LCWrapper {
                 approvalSignature.getBytes()
         );
 
-        TransactionReceipt transactionReceipt;
-        try {
-            transactionReceipt = this.standardLCFactory.create(parties, lcContent).send();
-        } catch (Exception e) {
-            throw new IOException("failed to create standard LC", e);
-        }
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
+        return this.standardLCFactory.create(parties, lcContent).send();
     }
 
     /**
-     *
      * @param parties
      * @param content
-     * @param privateKey
-     * @throws FailedTransactionException
-     * @throws IOException
+     * @param credentials
+     * @throws Exception
      */
-    public void createUPASLC(List<String> parties, LC.Content content, String privateKey) throws FailedTransactionException, IOException {
-        String approvalSignature = approvalSignature(LC.DEFAULT_ROOT_HASH, content.prevHash, content.contentHash, content.url, content.signedTime, content.acknowledge, privateKey);
+    public TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
+        String approvalSignature = getApprovalSignature(
+                new LC.Content(
+                        LC.DEFAULT_ROOT_HASH,
+                        content.signedTime,
+                        content.prevHash,
+                        0,
+                        content.contentHash,
+                        content.url,
+                        content.acknowledge,
+                        ""
+                ),
+                credentials
+        );
+
         UPASLCFactory.Content lcContent = new UPASLCFactory.Content(
                 LC.DEFAULT_ROOT_HASH.getBytes(),
                 content.signedTime,
@@ -98,27 +110,17 @@ public class LCWrapper {
                 approvalSignature.getBytes()
         );
 
-        TransactionReceipt transactionReceipt;
-        try {
-            transactionReceipt = this.upaslcFactory.create(parties, lcContent).send();
-        } catch (Exception e) {
-            throw new IOException("failed to create upas LC", e);
-        }
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
+        return this.upaslcFactory.create(parties, lcContent).send();
     }
 
     /**
-     *
      * @param documentId
      * @param stage
      * @param content
-     * @param privateKey
+     * @param credentials
      * @throws Exception
      */
-    public void approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception {
+    public TransactionReceipt approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception {
 
         StandardLC lc = getLCContract(documentId);
         RouterService.Content stageInfo = getStageInfo(lc, documentId, stage);
@@ -135,8 +137,21 @@ public class LCWrapper {
                 )
         );
         String rootHash = Arrays.toString(this.routerService.getRootHash(documentId).send());
-        String approvalSignature = approvalSignature(Arrays.toString(stageInfo.rootHash), prevHash, (String[]) stageInfo.contentHash.stream().map(Object::toString).toArray(), stageInfo.url, stageInfo.signedTime, stageInfo.acknowledge.toString(), privateKey);
-        TransactionReceipt transactionReceipt = this.routerService.approve(documentId, stage.stage, stage.subStage,
+        String approvalSignature = getApprovalSignature(
+                new LC.Content(
+                        Arrays.toString(stageInfo.rootHash),
+                        stageInfo.signedTime,
+                        prevHash,
+                        0,
+                        (String[]) stageInfo.contentHash.stream().map(Object::toString).toArray(),
+                        stageInfo.url,
+                        stageInfo.acknowledge.toString(),
+                        ""
+                ),
+                credentials
+        );
+
+        return this.routerService.approve(documentId, stage.stage, stage.subStage,
                 new RouterService.Content(
                         rootHash.getBytes(),
                         content.signedTime,
@@ -147,10 +162,6 @@ public class LCWrapper {
                         content.acknowledge.getBytes(),
                         approvalSignature.getBytes())
         ).send();
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
     }
 
     /**
@@ -158,35 +169,19 @@ public class LCWrapper {
      * @throws FailedTransactionException
      * @throws IOException
      */
-    public void closeLC(BigInteger documentId) throws FailedTransactionException, IOException {
-        TransactionReceipt transactionReceipt;
-        try {
-            transactionReceipt = this.routerService.closeLC(documentId).send();
-        } catch (Exception e) {
-            throw new IOException("failed to close LC", e);
-        }
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
+    public TransactionReceipt closeLC(BigInteger documentId) throws Exception {
+        return this.routerService.closeLC(documentId).send();
     }
 
     /**
-     *
      * @param documentId
      * @param stage
      * @param content
      * @param migrateStages
-     * @param privateKey
+     * @param credentials
      * @throws Exception
      */
-    public void submitAmendment(
-            BigInteger documentId,
-            LC.Stage stage,
-            LC.Content content,
-            List<com.fptblockchainlab.bindings.lc.LC.Stage> migrateStages,
-            String privateKey
-    ) throws Exception {
+    public TransactionReceipt submitAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, List<LC.Stage> migrateStages, Credentials credentials) throws Exception {
         StandardLC lc = getLCContract(documentId);
         Tuple3<RouterService.Content, BigInteger, BigInteger> amendStageContent = getAmendInfo(lc, documentId, stage);
         RouterService.Content amendStageInfo = amendStageContent.component1();
@@ -194,7 +189,7 @@ public class LCWrapper {
         BigInteger amendSubStage = amendStageContent.component3();
 
         if (Arrays.toString(amendStageInfo.signature).equals(LC.EMPTY_BYTES)) {
-            throw new Exception("EnumStage Amend not found");
+            throw new Exception("Stage Amend not found");
         }
 
         byte[] rootHash = this.routerService.getRootHash(documentId).send();
@@ -210,22 +205,26 @@ public class LCWrapper {
                         Arrays.toString(amendStageInfo.signature)
                 )
         );
-        List<byte[]> migrating_stages = calMigrateStages(documentId, migrateStages);
+        List<byte[]> migrating_stages = getMigrateStageHashes(documentId, migrateStages);
 
         if (amendStage.intValue() == LC.EnumStage.PHAT_HANH_LC.getValue() || amendStage.intValue() == LC.EnumStage.CHAP_NHAN_THANH_TOAN.getValue() || amendStage.intValue() == LC.EnumStage.UPAS_NHTT_NHXT.getValue()) {
 
         }
 
-        String approvalSignature = this.approvalSignature(
-                Arrays.toString(rootHash),
-                prevHash,
-                content.contentHash,
-                content.url,
-                content.signedTime,
-                content.acknowledge,
-                privateKey
+        String approvalSignature = this.getApprovalSignature(
+                new LC.Content(
+                        Arrays.toString(rootHash),
+                        content.signedTime,
+                        prevHash,
+                        0,
+                        content.contentHash,
+                        content.url,
+                        content.acknowledge,
+                        ""
+                ),
+                credentials
         );
-        String amendSignature = this.amendSignature(
+        String amendSignature = this.getAmendSignature(
                 migrating_stages,
                 new LC.Stage(amendStage, amendSubStage),
                 new LC.Content(
@@ -238,10 +237,10 @@ public class LCWrapper {
                         content.acknowledge,
                         approvalSignature
                 ),
-                privateKey
+                credentials
         );
 
-        TransactionReceipt transactionReceipt = this.routerService.submitAmendment(
+        return this.routerService.submitAmendment(
                 documentId,
                 migrating_stages,
                 new RouterService.AmendStage(
@@ -260,27 +259,23 @@ public class LCWrapper {
                 ),
                 amendSignature.getBytes()
         ).send();
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
     }
 
     /**
      * @param documentId
      * @param proposer
      * @param nonce
-     * @param privateKey
+     * @param credentials
      * @throws Exception
      */
-    public void approveAmendment(BigInteger documentId, String proposer, BigInteger nonce, String privateKey) throws Exception {
+    public TransactionReceipt approveAmendment(BigInteger documentId, String proposer, BigInteger nonce, Credentials credentials) throws Exception {
         BigInteger requestId = new BigInteger(LC.generateRequestId(proposer, nonce), 16);
         RouterService.Request amendRequest = this.routerService.getAmendmentRequest(documentId, requestId).send();
         boolean isApproved = this.routerService.isAmendApproved(documentId, requestId).send();
 
         if (isApproved) throw new Exception("Amend request has been approved.");
 
-        String amendSignature = this.amendSignature(
+        String amendSignature = this.getAmendSignature(
                 amendRequest.migratingStages,
                 new LC.Stage(amendRequest.amendStage.stage, amendRequest.amendStage.subStage),
                 new LC.Content(
@@ -293,14 +288,10 @@ public class LCWrapper {
                         Arrays.toString(amendRequest.amendStage.content.acknowledge),
                         Arrays.toString(amendRequest.amendStage.content.signature)
                 ),
-                privateKey
+                credentials
         );
 
-        TransactionReceipt transactionReceipt = this.routerService.approveAmendment(documentId, requestId, amendSignature.getBytes()).send();
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
+        return this.routerService.approveAmendment(documentId, requestId, amendSignature.getBytes()).send();
     }
 
     /**
@@ -309,72 +300,65 @@ public class LCWrapper {
      * @param nonce
      * @throws Exception
      */
-    public void fulfillAmendment(BigInteger documentId, String proposer, BigInteger nonce) throws Exception {
+    public TransactionReceipt fulfillAmendment(BigInteger documentId, String proposer, BigInteger nonce) throws Exception {
         BigInteger requestId = new BigInteger(LC.generateRequestId(proposer, nonce), 16);
-        TransactionReceipt transactionReceipt = this.routerService.fulfillAmendment(documentId, requestId).send();
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
+        return this.routerService.fulfillAmendment(documentId, requestId).send();
     }
 
     /**
-     *
      * @param documentId
      * @param content
-     * @param privateKey
+     * @param credentials
      * @throws Exception
      */
-    public void submitRootAmendment(BigInteger documentId, LC.Content content, String privateKey) throws Exception {
+    public TransactionReceipt submitRootAmendment(BigInteger documentId, LC.Content content, Credentials credentials) throws Exception {
         StandardLC lc = getLCContract(documentId);
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> migrateStages = this.getLCStatus(documentId, lc);
+        List<LC.Stage> migrateStages = this.getMigrateStages(documentId, lc);
 
-        this.submitAmendment(documentId, new LC.Stage(BigInteger.ONE, rootSubStage), content, migrateStages, privateKey);
+        return this.submitAmendment(documentId, new LC.Stage(BigInteger.ONE, rootSubStage), content, migrateStages, credentials);
     }
 
     /**
-     *
      * @param documentId
      * @param stage
      * @param content
-     * @param privateKey
+     * @param credentials
      * @throws Exception
      */
-    public void submitGeneralAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception {
+    public TransactionReceipt submitGeneralAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception {
         if (stage.stage.intValue() == LC.EnumStage.PHAT_HANH_LC.getValue()) {
             throw new Exception("Not allowed to submit root stage.");
         }
         StandardLC lc = getLCContract(documentId);
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> lcStatus = this.getLCStatus(documentId, lc);
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> migrateStages = lcStatus.stream().filter(
+        List<LC.Stage> lcStatus = this.getMigrateStages(documentId, lc);
+        List<LC.Stage> migrateStages = lcStatus.stream().filter(
                 item -> !(item.subStage.equals(stage.subStage) && item.stage.equals(stage.stage)
                 )).collect(Collectors.toList());
 
-        this.submitAmendment(documentId, stage, content, migrateStages, privateKey);
+        return this.submitAmendment(documentId, stage, content, migrateStages, credentials);
     }
 
     /**
-     *
      * @param documentId
-     * @param lc
+     * @param lc instance of LC contract
      * @return
      * @throws Exception
      */
-    private List<com.fptblockchainlab.bindings.lc.LC.Stage> getLCStatus(BigInteger documentId, StandardLC lc) throws Exception {
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> stages = LC.getLcStatus(lc);
-        List<LC.StageContent> stageContents = new ArrayList<>();
+    private List<LC.Stage> getMigrateStages(BigInteger documentId, StandardLC lc) throws Exception {
+        List<LC.Stage> stages = LC.getLcStatus(lc);
+        Map<LC.Stage, byte[]> generalStageContents = new HashMap<>();
 
-        for (com.fptblockchainlab.bindings.lc.LC.Stage stage : stages) {
+        for (LC.Stage stage : stages) {
             RouterService.Content content = this.routerService.getStageContent(documentId, stage.stage, stage.subStage).send();
-            stageContents.add(new LC.StageContent(stage, Arrays.toString(content.rootHash)));
+            generalStageContents.put(stage, content.rootHash);
         }
 
         List<byte[]> rootList = lc.getRootList().send();
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> migrateStages = new ArrayList<>();
+        List<LC.Stage> migrateStages = new ArrayList<>();
         List<Bytes32> roots = new ArrayList<>();
 
-        migrateStages.add(new com.fptblockchainlab.bindings.lc.LC.Stage(BigInteger.ONE, BigInteger.ONE));
+        migrateStages.add(new LC.Stage(BigInteger.ONE, BigInteger.ONE));
 
         for (int i = 0; i < rootList.size(); i++) {
             roots.add(new Bytes32(rootList.get(i)));
@@ -384,32 +368,35 @@ public class LCWrapper {
                             new DynamicArray(roots)
                     )
             );
+            Map<LC.Stage, byte[]> filteredGeneralStageContents = generalStageContents.entrySet().stream()
+                    .filter(stageContent -> (!stageContent.getKey().stage.equals(BigInteger.ONE)) && Arrays.equals(stageContent.getValue(), hash.getBytes()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            List<LC.Stage> generalStages = filteredGeneralStageContents.entrySet().stream().map(m -> m.getKey()).collect(Collectors.toList());
 
-            List<LC.StageContent> generalStages = stageContents.stream().filter(
-                    stageContent -> Objects.equals(stageContent.rootHash, hash) && stageContent.stage.stage.intValue() != 1
-            ).collect(Collectors.toList());
-            migrateStages.addAll(generalStages.stream().map(stage -> stage.stage).collect(Collectors.toList()));
+            migrateStages.addAll(generalStages);
 
             if (i != rootList.size() - 1) {
-                migrateStages.add(new com.fptblockchainlab.bindings.lc.LC.Stage(BigInteger.ONE, BigInteger.valueOf(i + 2)));
+                migrateStages.add(new LC.Stage(BigInteger.ONE, BigInteger.valueOf(i + 2)));
             }
         }
 
         return migrateStages;
     }
 
-    private String amendSignature(
-            List<byte[]> migrateStages,
-            LC.Stage stage,
-            LC.Content content,
-            String privateKey) {
-        Credentials credentials = Credentials.create(privateKey);
-        String[] migrate_stages = new String[migrateStages.size()];
-        for (int i = 0; i < migrate_stages.length; i++) {
-            migrate_stages[i] = Arrays.toString(migrateStages.get(i));
+    /**
+     * @param migrateStageHashes
+     * @param stage
+     * @param content
+     * @param credentials
+     * @return
+     */
+    private String getAmendSignature(List<byte[]> migrateStageHashes, LC.Stage stage, LC.Content content, Credentials credentials) {
+        String[] migrateStages = new String[migrateStageHashes.size()];
+        for (int i = 0; i < migrateStages.length; i++) {
+            migrateStages[i] = Arrays.toString(migrateStageHashes.get(i));
         }
         String amendMessageHash = LC.generateAmendMessageHash(
-                migrate_stages,
+                migrateStages,
                 new LC.AmendStage(
                         stage.stage,
                         stage.subStage,
@@ -429,11 +416,17 @@ public class LCWrapper {
         return LC.signMessage(amendMessageHash, credentials);
     }
 
-    private List<byte[]> calMigrateStages(BigInteger documentId, List<com.fptblockchainlab.bindings.lc.LC.Stage> migrateStages) throws Exception {
-        List<byte[]> migrating_stages = new ArrayList<>();
-        for (com.fptblockchainlab.bindings.lc.LC.Stage migrateStage : migrateStages) {
+    /**
+     * @param documentId
+     * @param migrateStages
+     * @return
+     * @throws Exception
+     */
+    private List<byte[]> getMigrateStageHashes(BigInteger documentId, List<LC.Stage> migrateStages) throws Exception {
+        List<byte[]> hashes = new ArrayList<>();
+        for (LC.Stage migrateStage : migrateStages) {
             RouterService.Content content = this.routerService.getStageContent(documentId, migrateStage.stage, migrateStage.subStage).send();
-            String prevHash = LC.generateStageHash(
+            String stageHash = LC.generateStageHash(
                     new LC.Content(
                             Arrays.toString(content.rootHash),
                             content.signedTime,
@@ -446,17 +439,31 @@ public class LCWrapper {
                     )
             );
 
-            migrating_stages.add(prevHash.getBytes());
+            hashes.add(stageHash.getBytes());
         }
 
-        return migrating_stages;
+        return hashes;
     }
 
+    /**
+     * Get instance of LC contract by documentId
+     *
+     * @param documentId
+     * @return instance of LC contract
+     * @throws Exception
+     */
     private StandardLC getLCContract(BigInteger documentId) throws Exception {
         Tuple2<String, BigInteger> result = this.routerService.getAddress(documentId).send();
         return StandardLC.load(result.component1(), this.quorum, this.credentials, this.contractGasProvider);
     }
 
+    /**
+     * @param lc instance of LC contract
+     * @param documentId
+     * @param stage
+     * @return LC content, stage and substage
+     * @throws Exception
+     */
     private Tuple3<RouterService.Content, BigInteger, BigInteger> getAmendInfo(StandardLC lc, BigInteger documentId, LC.Stage stage) throws Exception {
         BigInteger amendStage = stage.stage, amendSubStage = stage.subStage, prevStage = amendStage, prevSubStage = amendSubStage;
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();
@@ -476,6 +483,13 @@ public class LCWrapper {
         return new Tuple3<>(stageInfo, amendStage, amendSubStage);
     }
 
+    /**
+     * @param lc instance of LC contract
+     * @param documentId
+     * @param stage
+     * @return LC content
+     * @throws Exception
+     */
     private RouterService.Content getStageInfo(StandardLC lc, BigInteger documentId, LC.Stage stage) throws Exception {
         BigInteger prevStage = stage.stage, prevSubStage = stage.subStage;
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.valueOf(1)).send();
@@ -494,20 +508,13 @@ public class LCWrapper {
         return this.routerService.getStageContent(documentId, prevStage, prevSubStage).send();
     }
 
-    private String approvalSignature(String rootHash, String prevHash, String[] contentHash, String url, BigInteger signedTime, String acknowledge, String privateKey) {
-        Credentials credentials = Credentials.create(privateKey);
-        String approvalMessageHash = LC.generateApprovalMessageHash(
-                new LC.Content(
-                        rootHash,
-                        signedTime,
-                        prevHash,
-                        0,
-                        contentHash,
-                        url,
-                        acknowledge,
-                        ""
-                        )
-        );
+    /**
+     * @param content
+     * @param credentials
+     * @return
+     */
+    private String getApprovalSignature(LC.Content content, Credentials credentials) {
+        String approvalMessageHash = LC.generateApprovalMessageHash(content);
 
         return LC.signMessage(approvalMessageHash, credentials);
     }

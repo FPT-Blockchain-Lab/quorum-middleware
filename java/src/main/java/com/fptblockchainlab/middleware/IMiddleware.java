@@ -2,6 +2,8 @@ package com.fptblockchainlab.middleware;
 
 import com.fptblockchainlab.exceptions.FailedTransactionException;
 import com.fptblockchainlab.exceptions.NotParentOrgException;
+import org.web3j.crypto.Credentials;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.exceptions.TransactionException;
 
 import java.io.IOException;
@@ -57,7 +59,11 @@ public interface IMiddleware {
     void createSubOrgWithDefaultRoles(String orgFullId) throws NotParentOrgException, FailedTransactionException, IOException;
 
     /**
-     * Add
+     *
+     * @param subOrgFullId
+     * @param adminWallet
+     * @throws IOException
+     * @throws FailedTransactionException
      */
     void addAdminForSubOrg(String subOrgFullId, String adminWallet) throws IOException, FailedTransactionException;
 
@@ -78,23 +84,93 @@ public interface IMiddleware {
     void unwhiteListOrg(String orgFullId) throws FailedTransactionException, IOException;
 
     /**
-     * Suspend admin of sub org
+     *
+     * @param subOrgFullId
+     * @param adminAddress
+     * @throws FailedTransactionException
+     * @throws IOException
      */
     void suspendAdminSubOrg(String subOrgFullId, String adminAddress) throws FailedTransactionException, IOException;
 
-    void createStandardLC(List<String> parties, String prevHash, LC.Content content, String privateKey) throws FailedTransactionException, IOException;
+    /**
+     *
+     * @param parties
+     * @param prevHash
+     * @param content
+     * @param credentials
+     * @return
+     * @throws Exception
+     */
+    TransactionReceipt createStandardLC(List<String> parties, String prevHash, LC.Content content, Credentials credentials) throws Exception;
 
-    void createUPASLC(List<String> parties, String prevHash, LC.Content content, String privateKey) throws FailedTransactionException, IOException;
+    /**
+     *
+     * @param parties
+     * @param prevHash
+     * @param content
+     * @param credentials
+     * @return
+     * @throws Exception
+     */
+    TransactionReceipt createUPASLC(List<String> parties, String prevHash, LC.Content content, Credentials credentials) throws Exception;
 
-    public void approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception;
+    /**
+     *
+     * @param documentId
+     * @param stage
+     * @param content
+     * @param credentials
+     * @return
+     * @throws Exception
+     */
+    TransactionReceipt approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception;
 
-    void closeLC(BigInteger documentId) throws FailedTransactionException, IOException;
+    /**
+     *
+     * @param documentId
+     * @return
+     * @throws Exception
+     */
+    TransactionReceipt closeLC(BigInteger documentId) throws Exception;
 
-    void submitRootAmendment(BigInteger documentId, LC.Content content, String privateKey) throws Exception;
+    /**
+     *
+     * @param documentId
+     * @param content
+     * @param credentials
+     * @throws Exception
+     */
+    TransactionReceipt submitRootAmendment(BigInteger documentId, LC.Content content, Credentials credentials) throws Exception;
 
-    void submitGeneralAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception;
+    /**
+     *
+     * @param documentId
+     * @param stage
+     * @param content
+     * @param credentials
+     * @return
+     * @throws Exception
+     */
+    TransactionReceipt submitGeneralAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception;
 
-    void approveAmendment(BigInteger documentId, String proposer, BigInteger nonce, String privateKey) throws Exception;
+    /**
+     *
+     * @param documentId
+     * @param proposer
+     * @param nonce
+     * @param credentials
+     * @return
+     * @throws Exception
+     */
+    TransactionReceipt approveAmendment(BigInteger documentId, String proposer, BigInteger nonce, Credentials credentials) throws Exception;
 
-    void fulfillAmendment(BigInteger documentId, String proposer, BigInteger nonce) throws Exception;
+    /**
+     *
+     * @param documentId
+     * @param proposer
+     * @param nonce
+     * @return
+     * @throws Exception
+     */
+    TransactionReceipt fulfillAmendment(BigInteger documentId, String proposer, BigInteger nonce) throws Exception;
 }
