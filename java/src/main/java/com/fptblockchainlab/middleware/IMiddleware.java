@@ -1,6 +1,5 @@
 package com.fptblockchainlab.middleware;
 
-import com.fptblockchainlab.bindings.lc.LC;
 import com.fptblockchainlab.exceptions.FailedTransactionException;
 import com.fptblockchainlab.exceptions.NotParentOrgException;
 import org.web3j.protocol.exceptions.TransactionException;
@@ -9,7 +8,18 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 
-public interface Middleware {
+public interface IMiddleware {
+
+    /**
+     * get admin role from default roles
+     * @return
+     */
+    Permission.Role getAdminRole();
+
+    /**
+     * Get member role from default role
+     * @return
+     */Permission.Role getMemberRole();
 
     /**
      * Give a level 1 org in MiddlewareSErvice check if account is active and under this level 1 org
@@ -72,19 +82,17 @@ public interface Middleware {
      */
     void suspendAdminSubOrg(String subOrgFullId, String adminAddress) throws FailedTransactionException, IOException;
 
-    void createStandardLC(List<String> parties, String prevHash, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws FailedTransactionException, IOException;
+    void createStandardLC(List<String> parties, String prevHash, LC.Content content, String privateKey) throws FailedTransactionException, IOException;
 
-    void createUPASLC(List<String> parties, String prevHash, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws FailedTransactionException, IOException;
+    void createUPASLC(List<String> parties, String prevHash, LC.Content content, String privateKey) throws FailedTransactionException, IOException;
 
-    public void approveLC(BigInteger documentId, int stage, int subStage, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws Exception;
+    public void approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception;
 
     void closeLC(BigInteger documentId) throws FailedTransactionException, IOException;
 
-//    void submitAmendment(BigInteger documentId, int stage, int subStage, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, LC.Stage[] migrateStages, String privateKey) throws Exception;
+    void submitRootAmendment(BigInteger documentId, LC.Content content, String privateKey) throws Exception;
 
-    void submitRootAmendment(BigInteger documentId, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws Exception;
-
-    void submitGeneralAmendment(BigInteger documentId, int stage, int subStage, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws Exception;
+    void submitGeneralAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception;
 
     void approveAmendment(BigInteger documentId, String proposer, BigInteger nonce, String privateKey) throws Exception;
 

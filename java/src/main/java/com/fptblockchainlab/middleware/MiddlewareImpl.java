@@ -26,9 +26,9 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
 
-import static com.fptblockchainlab.middleware.Utils.signMessage;
+import static com.fptblockchainlab.middleware.LC.signMessage;
 
-public class MiddlewareImpl implements Middleware {
+public class MiddlewareImpl implements IMiddleware {
     // Block time in milliseconds
     private static final long DEFAULT_POLLING_FREQUENCY = 6 * 1000;
     private static final int DEFAULT_POLLING_ATTEMPTS_PER_TX_HASH = 10;
@@ -80,8 +80,8 @@ public class MiddlewareImpl implements Middleware {
         UPASLCFactory upaslcFactory = UPASLCFactory.load(upaslcFactoryAddress, quorum, fastRawTransactionManager, contractGasProvider);
         RouterService routerService = RouterService.load(routerServiceAddress, quorum, fastRawTransactionManager, contractGasProvider);
 
-        this.permission = Permission.getInstance(orgManager, roleManager, lcManagement, permissionInterface, accountManager, orgLevel1);
-        this.lcWrapper = LCWrapper.getInstance(
+        this.permission = new Permission(orgManager, roleManager, lcManagement, permissionInterface, accountManager, orgLevel1);
+        this.lcWrapper = new LCWrapper(
                 contractGasProvider,
                 credentials,
                 quorum,
@@ -89,6 +89,23 @@ public class MiddlewareImpl implements Middleware {
                 upaslcFactory,
                 routerService
         );
+    }
+
+    /**
+     * get admin role from default roles
+     *
+     * @return
+     */
+    public Permission.Role getAdminRole() {
+        return Permission.Role.ORGADMIN;
+    }
+
+    /**
+     * Get member role from default role
+     * @return
+     */
+    public Permission.Role getMemberRole() {
+        return Permission.Role.MEMBER;
     }
 
     /**
@@ -199,18 +216,18 @@ public class MiddlewareImpl implements Middleware {
     }
 
     @Override
-    public void createStandardLC(List<String> parties, String prevHash, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws FailedTransactionException, IOException {
-        this.lcWrapper.createStandardLC(parties, prevHash, contentHash, url, signedTime, numOfDocuments, acknowledge, privateKey);
+    public void createStandardLC(List<String> parties, String prevHash, LC.Content content, String privateKey) throws FailedTransactionException, IOException {
+        this.lcWrapper.createStandardLC(parties, content, privateKey);
     }
 
     @Override
-    public void createUPASLC(List<String> parties, String prevHash, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws FailedTransactionException, IOException {
-        this.lcWrapper.createUPASLC(parties, prevHash, contentHash, url, signedTime, numOfDocuments, acknowledge, privateKey);
+    public void createUPASLC(List<String> parties, String prevHash, LC.Content content, String privateKey) throws FailedTransactionException, IOException {
+        this.lcWrapper.createUPASLC(parties, content, privateKey);
     }
 
     @Override
-    public void approveLC(BigInteger documentId, int stage, int subStage, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws Exception {
-        this.lcWrapper.approveLC(documentId, stage, subStage, contentHash, url, signedTime, numOfDocuments, acknowledge, privateKey);
+    public void approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception {
+        this.lcWrapper.approveLC(documentId, stage, content, privateKey);
     }
 
     @Override
@@ -218,19 +235,14 @@ public class MiddlewareImpl implements Middleware {
         this.lcWrapper.closeLC(documentId);
     }
 
-//    @Override
-//    public void submitAmendment(BigInteger documentId, int stage, int subStage, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, LC.Stage[] migrateStages, String privateKey) throws Exception {
-//        this.lcWrapper.submitAmendment(documentId, stage, subStage, contentHash, url, signedTime, numOfDocuments, acknowledge, migrateStages, privateKey);
-//    }
-
     @Override
-    public void submitRootAmendment(BigInteger documentId, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws Exception {
-        this.lcWrapper.submitRootAmendment(documentId, contentHash, url, signedTime, numOfDocuments, acknowledge, privateKey);
+    public void submitRootAmendment(BigInteger documentId, LC.Content content, String privateKey) throws Exception {
+        this.lcWrapper.submitRootAmendment(documentId, content, privateKey);
     }
 
     @Override
-    public void submitGeneralAmendment(BigInteger documentId, int stage, int subStage, String[] contentHash, String url, BigInteger signedTime, int numOfDocuments, String acknowledge, String privateKey) throws Exception {
-        this.lcWrapper.submitGeneralAmendment(documentId, stage, subStage, contentHash, url, signedTime, numOfDocuments, acknowledge, privateKey);
+    public void submitGeneralAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception {
+        this.lcWrapper.submitGeneralAmendment(documentId, stage, content, privateKey);
     }
 
     @Override

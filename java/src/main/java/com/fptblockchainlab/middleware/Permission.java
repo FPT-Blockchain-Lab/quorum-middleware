@@ -18,7 +18,6 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 public class Permission {
-    private static Permission instance;
     private final OrgManager orgManager;
     private final RoleManager roleManager;
     private final LCManagement lcManagement;
@@ -26,7 +25,7 @@ public class Permission {
     private final AccountManager accountManager;
     private final String orgLevel1;
 
-    private Permission(
+    public Permission(
             OrgManager orgManager,
             RoleManager roleManager,
             LCManagement lcManagement,
@@ -40,39 +39,6 @@ public class Permission {
         this.permissionInterface = permissionInterface;
         this.accountManager = accountManager;
         this.orgLevel1 = orgLevel1;
-    }
-
-    public static Permission getInstance(
-            OrgManager orgManager,
-            RoleManager roleManager,
-            LCManagement lcManagement,
-            PermissionsInterface permissionInterface,
-            AccountManager accountManager,
-            String orgLevel1
-    ) {
-        if (instance == null) {
-            instance = new Permission(orgManager, roleManager, lcManagement, permissionInterface, accountManager, orgLevel1);
-        }
-
-        return instance;
-    }
-
-    /**
-     * get admin role from default roles
-     *
-     * @return
-     */
-    public static Permission.Role getAdminRole() {
-        return Role.ORGADMIN;
-    }
-
-    /**
-     * Get member role from default role
-     *
-     * @return
-     */
-    public static Permission.Role getMemberRole() {
-        return Role.MEMBER;
     }
 
     public void createSubOrgWithDefaultRoles(String orgFullId) throws NotParentOrgException, FailedTransactionException, IOException {
@@ -211,7 +177,7 @@ public class Permission {
     }
 
     private boolean isRoleExist(String roleName, String fullOrgId) throws IOException {
-        Tuple6<String, String, BigInteger, Boolean, Boolean, Boolean> roleDetails = null;
+        Tuple6<String, String, BigInteger, Boolean, Boolean, Boolean> roleDetails;
         try {
             roleDetails = this.roleManager.getRoleDetails(roleName, fullOrgId).send();
         } catch (Exception e) {
