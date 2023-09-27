@@ -111,17 +111,6 @@ public class LC {
         }
     }
 
-    public static class StageContent {
-        public com.fptblockchainlab.bindings.lc.LC.Stage stage;
-
-        public String rootHash;
-
-        public StageContent(com.fptblockchainlab.bindings.lc.LC.Stage stage, String rootHash) {
-            this.stage = stage;
-            this.rootHash = rootHash;
-        }
-    }
-
     public static class Stage {
         public BigInteger stage;
         public BigInteger subStage;
@@ -137,29 +126,29 @@ public class LC {
         }
     }
 
-    public static List<com.fptblockchainlab.bindings.lc.LC.Stage> getLcStatus(StandardLC lc) throws Exception {
+    public static List<LC.Stage> getLcStatus(StandardLC lc) throws Exception {
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();
         List<BigInteger> lcStatus = lc.getStatus().send();
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> rootStages = new ArrayList<>();
+        List<LC.Stage> rootStages = new ArrayList<>();
 
         for (int i = 0; i < rootSubStage.intValue(); i++) {
-            rootStages.add(new com.fptblockchainlab.bindings.lc.LC.Stage(BigInteger.ONE, BigInteger.valueOf(i)));
+            rootStages.add(new LC.Stage(BigInteger.ONE, BigInteger.valueOf(i)));
         }
 
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> lcStages = calculateStages(lcStatus);
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> allStatus = new ArrayList<>();
+        List<LC.Stage> lcStages = calculateStages(lcStatus);
+        List<LC.Stage> allStatus = new ArrayList<>();
         allStatus.addAll(rootStages);
         allStatus.addAll(lcStages);
 
         return allStatus;
     }
 
-    private static List<com.fptblockchainlab.bindings.lc.LC.Stage> calculateStages(List<BigInteger> lastestStages) {
-        List<com.fptblockchainlab.bindings.lc.LC.Stage> res = new ArrayList<>();
+    private static List<LC.Stage> calculateStages(List<BigInteger> lastestStages) {
+        List<LC.Stage> res = new ArrayList<>();
 
         for (int i = 0; i < lastestStages.size(); i++) {
             for (int j = 0; j < lastestStages.get(i).intValue(); j++) {
-                res.add(new com.fptblockchainlab.bindings.lc.LC.Stage(BigInteger.valueOf(j + 1), BigInteger.valueOf(i + 1)));
+                res.add(new LC.Stage(BigInteger.valueOf(j + 1), BigInteger.valueOf(i + 1)));
             }
         }
 

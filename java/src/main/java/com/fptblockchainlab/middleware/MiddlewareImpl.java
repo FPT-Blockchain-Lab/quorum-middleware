@@ -29,7 +29,7 @@ import java.util.List;
 import static com.fptblockchainlab.middleware.LC.signMessage;
 
 public class MiddlewareImpl implements IMiddleware {
-    // Block time in milliseconds
+    // TODO dynamic fetch
     private static final long DEFAULT_POLLING_FREQUENCY = 6 * 1000;
     private static final int DEFAULT_POLLING_ATTEMPTS_PER_TX_HASH = 10;
     private static final long MAX_GAS_PER_BLOCK = 4_700_000;
@@ -91,43 +91,19 @@ public class MiddlewareImpl implements IMiddleware {
         );
     }
 
-    /**
-     * get admin role from default roles
-     *
-     * @return
-     */
     public Permission.Role getAdminRole() {
         return Permission.Role.ORGADMIN;
     }
 
-    /**
-     * Get member role from default role
-     * @return
-     */
     public Permission.Role getMemberRole() {
         return Permission.Role.MEMBER;
     }
 
-    /**
-     * Give a level 1 org in MiddlewareSErvice check if account is active and under this level 1 org
-     * or any sub or of this level 1 org
-     *
-     * @param account
-     * @return
-     * @throws IOException
-     */
     @Override
     public boolean isAccountOnchainUnderLevel1Org(String account) throws IOException {
         return this.permission.isAccountOnchainUnderLevel1Org(account);
     }
 
-    /**
-     * @param to
-     * @param data
-     * @throws IOException
-     * @throws TransactionException
-     * @throws FailedTransactionException
-     */
     @Override
     public void signWithAdminAndSend(String to, String data) throws IOException, TransactionException, FailedTransactionException {
         EthSendTransaction ethSendTransaction = this.fastRawTransactionManager.sendTransaction(
@@ -145,113 +121,73 @@ public class MiddlewareImpl implements IMiddleware {
         }
     }
 
-    /**
-     * sign message hash compatible with personal_sign
-     *
-     * @param messageHash
-     * @return
-     */
     @Override
     public String signWithUltimateParentAdmin(String messageHash) {
         return signMessage(messageHash, this.credentials);
     }
 
-    /**
-     * Create sub org for org level 1
-     *
-     * @param orgFullId
-     * @throws NotParentOrgException
-     * @throws FailedTransactionException
-     * @throws IOException
-     */
     @Override
     public void createSubOrgWithDefaultRoles(String orgFullId) throws NotParentOrgException, FailedTransactionException, IOException {
         this.permission.createSubOrgWithDefaultRoles(orgFullId);
     }
 
-    /**
-     * Add
-     *
-     * @param subOrgFullId
-     * @param adminWallet
-     */
     @Override
     public void addAdminForSubOrg(String subOrgFullId, String adminWallet) throws IOException, FailedTransactionException {
         this.permission.addAdminForSubOrg(subOrgFullId, adminWallet);
     }
 
-    /**
-     * Allow org to use LC protocol
-     *
-     * @param orgFullId
-     * @throws FailedTransactionException
-     * @throws IOException
-     */
     @Override
     public void whiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
         this.permission.whiteListOrg(orgFullId);
     }
 
-    /**
-     * Restrict org to use LC protocol
-     *
-     * @param orgFullId
-     * @throws FailedTransactionException
-     * @throws IOException
-     */
     @Override
     public void unwhiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
         this.permission.unwhiteListOrg(orgFullId);
     }
 
-    /**
-     * Suspend admin of sub org
-     *
-     * @param subOrgFullId
-     * @param adminAddress
-     */
     @Override
     public void suspendAdminSubOrg(String subOrgFullId, String adminAddress) throws FailedTransactionException, IOException {
         this.permission.suspendAdminSubOrg(subOrgFullId, adminAddress);
     }
 
     @Override
-    public void createStandardLC(List<String> parties, String prevHash, LC.Content content, String privateKey) throws FailedTransactionException, IOException {
-        this.lcWrapper.createStandardLC(parties, content, privateKey);
+    public TransactionReceipt createStandardLC(List<String> parties, String prevHash, LC.Content content, Credentials credentials) throws Exception {
+        return this.lcWrapper.createStandardLC(parties, content, credentials);
     }
 
     @Override
-    public void createUPASLC(List<String> parties, String prevHash, LC.Content content, String privateKey) throws FailedTransactionException, IOException {
-        this.lcWrapper.createUPASLC(parties, content, privateKey);
+    public TransactionReceipt createUPASLC(List<String> parties, String prevHash, LC.Content content, Credentials credentials) throws Exception {
+        return this.lcWrapper.createUPASLC(parties, content, credentials);
     }
 
     @Override
-    public void approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception {
-        this.lcWrapper.approveLC(documentId, stage, content, privateKey);
+    public TransactionReceipt approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception {
+        return this.lcWrapper.approveLC(documentId, stage, content, credentials);
     }
 
     @Override
-    public void closeLC(BigInteger documentId) throws FailedTransactionException, IOException {
-        this.lcWrapper.closeLC(documentId);
+    public TransactionReceipt closeLC(BigInteger documentId) throws Exception {
+        return this.lcWrapper.closeLC(documentId);
     }
 
     @Override
-    public void submitRootAmendment(BigInteger documentId, LC.Content content, String privateKey) throws Exception {
-        this.lcWrapper.submitRootAmendment(documentId, content, privateKey);
+    public TransactionReceipt submitRootAmendment(BigInteger documentId, LC.Content content, Credentials credentials) throws Exception {
+        return this.lcWrapper.submitRootAmendment(documentId, content, credentials);
     }
 
     @Override
-    public void submitGeneralAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, String privateKey) throws Exception {
-        this.lcWrapper.submitGeneralAmendment(documentId, stage, content, privateKey);
+    public TransactionReceipt submitGeneralAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception {
+        return this.lcWrapper.submitGeneralAmendment(documentId, stage, content, credentials);
     }
 
     @Override
-    public void approveAmendment(BigInteger documentId, String proposer, BigInteger nonce, String privateKey) throws Exception {
-        this.lcWrapper.approveAmendment(documentId, proposer, nonce, privateKey);
+    public TransactionReceipt approveAmendment(BigInteger documentId, String proposer, BigInteger nonce, Credentials credentials) throws Exception {
+        return this.lcWrapper.approveAmendment(documentId, proposer, nonce, credentials);
     }
 
     @Override
-    public void fulfillAmendment(BigInteger documentId, String proposer, BigInteger nonce) throws Exception {
-        this.lcWrapper.fulfillAmendment(documentId, proposer, nonce);
+    public TransactionReceipt fulfillAmendment(BigInteger documentId, String proposer, BigInteger nonce) throws Exception {
+        return this.lcWrapper.fulfillAmendment(documentId, proposer, nonce);
     }
 }
