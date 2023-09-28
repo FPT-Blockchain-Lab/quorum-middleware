@@ -175,17 +175,17 @@ public class LC {
     public static Bytes32 generateAcknowledgeMessageHashBytes(Bytes32[] contentHash, int numOfDocuments) {
         int lastIndex = numOfDocuments + 1;
         return new Bytes32(
-                Numeric.hexStringToByteArray(
-                        Hash.sha3(
-                                "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
-                                        Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(numOfDocuments), 64) + // length of encoded array
-                                        FunctionEncoder.encodeConstructor(
-                                                Arrays.asList(
-                                                        Arrays.copyOfRange(contentHash, 1, lastIndex)
-                                                )
-                                        )
+            Numeric.hexStringToByteArray(
+                Hash.sha3(
+                    "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
+                        Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(numOfDocuments), 64) + // length of encoded array
+                        FunctionEncoder.encodeConstructor(
+                            Arrays.asList(
+                                Arrays.copyOfRange(contentHash, 1, lastIndex)
+                            )
                         )
                 )
+            )
         );
     }
 
@@ -198,13 +198,13 @@ public class LC {
     public static String generateAcknowledgeMessageHash(Bytes32[] contentHash, int numOfDocuments) {
         int lastIndex = numOfDocuments + 1;
         return Hash.sha3(
-                "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
-                        Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(numOfDocuments), 64) + // length of encoded array
-                        FunctionEncoder.encodeConstructor(
-                                Arrays.asList(
-                                        Arrays.copyOfRange(contentHash, 1, lastIndex)
-                                )
-                        )
+            "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
+                Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(numOfDocuments), 64) + // length of encoded array
+                FunctionEncoder.encodeConstructor(
+                    Arrays.asList(
+                        Arrays.copyOfRange(contentHash, 1, lastIndex)
+                    )
+                )
         );
     }
 
@@ -217,25 +217,24 @@ public class LC {
     public static String generateAcknowledgeMessageHash(String[] contentHash, int numOfDocuments) {
         int lastIndex = numOfDocuments + 1;
         return Hash.sha3(
-                "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
-                        Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(numOfDocuments), 64) + // length of encoded array
-                        FunctionEncoder.encodeConstructor(
-                                Arrays.asList(
-                                        Arrays.stream(
-                                                        Arrays.copyOfRange(contentHash, 1, lastIndex)
-                                                )
-                                                .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
-                                                .toArray(Bytes32[]::new)
-                                )
-                        )
-        );
+            "0000000000000000000000000000000000000000000000000000000000000020" + // offset in bytes to the start of encoded data
+                Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(numOfDocuments), 64) + // length of encoded array
+                FunctionEncoder.encodeConstructor(
+                    Arrays.asList(
+                        Arrays.stream(
+                                Arrays.copyOfRange(contentHash, 1, lastIndex)
+                            )
+                            .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
+                            .toArray(Bytes32[]::new)
+                    )
+                ));
     }
 
     private static String _encodeSignature(String signature) {
         return signature.equals("0x") ?
-                "0000000000000000000000000000000000000000000000000000000000000000" : // signature (0 byte -> 32 bytes)
-                "0000000000000000000000000000000000000000000000000000000000000041" + // length of acknowledge signature byte
-                        signature.trim().substring(2, signature.length()).trim() + "00000000000000000000000000000000000000000000000000000000000000"; // signature (65 bytes -> 96 bytes)
+            "0000000000000000000000000000000000000000000000000000000000000000" : // signature (0 byte -> 32 bytes)
+            "0000000000000000000000000000000000000000000000000000000000000041" + // length of acknowledge signature byte
+                signature.trim().substring(2, signature.length()).trim() + "00000000000000000000000000000000000000000000000000000000000000"; // signature (65 bytes -> 96 bytes)
     }
 
     /**
@@ -249,26 +248,26 @@ public class LC {
         urlList.add(new Utf8String(stageContent.url));
         String urlEncoded = FunctionEncoder.encodeConstructor(urlList);
         return
-                Hash.sha3(
-                        FunctionEncoder.encodeConstructor(Arrays.asList(
-                                new Bytes32(Numeric.hexStringToByteArray(stageContent.rootHash)),
-                                new Bytes32(Numeric.hexStringToByteArray(stageContent.prevHash))
-                        )) +
-                                "00000000000000000000000000000000000000000000000000000000000000c0" + // offset in bytes to the start of contentHash
-                                Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf((contentHashLength + 7) * 32)), 64) + // offset in bytes to the start of url
-                                Numeric.toHexStringNoPrefixZeroPadded(stageContent.signedTime, 64) +
-                                Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((6 + contentHashLength + urlEncoded.length() / 64) * 32L), 64) + // offset in bytes to the start of acknowledge
-                                Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf(contentHashLength)), 64) +
-                                FunctionEncoder.encodeConstructor(
-                                        Arrays.asList(
-                                                Arrays.stream(stageContent.contentHash)
-                                                        .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
-                                                        .toArray(Bytes32[]::new)
-                                        )
-                                ) +
-                                urlEncoded.substring(64, urlEncoded.length()) + // remove offset
-                                _encodeSignature(stageContent.acknowledge) // signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
-                );
+            Hash.sha3(
+                FunctionEncoder.encodeConstructor(Arrays.asList(
+                    new Bytes32(Numeric.hexStringToByteArray(stageContent.rootHash)),
+                    new Bytes32(Numeric.hexStringToByteArray(stageContent.prevHash))
+                )) +
+                    "00000000000000000000000000000000000000000000000000000000000000c0" + // offset in bytes to the start of contentHash
+                    Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf((contentHashLength + 7) * 32)), 64) + // offset in bytes to the start of url
+                    Numeric.toHexStringNoPrefixZeroPadded(stageContent.signedTime, 64) +
+                    Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((6 + contentHashLength + urlEncoded.length() / 64) * 32L), 64) + // offset in bytes to the start of acknowledge
+                    Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf(contentHashLength)), 64) +
+                    FunctionEncoder.encodeConstructor(
+                        Arrays.asList(
+                            Arrays.stream(stageContent.contentHash)
+                                .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
+                                .toArray(Bytes32[]::new)
+                        )
+                    ) +
+                    urlEncoded.substring(64, urlEncoded.length()) + // remove offset
+                    _encodeSignature(stageContent.acknowledge) // signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
+            );
     }
 
     /**
@@ -278,30 +277,30 @@ public class LC {
      */
     public static String generateStageHash(LC.Content stageContent) {
         return
-                Hash.sha3(
-                        TypeEncoder.encodePacked(
-                                new DynamicArray(
-                                        new Bytes32(Numeric.hexStringToByteArray(stageContent.rootHash)),
-                                        new Bytes32(Numeric.hexStringToByteArray(stageContent.prevHash))
-                                )
-                        ) +
-                                TypeEncoder.encodePacked(
-                                        new DynamicArray(
-                                                Arrays.asList(
-                                                        Arrays.stream(stageContent.contentHash)
-                                                                .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
-                                                                .toArray(Bytes32[]::new)
-                                                )
-                                        )
-                                ) +
-                                TypeEncoder.encodePacked(
-                                        new Utf8String(stageContent.url)
-                                ) +
-                                TypeEncoder.encodePacked(
-                                        new Uint256(stageContent.signedTime)
-                                ) +  stageContent.signature.trim().substring(2, stageContent.signature.length()).trim()+
-                                stageContent.acknowledge.trim().substring(2, stageContent.acknowledge.length()).trim()
-                );
+            Hash.sha3(
+                TypeEncoder.encodePacked(
+                    new DynamicArray(
+                        new Bytes32(Numeric.hexStringToByteArray(stageContent.rootHash)),
+                        new Bytes32(Numeric.hexStringToByteArray(stageContent.prevHash))
+                    )
+                ) +
+                    TypeEncoder.encodePacked(
+                        new DynamicArray(
+                            Arrays.asList(
+                                Arrays.stream(stageContent.contentHash)
+                                    .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
+                                    .toArray(Bytes32[]::new)
+                            )
+                        )
+                    ) +
+                    TypeEncoder.encodePacked(
+                        new Utf8String(stageContent.url)
+                    ) +
+                    TypeEncoder.encodePacked(
+                        new Uint256(stageContent.signedTime)
+                    ) + stageContent.signature.trim().substring(2, stageContent.signature.length()).trim() +
+                    stageContent.acknowledge.trim().substring(2, stageContent.acknowledge.length()).trim()
+            );
     }
 
     /**
@@ -311,12 +310,12 @@ public class LC {
      */
     public static String generateRequestId(String proposer, BigInteger nonce) {
         return
-                Hash.sha3(
-                        Numeric.toHexStringNoPrefix(Numeric.hexStringToByteArray(proposer)) +
-                                TypeEncoder.encodePacked(
-                                        new Uint256(nonce)
-                                )
-                );
+            Hash.sha3(
+                Numeric.toHexStringNoPrefix(Numeric.hexStringToByteArray(proposer)) +
+                    TypeEncoder.encodePacked(
+                        new Uint256(nonce)
+                    )
+            );
     }
 
     /**
@@ -334,40 +333,40 @@ public class LC {
         String encodeAcknowledge = _encodeSignature(stageContent.acknowledge);
         int offsetAcknowledge = 9 + contentHashLength + urlEncoded.length() / 64;
         String message = Hash.sha3(
-                FunctionEncoder.encodeConstructor(Arrays.asList(
-                        new Uint256(amendStage.stage),
-                        new Uint256(amendStage.subStage),
-                        new Bytes32(Numeric.hexStringToByteArray(stageContent.rootHash)),
-                        new Bytes32(Numeric.hexStringToByteArray(stageContent.prevHash))
-                )) +
-                        "0000000000000000000000000000000000000000000000000000000000000120" + // offset in bytes to the start of contentHash
-                        Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf((contentHashLength + 10) * 32)), 64) + // offset in bytes to the start of url
-                        Numeric.toHexStringNoPrefixZeroPadded(stageContent.signedTime, 64) +
-                        Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((offsetAcknowledge) * 32L), 64) + // offset in bytes to the start of acknowledge signature
-                        Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((offsetAcknowledge + encodeAcknowledge.length() / 64 ) * 32L), 64) + // offset in bytes to the start of approval signature
-                        Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf(contentHashLength)), 64) +
-                        FunctionEncoder.encodeConstructor(
-                                Arrays.asList(
-                                        Arrays.stream(stageContent.contentHash)
-                                                .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
-                                                .toArray(Bytes32[]::new)
-                                )
-                        ) +
-                        urlEncoded.substring(64, urlEncoded.length()) + // remove offset
-                        _encodeSignature(stageContent.acknowledge) + // signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
-                        _encodeSignature(stageContent.signature) // approval signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
+            FunctionEncoder.encodeConstructor(Arrays.asList(
+                new Uint256(amendStage.stage),
+                new Uint256(amendStage.subStage),
+                new Bytes32(Numeric.hexStringToByteArray(stageContent.rootHash)),
+                new Bytes32(Numeric.hexStringToByteArray(stageContent.prevHash))
+            )) +
+                "0000000000000000000000000000000000000000000000000000000000000120" + // offset in bytes to the start of contentHash
+                Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf((contentHashLength + 10) * 32)), 64) + // offset in bytes to the start of url
+                Numeric.toHexStringNoPrefixZeroPadded(stageContent.signedTime, 64) +
+                Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((offsetAcknowledge) * 32L), 64) + // offset in bytes to the start of acknowledge signature
+                Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf((offsetAcknowledge + encodeAcknowledge.length() / 64) * 32L), 64) + // offset in bytes to the start of approval signature
+                Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf(contentHashLength)), 64) +
+                FunctionEncoder.encodeConstructor(
+                    Arrays.asList(
+                        Arrays.stream(stageContent.contentHash)
+                            .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
+                            .toArray(Bytes32[]::new)
+                    )
+                ) +
+                urlEncoded.substring(64, urlEncoded.length()) + // remove offset
+                _encodeSignature(stageContent.acknowledge) + // signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
+                _encodeSignature(stageContent.signature) // approval signature (65 bytes -> 96 bytes, 0 byte - 32 bytes)
         );
         return Hash.sha3(
-                "0000000000000000000000000000000000000000000000000000000000000040" +
-                        Numeric.toHexStringNoPrefix(Numeric.hexStringToByteArray(message)) +
-                        Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf(migratingStages.length)), 64) +
-                        FunctionEncoder.encodeConstructor(
-                                Arrays.asList(
-                                        Arrays.stream(migratingStages)
-                                                .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
-                                                .toArray(Bytes32[]::new)
-                                )
-                        )
+            "0000000000000000000000000000000000000000000000000000000000000040" +
+                Numeric.toHexStringNoPrefix(Numeric.hexStringToByteArray(message)) +
+                Numeric.toHexStringNoPrefixZeroPadded((BigInteger.valueOf(migratingStages.length)), 64) +
+                FunctionEncoder.encodeConstructor(
+                    Arrays.asList(
+                        Arrays.stream(migratingStages)
+                            .map(c -> new Bytes32(Numeric.hexStringToByteArray(c)))
+                            .toArray(Bytes32[]::new)
+                    )
+                )
         );
     }
 }
