@@ -20,7 +20,7 @@ import java.util.Arrays;
 public class Permission {
     private final OrgManager orgManager;
     private final RoleManager roleManager;
-    private final LCManagement lcManagement;
+//    private final LCManagement lcManagement;
     private final PermissionsInterface permissionInterface;
     private final AccountManager accountManager;
     private final String orgLevel1;
@@ -28,14 +28,14 @@ public class Permission {
     public Permission(
             OrgManager orgManager,
             RoleManager roleManager,
-            LCManagement lcManagement,
+//            LCManagement lcManagement,
             PermissionsInterface permissionInterface,
             AccountManager accountManager,
             String orgLevel1
     ) {
         this.orgManager = orgManager;
         this.roleManager = roleManager;
-        this.lcManagement = lcManagement;
+//        this.lcManagement = lcManagement;
         this.permissionInterface = permissionInterface;
         this.accountManager = accountManager;
         this.orgLevel1 = orgLevel1;
@@ -51,32 +51,6 @@ public class Permission {
             this.permissionInterface.assignAccountRole(adminAddress, subOrgFullId, Permission.Role.ORGADMIN.getName()).send();
         } catch (Exception e) {
             throw new IOException(e);
-        }
-    }
-
-    public void whiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
-        TransactionReceipt transactionReceipt;
-        try {
-            transactionReceipt = this.lcManagement.whitelist(Arrays.asList(orgFullId)).send();
-        } catch (Exception e) {
-            throw new IOException("failed to whitelist org", e);
-        }
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
-        }
-    }
-
-    public void unwhiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
-        TransactionReceipt transactionReceipt;
-        try {
-            transactionReceipt = this.lcManagement.unwhitelist(Arrays.asList(orgFullId)).send();
-        } catch (Exception e) {
-            throw new IOException("failed to unwhitelist org", e);
-        }
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
         }
     }
 

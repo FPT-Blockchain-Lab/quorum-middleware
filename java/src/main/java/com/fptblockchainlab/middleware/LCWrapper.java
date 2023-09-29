@@ -1,9 +1,6 @@
 package com.fptblockchainlab.middleware;
 
-import com.fptblockchainlab.bindings.lc.RouterService;
-import com.fptblockchainlab.bindings.lc.StandardLC;
-import com.fptblockchainlab.bindings.lc.StandardLCFactory;
-import com.fptblockchainlab.bindings.lc.UPASLCFactory;
+import com.fptblockchainlab.bindings.lc.*;
 import com.fptblockchainlab.exceptions.FailedTransactionException;
 import org.web3j.abi.TypeEncoder;
 import org.web3j.abi.datatypes.DynamicArray;
@@ -28,13 +25,15 @@ public class LCWrapper {
     private final StandardLCFactory standardLCFactory;
     private final UPASLCFactory upaslcFactory;
     private final RouterService routerService;
+    private final LCManagement lcManagement;
 
     public LCWrapper(ContractGasProvider contractGasProvider,
                      Credentials credentials,
                      Quorum quorum,
                      StandardLCFactory standardLCFactory,
                      UPASLCFactory upaslcFactory,
-                     RouterService routerService
+                     RouterService routerService,
+                     LCManagement lcManagement
     ) {
         this.routerService = routerService;
         this.quorum = quorum;
@@ -42,6 +41,7 @@ public class LCWrapper {
         this.credentials = credentials;
         this.upaslcFactory = upaslcFactory;
         this.standardLCFactory = standardLCFactory;
+        this.lcManagement = lcManagement;
     }
 
     /**
@@ -517,5 +517,31 @@ public class LCWrapper {
         String approvalMessageHash = LC.generateApprovalMessageHash(content);
 
         return LC.signMessage(approvalMessageHash, credentials);
+    }
+
+    public void whiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
+        TransactionReceipt transactionReceipt;
+        try {
+            transactionReceipt = this.lcManagement.whitelist(Arrays.asList(orgFullId)).send();
+        } catch (Exception e) {
+            throw new IOException("failed to whitelist org", e);
+        }
+
+        if (!transactionReceipt.isStatusOK()) {
+            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
+        }
+    }
+
+    public void unwhiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
+        TransactionReceipt transactionReceipt;
+        try {
+            transactionReceipt = this.lcManagement.unwhitelist(Arrays.asList(orgFullId)).send();
+        } catch (Exception e) {
+            throw new IOException("failed to unwhitelist org", e);
+        }
+
+        if (!transactionReceipt.isStatusOK()) {
+            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
+        }
     }
 }

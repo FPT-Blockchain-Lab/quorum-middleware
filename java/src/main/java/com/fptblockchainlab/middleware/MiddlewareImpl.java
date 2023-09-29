@@ -80,14 +80,15 @@ public class MiddlewareImpl implements IMiddleware {
         UPASLCFactory upaslcFactory = UPASLCFactory.load(upaslcFactoryAddress, quorum, fastRawTransactionManager, contractGasProvider);
         RouterService routerService = RouterService.load(routerServiceAddress, quorum, fastRawTransactionManager, contractGasProvider);
 
-        this.permission = new Permission(orgManager, roleManager, lcManagement, permissionInterface, accountManager, orgLevel1);
+        this.permission = new Permission(orgManager, roleManager, permissionInterface, accountManager, orgLevel1);
         this.lcWrapper = new LCWrapper(
                 contractGasProvider,
                 credentials,
                 quorum,
                 standardLCFactory,
                 upaslcFactory,
-                routerService
+                routerService,
+                lcManagement
         );
     }
 
@@ -138,12 +139,12 @@ public class MiddlewareImpl implements IMiddleware {
 
     @Override
     public void whiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
-        this.permission.whiteListOrg(orgFullId);
+        this.lcWrapper.whiteListOrg(orgFullId);
     }
 
     @Override
     public void unwhiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
-        this.permission.unwhiteListOrg(orgFullId);
+        this.lcWrapper.unwhiteListOrg(orgFullId);
     }
 
     @Override
