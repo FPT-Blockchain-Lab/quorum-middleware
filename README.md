@@ -29,6 +29,9 @@ npm install -g yarn
 
 - We have some CLIs required to install to generate bindings
 ```
+wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+chmod +x ./jq
+sudo mv jq /usr/bin
 curl -L get.web3j.io | sh && source ~/.web3j/source.sh
 npm install -g typescript typechain @typechain/web3-v1
 ```
@@ -70,9 +73,10 @@ cd quorum-test-network
 cd quorum-test-network/smart_contracts/permissioning
 yarn
 # (optional) install solidity compiler https://github.com/ethereum/solidity/releases/tag/v0.5.17
-wget -c https://github.com/ethereum/solidity/releases/download/v0.5.17/solc-static-linux 
-sudo mv ./solc-static-linux /usr/bin/solc
-chmod +x /usr/bin/solc
+wget -O solc https://github.com/ethereum/solidity/releases/download/v0.5.17/solc-static-linux
+chmod +x solc
+sudo mv solc /usr/bin/
+
 
 # compile solidity
 ./scripts/compile.sh
