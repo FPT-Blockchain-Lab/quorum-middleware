@@ -18,6 +18,8 @@ import org.web3j.protocol.exceptions.TransactionException;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.quorum.Quorum;
 import org.web3j.tx.FastRawTransactionManager;
+import org.web3j.tx.TransactionManager;
+import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.StaticGasProvider;
 import org.web3j.tx.response.PollingTransactionReceiptProcessor;
 import org.web3j.tx.response.TransactionReceiptProcessor;
@@ -29,67 +31,50 @@ import java.util.List;
 import static com.fptblockchainlab.middleware.LC.signMessage;
 
 public class MiddlewareImpl implements IMiddleware {
-    // TODO dynamic fetch
-    private static final long DEFAULT_POLLING_FREQUENCY = 6 * 1000;
-    private static final int DEFAULT_POLLING_ATTEMPTS_PER_TX_HASH = 10;
+    private static final long DEFAULT_POLLING_FREQUENCY = 1_000;
+    private static final int DEFAULT_POLLING_ATTEMPTS_PER_TX_HASH = 20;
     private static final long MAX_GAS_PER_BLOCK = 4_700_000;
     private static final int GAS_PRICE = 0;
 
     private final Credentials credentials;
-
-    private final FastRawTransactionManager fastRawTransactionManager;
-
+    private final TransactionManager transactionManager;
     private final TransactionReceiptProcessor transactionReceiptProcessor;
+    private final ContractGasProvider contractGasProvider;
+    private final Quorum quorum;
+    private LCWrapper lcWrapper;
+    private Permission permission;
 
     @Getter
-    private final Permission permission;
-
-    @Getter
-    private final LCWrapper lcWrapper;
+    public boolean isReadOnly;
 
     public MiddlewareImpl(
-            String quorumUrl,
-            String privateKey,
-            long chainId,
-            String accountMgrAddress,
-            String orgMgrAddress,
-            String roleMgrAddress,
-            String lcManagementAddress,
-            String interfaceAddress,
-            String standardLCFactoryAddress,
-            String upaslcFactoryAddress,
-            String routerServiceAddress,
-            String orgLevel1) {
-        HttpService httpService = new HttpService(quorumUrl);
-
-        Quorum quorum = Quorum.build(httpService);
-        StaticGasProvider contractGasProvider = new StaticGasProvider(BigInteger.valueOf(GAS_PRICE), BigInteger.valueOf(MAX_GAS_PER_BLOCK));
-        this.credentials = Credentials.create(privateKey);
+            HttpService httpService,
+            Config config
+    ) {
+        this.quorum = Quorum.build(httpService);
+        this.contractGasProvider = new StaticGasProvider(BigInteger.valueOf(GAS_PRICE), BigInteger.valueOf(MAX_GAS_PER_BLOCK));
+        this.credentials = Credentials.create(config.getPrivateKey());
         this.transactionReceiptProcessor = new PollingTransactionReceiptProcessor(
                 quorum,
                 DEFAULT_POLLING_FREQUENCY,
                 DEFAULT_POLLING_ATTEMPTS_PER_TX_HASH
         );
-        this.fastRawTransactionManager = new FastRawTransactionManager(quorum, credentials, chainId, transactionReceiptProcessor);
-        AccountManager accountManager = AccountManager.load(accountMgrAddress, quorum, fastRawTransactionManager, contractGasProvider);
-        OrgManager orgManager = OrgManager.load(orgMgrAddress, quorum, fastRawTransactionManager, contractGasProvider);
-        RoleManager roleManager = RoleManager.load(roleMgrAddress, quorum, fastRawTransactionManager, contractGasProvider);
-        LCManagement lcManagement = LCManagement.load(lcManagementAddress, quorum, fastRawTransactionManager, contractGasProvider);
-        PermissionsInterface permissionInterface = PermissionsInterface.load(interfaceAddress, quorum, fastRawTransactionManager, contractGasProvider);
-        StandardLCFactory standardLCFactory = StandardLCFactory.load(standardLCFactoryAddress, quorum, fastRawTransactionManager, contractGasProvider);
-        UPASLCFactory upaslcFactory = UPASLCFactory.load(upaslcFactoryAddress, quorum, fastRawTransactionManager, contractGasProvider);
-        RouterService routerService = RouterService.load(routerServiceAddress, quorum, fastRawTransactionManager, contractGasProvider);
+        this.transactionManager = new FastRawTransactionManager(quorum, credentials, config.getChainId(), transactionReceiptProcessor);
+        if (config.getLcManagmentAddress().isPresent() && config.getStandardLCFactoryAddress().isPresent() && config.getUpaslcFactoryAddress().isPresent() && config.getRouterServiceAddress().isPresent()) {
+            LCManagement lcManagement = LCManagement.load(config.getLcManagmentAddress().get(), quorum, this.transactionManager , contractGasProvider);
+            StandardLCFactory standardLCFactory = StandardLCFactory.load(config.getStandardLCFactoryAddress().get(), quorum, this.transactionManager , contractGasProvider);
+            UPASLCFactory upaslcFactory = UPASLCFactory.load(config.getUpaslcFactoryAddress().get(), quorum, this.transactionManager , contractGasProvider);
+            RouterService routerService = RouterService.load(config.getRouterServiceAddress().get(), quorum, this.transactionManager , contractGasProvider);
+            this.lcWrapper = new LCWrapper(quorum, standardLCFactory, upaslcFactory, routerService, lcManagement);
+        }
 
-        this.permission = new Permission(orgManager, roleManager, permissionInterface, accountManager, orgLevel1);
-        this.lcWrapper = new LCWrapper(
-                contractGasProvider,
-                credentials,
-                quorum,
-                standardLCFactory,
-                upaslcFactory,
-                routerService,
-                lcManagement
-        );
+        if (config.getAccountMgrAddress().isPresent() && config.getOrgMgrAddress().isPresent() && config.getRoleMgrAddress().isPresent() && config.getInterfaceAddress().isPresent() && config.getUltimateParentOrg().isPresent()) {
+            AccountManager accountManager = AccountManager.load(config.getAccountMgrAddress().get(), quorum, this.transactionManager, contractGasProvider);
+            OrgManager orgManager = OrgManager.load(config.getOrgMgrAddress().get(), quorum, this.transactionManager, contractGasProvider);
+            RoleManager roleManager = RoleManager.load(config.getRoleMgrAddress().get(), quorum, this.transactionManager, contractGasProvider);
+            PermissionsInterface permissionInterface = PermissionsInterface.load(config.getInterfaceAddress().get(), quorum, this.transactionManager, contractGasProvider);
+            this.permission = new Permission(orgManager, roleManager, permissionInterface, accountManager, config.getUltimateParentOrg().get());
+        }
     }
 
     public Permission.Role getAdminRole() {
@@ -107,7 +92,7 @@ public class MiddlewareImpl implements IMiddleware {
 
     @Override
     public void signWithAdminAndSend(String to, String data) throws IOException, TransactionException, FailedTransactionException {
-        EthSendTransaction ethSendTransaction = this.fastRawTransactionManager.sendTransaction(
+        EthSendTransaction ethSendTransaction = this.transactionManager.sendTransaction(
                 BigInteger.valueOf(GAS_PRICE),
                 BigInteger.valueOf(MAX_GAS_PER_BLOCK),
                 to,

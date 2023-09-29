@@ -11,7 +11,9 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.quorum.Quorum;
 import org.web3j.tuples.generated.Tuple2;
 import org.web3j.tuples.generated.Tuple3;
+import org.web3j.tx.ReadonlyTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
+import org.web3j.tx.gas.DefaultGasProvider;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -19,37 +21,29 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class LCWrapper {
-    private final ContractGasProvider contractGasProvider;
-    private final Credentials credentials;
     private final Quorum quorum;
+    private final ReadonlyTransactionManager readonlyTransactionManager;
+    private final ContractGasProvider contractGasProvider;
     private final StandardLCFactory standardLCFactory;
     private final UPASLCFactory upaslcFactory;
     private final RouterService routerService;
     private final LCManagement lcManagement;
 
-    public LCWrapper(ContractGasProvider contractGasProvider,
-                     Credentials credentials,
-                     Quorum quorum,
+    public LCWrapper(Quorum quorum,
                      StandardLCFactory standardLCFactory,
                      UPASLCFactory upaslcFactory,
                      RouterService routerService,
                      LCManagement lcManagement
     ) {
-        this.routerService = routerService;
         this.quorum = quorum;
-        this.contractGasProvider = contractGasProvider;
-        this.credentials = credentials;
+        this.readonlyTransactionManager = new ReadonlyTransactionManager(quorum, "0x0000000000000000000000000000000000000000");
+        this.contractGasProvider = new DefaultGasProvider();
+        this.routerService = routerService;
         this.upaslcFactory = upaslcFactory;
         this.standardLCFactory = standardLCFactory;
         this.lcManagement = lcManagement;
     }
 
-    /**
-     * @param parties
-     * @param content
-     * @param credentials
-     * @throws Exception
-     */
     public TransactionReceipt createStandardLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
         String approvalSignature = getApprovalSignature(
                 new LC.Content(
@@ -78,12 +72,6 @@ public class LCWrapper {
         return this.standardLCFactory.create(parties, lcContent).send();
     }
 
-    /**
-     * @param parties
-     * @param content
-     * @param credentials
-     * @throws Exception
-     */
     public TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
         String approvalSignature = getApprovalSignature(
                 new LC.Content(
@@ -113,13 +101,6 @@ public class LCWrapper {
         return this.upaslcFactory.create(parties, lcContent).send();
     }
 
-    /**
-     * @param documentId
-     * @param stage
-     * @param content
-     * @param credentials
-     * @throws Exception
-     */
     public TransactionReceipt approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception {
 
         StandardLC lc = getLCContract(documentId);
@@ -164,23 +145,10 @@ public class LCWrapper {
         ).send();
     }
 
-    /**
-     * @param documentId
-     * @throws FailedTransactionException
-     * @throws IOException
-     */
     public TransactionReceipt closeLC(BigInteger documentId) throws Exception {
         return this.routerService.closeLC(documentId).send();
     }
 
-    /**
-     * @param documentId
-     * @param stage
-     * @param content
-     * @param migrateStages
-     * @param credentials
-     * @throws Exception
-     */
     public TransactionReceipt submitAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, List<LC.Stage> migrateStages, Credentials credentials) throws Exception {
         StandardLC lc = getLCContract(documentId);
         Tuple3<RouterService.Content, BigInteger, BigInteger> amendStageContent = getAmendInfo(lc, documentId, stage);
@@ -261,13 +229,6 @@ public class LCWrapper {
         ).send();
     }
 
-    /**
-     * @param documentId
-     * @param proposer
-     * @param nonce
-     * @param credentials
-     * @throws Exception
-     */
     public TransactionReceipt approveAmendment(BigInteger documentId, String proposer, BigInteger nonce, Credentials credentials) throws Exception {
         BigInteger requestId = new BigInteger(LC.generateRequestId(proposer, nonce), 16);
         RouterService.Request amendRequest = this.routerService.getAmendmentRequest(documentId, requestId).send();
@@ -454,16 +415,9 @@ public class LCWrapper {
      */
     private StandardLC getLCContract(BigInteger documentId) throws Exception {
         Tuple2<String, BigInteger> result = this.routerService.getAddress(documentId).send();
-        return StandardLC.load(result.component1(), this.quorum, this.credentials, this.contractGasProvider);
+        return StandardLC.load(result.component1(), this.quorum, this.readonlyTransactionManager, contractGasProvider);
     }
 
-    /**
-     * @param lc instance of LC contract
-     * @param documentId
-     * @param stage
-     * @return LC content, stage and substage
-     * @throws Exception
-     */
     private Tuple3<RouterService.Content, BigInteger, BigInteger> getAmendInfo(StandardLC lc, BigInteger documentId, LC.Stage stage) throws Exception {
         BigInteger amendStage = stage.stage, amendSubStage = stage.subStage, prevStage = amendStage, prevSubStage = amendSubStage;
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();

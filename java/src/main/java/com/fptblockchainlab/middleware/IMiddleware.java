@@ -21,7 +21,8 @@ public interface IMiddleware {
     /**
      * Get member role from default role
      * @return
-     */Permission.Role getMemberRole();
+     */
+    Permission.Role getMemberRole();
 
     /**
      * Give a level 1 org in MiddlewareSErvice check if account is active and under this level 1 org

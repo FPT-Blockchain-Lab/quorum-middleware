@@ -1,15 +1,23 @@
 package com.fptblockchainlab.middleware;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 import java.util.Optional;
 
-// TODO use config based for Middleware
+@Getter
+@AllArgsConstructor
 public class Config {
     private String quorumUrl;
-    private Optional<String> privateKey;
-    private Optional<Long> chainId;
+    private String privateKey;
+    private Long chainId;
     private Optional<String> accountMgrAddress;
     private Optional<String> orgMgrAddress;
     private Optional<String> roleMgrAddress;
     private Optional<String> interfaceAddress;
     private Optional<String> lcManagmentAddress;
+    private Optional<String> standardLCFactoryAddress;
+    private Optional<String> upaslcFactoryAddress;
+    private Optional<String> routerServiceAddress;
+    private Optional<String> ultimateParentOrg; // level 1
 }
