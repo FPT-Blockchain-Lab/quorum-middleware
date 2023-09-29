@@ -1,4 +1,4 @@
-package lc;
+package com.fptblockchainlab.bindings.lc;
 
 import java.math.BigInteger;
 import java.util.Arrays;
