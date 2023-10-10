@@ -96,24 +96,22 @@ public interface IMiddleware {
     /**
      *
      * @param parties
-     * @param prevHash
      * @param content
      * @param credentials
      * @return
      * @throws Exception
      */
-    TransactionReceipt createStandardLC(List<String> parties, String prevHash, LC.Content content, Credentials credentials) throws Exception;
+    TransactionReceipt createStandardLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception;
 
     /**
      *
      * @param parties
-     * @param prevHash
      * @param content
      * @param credentials
      * @return
      * @throws Exception
      */
-    TransactionReceipt createUPASLC(List<String> parties, String prevHash, LC.Content content, Credentials credentials) throws Exception;
+    TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception;
 
     /**
      *
