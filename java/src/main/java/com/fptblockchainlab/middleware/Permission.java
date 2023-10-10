@@ -85,18 +85,10 @@ public class Permission {
             AccountManager accountManager,
             String orgLevel1
     ) {
-        if (orgManager.getContractAddress() != null && !orgManager.getContractAddress().isEmpty())
-            this.orgManager = orgManager;
-        else throw new RuntimeException("org manager is invalid");
-        if (roleManager.getContractAddress() != null && !roleManager.getContractAddress().isEmpty())
-            this.roleManager = roleManager;
-        else throw new RuntimeException("org manager is invalid");
-        if (permissionInterface.getContractAddress() != null && !permissionInterface.getContractAddress().isEmpty())
-            this.permissionInterface = permissionInterface;
-        else throw new RuntimeException("org manager is invalid");
-        if (accountManager.getContractAddress() != null && !accountManager.getContractAddress().isEmpty())
-            this.accountManager = accountManager;
-        else throw new RuntimeException("org manager is invalid");
+        this.orgManager = orgManager;
+        this.roleManager = roleManager;
+        this.permissionInterface = permissionInterface;
+        this.accountManager = accountManager;
         this.orgLevel1 = orgLevel1;
     }
 
