@@ -138,12 +138,12 @@ public class MiddlewareImpl implements IMiddleware {
     }
 
     @Override
-    public TransactionReceipt createStandardLC(List<String> parties, String prevHash, LC.Content content, Credentials credentials) throws Exception {
+    public TransactionReceipt createStandardLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
         return this.lcWrapper.createStandardLC(parties, content, credentials);
     }
 
     @Override
-    public TransactionReceipt createUPASLC(List<String> parties, String prevHash, LC.Content content, Credentials credentials) throws Exception {
+    public TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
         return this.lcWrapper.createUPASLC(parties, content, credentials);
     }
 
