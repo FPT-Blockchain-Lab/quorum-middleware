@@ -6,36 +6,6 @@
 - Supported languages: JavaScript, Java
 - Platform: Linux, MacOS, WSL
 
-## Prerequisites
-
-- Java 17, and maven, here we use sdkman, you can use different installation method
-
-```
-curl -s "https://get.sdkman.io" | bash
-sdk install java # java >= 17
-sdk install maven # 
-
-# REQUIRED to check installation success
-java version
-mvn --help
-```
-
-- Node.js, and yarn
-```
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
-nvm install --lts # node >= v14
-npm install -g yarn
-```
-
-- We have some CLIs required to install to generate bindings
-```
-wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
-chmod +x ./jq
-sudo mv jq /usr/bin
-curl -L get.web3j.io | sh && source ~/.web3j/source.sh
-npm install -g typescript typechain @typechain/web3-v1
-```
-
 ## Installation
 
 **Java**
@@ -68,6 +38,36 @@ npm i quorum-middleware
 ```
 
 ## Build
+
+### Prerequisites
+
+- Java 17, and maven, here we use sdkman, you can use different installation method
+
+```
+curl -s "https://get.sdkman.io" | bash
+sdk install java # java >= 17
+sdk install maven # 
+
+# REQUIRED to check installation success
+java version
+mvn --help
+```
+
+- Node.js, and yarn
+```
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+nvm install --lts # node >= v14
+npm install -g yarn
+```
+
+- We have some CLIs required to install to generate bindings
+```
+wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+chmod +x ./jq
+sudo mv jq /usr/bin
+curl -L get.web3j.io | sh && source ~/.web3j/source.sh
+npm install -g typescript typechain @typechain/web3-v1
+```
 
 1. (Optional) Generate bindings
 ```
