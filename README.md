@@ -1,6 +1,7 @@
 # Quorum Middleware
 
 **Multi-language middleware for Quorum blockchain with LC protocol supports**
+Built to simplify interaction with quorum blockchain permission layer (smart contracts) and letter of credit protocol smart contract. Make an easy integration between web2 developer with predefined interfaces to blockchain smart contract data types and encoding.
 
 ## Features
 - Supported languages: JavaScript, Java
