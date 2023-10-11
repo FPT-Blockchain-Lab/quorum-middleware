@@ -90,7 +90,7 @@ mvn compiler:compile
 yarn run build
 ```
 
-## How to run local network (WIP)
+## How to run local network and deploy smart contracts targeted by quorum middleware (WIP)
 
 1. Go to `quorum-test-network` directory
 ```
