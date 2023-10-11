@@ -60,12 +60,13 @@ public class MiddlewareImpl implements IMiddleware {
                 DEFAULT_POLLING_ATTEMPTS_PER_TX_HASH
         );
         this.transactionManager = new FastRawTransactionManager(quorum, credentials, config.getChainId(), transactionReceiptProcessor);
-        if (config.getLcManagmentAddress().isPresent() && config.getStandardLCFactoryAddress().isPresent() && config.getUpaslcFactoryAddress().isPresent() && config.getRouterServiceAddress().isPresent()) {
+        if (config.getLcManagmentAddress().isPresent() && config.getStandardLCFactoryAddress().isPresent() && config.getUpaslcFactoryAddress().isPresent() && config.getRouterServiceAddress().isPresent() && config.getOrgMgrAddress().isPresent()) {
             LCManagement lcManagement = LCManagement.load(config.getLcManagmentAddress().get(), quorum, this.transactionManager , contractGasProvider);
             StandardLCFactory standardLCFactory = StandardLCFactory.load(config.getStandardLCFactoryAddress().get(), quorum, this.transactionManager , contractGasProvider);
             UPASLCFactory upaslcFactory = UPASLCFactory.load(config.getUpaslcFactoryAddress().get(), quorum, this.transactionManager , contractGasProvider);
             RouterService routerService = RouterService.load(config.getRouterServiceAddress().get(), quorum, this.transactionManager , contractGasProvider);
-            this.lcWrapper = new LCWrapper(quorum, standardLCFactory, upaslcFactory, routerService, lcManagement);
+            OrgManager orgManager = OrgManager.load(config.getOrgMgrAddress().get(), quorum, this.transactionManager, contractGasProvider);
+            this.lcWrapper = new LCWrapper(quorum, standardLCFactory, upaslcFactory, routerService, lcManagement, orgManager);
         }
 
         if (config.getAccountMgrAddress().isPresent() && config.getOrgMgrAddress().isPresent() && config.getRoleMgrAddress().isPresent() && config.getInterfaceAddress().isPresent() && config.getUltimateParentOrg().isPresent()) {

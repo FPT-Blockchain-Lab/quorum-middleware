@@ -100,8 +100,7 @@ public class LC {
         LC_NHXT_BTH(6), // lc thường: ngân hàng xuất trình - bên thụ hưởng
         UPAS_NHTT_NHXT(5), // lc upas: ngân hàng tài trợ - ngân hàng xuất trình
         UPAS_NHXT_BTH(6), // lc upas: ngân hàng xuất trình - bên thụ hưởng
-        UPAS_NHPH_NHTT(7),
-        ; // lc upas: ngân hàng phát hành - ngân hàng tài trợ
+        UPAS_NHPH_NHTT(7);// lc upas: ngân hàng phát hành - ngân hàng tài trợ
 
         @Getter
         private final int value;
@@ -109,6 +108,35 @@ public class LC {
         EnumStage(int value) {
             this.value = value;
         }
+    }
+
+    public enum LCTYPE {
+        STANDARD_LC(1),
+        UPAS_LC(2);
+
+        @Getter
+        private final int value;
+
+        LCTYPE(int value) {
+            this.value = value;
+        }
+    }
+
+    // Enum the number of involved parties of each LC type
+    public enum NUMOFPARTIES {
+        STANDARD_LC_PARTIES(4), // [0] = _issuingBank, [1] = _advisingBank, [2] = _applicantOrg, [3] = _beneficiaryOrg;
+        UPAS_LC_PARTIES(5); // [0] = _issuingBank, [1] = _advisingBank, [2] = _reimbursingBank, [3] = _applicantOrg, [4] = _beneficiaryOrg;
+
+        @Getter
+        private final int value;
+
+        NUMOFPARTIES(int value) { this.value = value; }
+    }
+
+    public enum INDEXOFORG {
+        NHPH, // ngân hàng xuất trình
+        NHTB, // ngân hàng thông báo
+        NHTT, // ngân hàng tài trợ
     }
 
     public static class Stage {
