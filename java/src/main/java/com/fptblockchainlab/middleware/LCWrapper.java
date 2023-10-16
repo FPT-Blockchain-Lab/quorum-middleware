@@ -1,6 +1,7 @@
 package com.fptblockchainlab.middleware;
 
 import com.fptblockchainlab.bindings.lc.*;
+import com.fptblockchainlab.bindings.permission.OrgManager;
 import com.fptblockchainlab.exceptions.FailedTransactionException;
 import org.web3j.abi.TypeEncoder;
 import org.web3j.abi.datatypes.DynamicArray;
@@ -14,10 +15,13 @@ import org.web3j.tuples.generated.Tuple3;
 import org.web3j.tx.ReadonlyTransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
+import org.web3j.utils.Numeric;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class LCWrapper {
@@ -28,12 +32,14 @@ public class LCWrapper {
     private final UPASLCFactory upaslcFactory;
     private final RouterService routerService;
     private final LCManagement lcManagement;
+    private final OrgManager orgManager;
 
     public LCWrapper(Quorum quorum,
                      StandardLCFactory standardLCFactory,
                      UPASLCFactory upaslcFactory,
                      RouterService routerService,
-                     LCManagement lcManagement
+                     LCManagement lcManagement,
+                     OrgManager orgManager
     ) {
         this.quorum = quorum;
         this.readonlyTransactionManager = new ReadonlyTransactionManager(quorum, "0x0000000000000000000000000000000000000000");
@@ -42,10 +48,15 @@ public class LCWrapper {
         this.upaslcFactory = upaslcFactory;
         this.standardLCFactory = standardLCFactory;
         this.lcManagement = lcManagement;
+        this.orgManager = orgManager;
     }
 
     public TransactionReceipt createStandardLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
-        String approvalSignature = getApprovalSignature(
+        if (!isValidPrevHash(content.prevHash)) throw new Exception("Invalid previous hash.");
+        if (!isValidContentHash(content.contentHash)) throw new Exception("Invalid content hash.");
+        if (!isValid("^0x[0-9a-zA-Z]{130}", content.acknowledge)) throw new Exception("Invalid acknowledge signature.");
+
+        content.signature = getApprovalSignature(
                 new LC.Content(
                         LC.DEFAULT_ROOT_HASH,
                         content.signedTime,
@@ -58,22 +69,29 @@ public class LCWrapper {
                 ),
                 credentials
         );
+
+        validateData(LC.LCTYPE.STANDARD_LC, parties, content, credentials);
+
         StandardLCFactory.Content lcContent = new StandardLCFactory.Content(
-                LC.DEFAULT_ROOT_HASH.getBytes(),
-                content.signedTime,
-                content.prevHash.getBytes(),
-                BigInteger.valueOf(content.numOfDocuments),
-                parties.stream().map(String::getBytes).collect(Collectors.toList()),
-                content.url,
-                content.acknowledge.getBytes(),
-                approvalSignature.getBytes()
+            Numeric.hexStringToByteArray(LC.DEFAULT_ROOT_HASH),
+            content.signedTime,
+            Numeric.hexStringToByteArray(content.prevHash),
+            BigInteger.valueOf(content.numOfDocuments),
+            Arrays.stream(content.contentHash).map(Numeric::hexStringToByteArray).collect(Collectors.toList()),
+            content.url,
+            content.acknowledge.getBytes(),
+            content.signature.getBytes()
         );
 
         return this.standardLCFactory.create(parties, lcContent).send();
     }
 
     public TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
-        String approvalSignature = getApprovalSignature(
+        if (!isValidPrevHash(content.prevHash)) throw new Exception("Invalid previous hash.");
+        if (!isValidContentHash(content.contentHash)) throw new Exception("Invalid content hash.");
+        if (!isValid("^0x[0-9a-zA-Z]{130}", content.acknowledge)) throw new Exception("Invalid acknowledge signature.");
+
+        content.signature = getApprovalSignature(
                 new LC.Content(
                         LC.DEFAULT_ROOT_HASH,
                         content.signedTime,
@@ -87,24 +105,35 @@ public class LCWrapper {
                 credentials
         );
 
+        validateData(LC.LCTYPE.UPAS_LC, parties, content, credentials);
+
         UPASLCFactory.Content lcContent = new UPASLCFactory.Content(
-                LC.DEFAULT_ROOT_HASH.getBytes(),
+                Numeric.hexStringToByteArray(LC.DEFAULT_ROOT_HASH),
                 content.signedTime,
-                content.prevHash.getBytes(),
+                Numeric.hexStringToByteArray(content.prevHash),
                 BigInteger.valueOf(content.numOfDocuments),
-                parties.stream().map(String::getBytes).collect(Collectors.toList()),
+                Arrays.stream(content.contentHash).map(Numeric::hexStringToByteArray).collect(Collectors.toList()),
                 content.url,
                 content.acknowledge.getBytes(),
-                approvalSignature.getBytes()
+                content.signature.getBytes()
         );
 
         return this.upaslcFactory.create(parties, lcContent).send();
     }
 
     public TransactionReceipt approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception {
+        if (!isValidContentHash(content.contentHash)) throw new Exception("Invalid content hash.");
+        if (stage.stage.intValue() == LC.EnumStage.PHAT_HANH_LC.getValue() ||
+            stage.stage.intValue() == LC.EnumStage.CHAP_NHAN_THANH_TOAN.getValue() ||
+            stage.stage.intValue() == LC.EnumStage.UPAS_NHTT_NHXT.getValue()) {
 
-        StandardLC lc = getLCContract(documentId);
-        RouterService.Content stageInfo = getStageInfo(lc, documentId, stage);
+            if (!isValid("^0x[0-9a-zA-Z]{130}", content.acknowledge)) {
+                throw new Exception("Invalid acknowledge signature.");
+            }
+        }
+
+        Tuple2<StandardLC, BigInteger> lc = getLCContract(documentId);
+        RouterService.Content stageInfo = getStageInfo(lc.component1(), documentId, stage);
         String prevHash = LC.generateStageHash(
                 new LC.Content(
                         Arrays.toString(stageInfo.rootHash),
@@ -117,6 +146,7 @@ public class LCWrapper {
                         Arrays.toString(stageInfo.signature)
                 )
         );
+
         String rootHash = Arrays.toString(this.routerService.getRootHash(documentId).send());
         String approvalSignature = getApprovalSignature(
                 new LC.Content(
@@ -126,19 +156,23 @@ public class LCWrapper {
                         0,
                         (String[]) stageInfo.contentHash.stream().map(Object::toString).toArray(),
                         stageInfo.url,
-                        stageInfo.acknowledge.toString(),
+                        Arrays.toString(stageInfo.acknowledge),
                         ""
                 ),
                 credentials
         );
 
+        String org = getOrgByStage(lc.component1(), stage.stage.intValue(), lc.component2().intValue());
+
+        validateAccountOrg(org, credentials.getAddress());
+
         return this.routerService.approve(documentId, stage.stage, stage.subStage,
                 new RouterService.Content(
-                        rootHash.getBytes(),
+                        Numeric.hexStringToByteArray(rootHash),
                         content.signedTime,
-                        prevHash.getBytes(),
+                        Numeric.hexStringToByteArray(prevHash),
                         BigInteger.valueOf(content.numOfDocuments),
-                        Arrays.stream(content.contentHash).map(String::getBytes).collect(Collectors.toList()),
+                        Arrays.stream(content.contentHash).map(Numeric::hexStringToByteArray).collect(Collectors.toList()),
                         content.url,
                         content.acknowledge.getBytes(),
                         approvalSignature.getBytes())
@@ -150,8 +184,8 @@ public class LCWrapper {
     }
 
     public TransactionReceipt submitAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, List<LC.Stage> migrateStages, Credentials credentials) throws Exception {
-        StandardLC lc = getLCContract(documentId);
-        Tuple3<RouterService.Content, BigInteger, BigInteger> amendStageContent = getAmendInfo(lc, documentId, stage);
+        Tuple2<StandardLC, BigInteger> lc = getLCContract(documentId);
+        Tuple3<RouterService.Content, BigInteger, BigInteger> amendStageContent = getAmendInfo(lc.component1(), documentId, stage);
         RouterService.Content amendStageInfo = amendStageContent.component1();
         BigInteger amendStage = amendStageContent.component2();
         BigInteger amendSubStage = amendStageContent.component3();
@@ -176,7 +210,9 @@ public class LCWrapper {
         List<byte[]> migrating_stages = getMigrateStageHashes(documentId, migrateStages);
 
         if (amendStage.intValue() == LC.EnumStage.PHAT_HANH_LC.getValue() || amendStage.intValue() == LC.EnumStage.CHAP_NHAN_THANH_TOAN.getValue() || amendStage.intValue() == LC.EnumStage.UPAS_NHTT_NHXT.getValue()) {
-
+            if (!isValid("^0x[0-9a-zA-Z]{130}", content.acknowledge)) {
+                throw new Exception("Invalid acknowledge signature.");
+            }
         }
 
         String approvalSignature = this.getApprovalSignature(
@@ -217,9 +253,9 @@ public class LCWrapper {
                         new RouterService.Content(
                                 rootHash,
                                 content.signedTime,
-                                prevHash.getBytes(),
+                                Numeric.hexStringToByteArray(prevHash),
                                 BigInteger.valueOf(content.numOfDocuments),
-                                Arrays.stream(content.contentHash).map(String::getBytes).collect(Collectors.toList()),
+                                Arrays.stream(content.contentHash).map(Numeric::hexStringToByteArray).collect(Collectors.toList()),
                                 content.url,
                                 content.acknowledge.getBytes(),
                                 approvalSignature.getBytes()
@@ -230,11 +266,11 @@ public class LCWrapper {
     }
 
     public TransactionReceipt approveAmendment(BigInteger documentId, String proposer, BigInteger nonce, Credentials credentials) throws Exception {
-        BigInteger requestId = new BigInteger(LC.generateRequestId(proposer, nonce), 16);
+        BigInteger requestId = new BigInteger(LC.generateRequestId(proposer, nonce).substring(2), 16);
         RouterService.Request amendRequest = this.routerService.getAmendmentRequest(documentId, requestId).send();
-        boolean isApproved = this.routerService.isAmendApproved(documentId, requestId).send();
 
-        if (isApproved) throw new Exception("Amend request has been approved.");
+        if (amendRequest == null) throw new Exception("Amend request not found.");
+        if (this.routerService.isAmendApproved(documentId, requestId).send()) throw new Exception("Amend request has been approved.");
 
         String amendSignature = this.getAmendSignature(
                 amendRequest.migratingStages,
@@ -262,7 +298,12 @@ public class LCWrapper {
      * @throws Exception
      */
     public TransactionReceipt fulfillAmendment(BigInteger documentId, String proposer, BigInteger nonce) throws Exception {
-        BigInteger requestId = new BigInteger(LC.generateRequestId(proposer, nonce), 16);
+        BigInteger requestId = new BigInteger(LC.generateRequestId(proposer, nonce).substring(2), 16);
+        RouterService.Request request = this.routerService.getAmendmentRequest(documentId, requestId).send();
+        if (request == null) {
+            throw new Exception("Amend request not found.");
+        }
+
         return this.routerService.fulfillAmendment(documentId, requestId).send();
     }
 
@@ -273,9 +314,9 @@ public class LCWrapper {
      * @throws Exception
      */
     public TransactionReceipt submitRootAmendment(BigInteger documentId, LC.Content content, Credentials credentials) throws Exception {
-        StandardLC lc = getLCContract(documentId);
-        BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();
-        List<LC.Stage> migrateStages = this.getMigrateStages(documentId, lc);
+        Tuple2<StandardLC, BigInteger> lc = getLCContract(documentId);
+        BigInteger rootSubStage = lc.component1().numOfSubStage(BigInteger.ONE).send();
+        List<LC.Stage> migrateStages = this.getMigrateStages(documentId, lc.component1());
 
         return this.submitAmendment(documentId, new LC.Stage(BigInteger.ONE, rootSubStage), content, migrateStages, credentials);
     }
@@ -291,8 +332,8 @@ public class LCWrapper {
         if (stage.stage.intValue() == LC.EnumStage.PHAT_HANH_LC.getValue()) {
             throw new Exception("Not allowed to submit root stage.");
         }
-        StandardLC lc = getLCContract(documentId);
-        List<LC.Stage> lcStatus = this.getMigrateStages(documentId, lc);
+        Tuple2<StandardLC, BigInteger> lc = getLCContract(documentId);
+        List<LC.Stage> lcStatus = this.getMigrateStages(documentId, lc.component1());
         List<LC.Stage> migrateStages = lcStatus.stream().filter(
                 item -> !(item.subStage.equals(stage.subStage) && item.stage.equals(stage.stage)
                 )).collect(Collectors.toList());
@@ -332,7 +373,7 @@ public class LCWrapper {
             Map<LC.Stage, byte[]> filteredGeneralStageContents = generalStageContents.entrySet().stream()
                     .filter(stageContent -> (!stageContent.getKey().stage.equals(BigInteger.ONE)) && Arrays.equals(stageContent.getValue(), hash.getBytes()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-            List<LC.Stage> generalStages = filteredGeneralStageContents.entrySet().stream().map(m -> m.getKey()).collect(Collectors.toList());
+            List<LC.Stage> generalStages = filteredGeneralStageContents.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList());
 
             migrateStages.addAll(generalStages);
 
@@ -413,9 +454,9 @@ public class LCWrapper {
      * @return instance of LC contract
      * @throws Exception
      */
-    private StandardLC getLCContract(BigInteger documentId) throws Exception {
+    private Tuple2<StandardLC, BigInteger> getLCContract(BigInteger documentId) throws Exception {
         Tuple2<String, BigInteger> result = this.routerService.getAddress(documentId).send();
-        return StandardLC.load(result.component1(), this.quorum, this.readonlyTransactionManager, contractGasProvider);
+        return new Tuple2<>(StandardLC.load(result.component1(), this.quorum, this.readonlyTransactionManager, contractGasProvider), result.component2());
     }
 
     private Tuple3<RouterService.Content, BigInteger, BigInteger> getAmendInfo(StandardLC lc, BigInteger documentId, LC.Stage stage) throws Exception {
@@ -474,28 +515,113 @@ public class LCWrapper {
     }
 
     public void whiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
-        TransactionReceipt transactionReceipt;
         try {
-            transactionReceipt = this.lcManagement.whitelist(Arrays.asList(orgFullId)).send();
+            this.lcManagement.whitelist(Arrays.asList(orgFullId)).send();
         } catch (Exception e) {
             throw new IOException("failed to whitelist org", e);
-        }
-
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
         }
     }
 
     public void unwhiteListOrg(String orgFullId) throws FailedTransactionException, IOException {
-        TransactionReceipt transactionReceipt;
         try {
-            transactionReceipt = this.lcManagement.unwhitelist(Arrays.asList(orgFullId)).send();
+            this.lcManagement.unwhitelist(Arrays.asList(orgFullId)).send();
         } catch (Exception e) {
             throw new IOException("failed to unwhitelist org", e);
         }
+    }
 
-        if (!transactionReceipt.isStatusOK()) {
-            throw new FailedTransactionException(String.format("transaction %s failed with %s", transactionReceipt.getTransactionHash(), transactionReceipt.getRevertReason()));
+    /**
+     * Check character sequence to be matched expression
+     * @param regex The expression to be compiled
+     * @param input The character sequence to be matched
+     * @return true if, and only if, a subsequence of the input sequence matches this matcher's pattern
+     */
+    private boolean isValid(String regex, String input) {
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+
+        return matcher.find();
+    }
+
+    private void validateData(LC.LCTYPE typeOf, List<String> parties, LC.Content content, Credentials credentials) throws Exception {
+        if (typeOf == LC.LCTYPE.STANDARD_LC) {
+            if (parties.size() != LC.NUMOFPARTIES.STANDARD_LC_PARTIES.getValue()) {
+                throw new Exception("The number of involved parties does not match. Expected 4.");
+            }
+
+            if (
+                !this.orgManager.checkOrgExists(parties.get(LC.INDEXOFORG.NHPH.ordinal())).send() &&
+                    !this.orgManager.checkOrgExists(parties.get(LC.INDEXOFORG.NHTB.ordinal())).send()
+            ) {
+                throw new Exception("Organization at index 0 or 1 does not exist.");
+            }
+        } else if (typeOf == LC.LCTYPE.UPAS_LC) {
+            if (parties.size() != LC.NUMOFPARTIES.UPAS_LC_PARTIES.getValue()) {
+                throw new Exception("The number of involved parties does not match. Expected 5.");
+            }
+
+            if (
+                !this.orgManager.checkOrgExists(parties.get(LC.INDEXOFORG.NHPH.ordinal())).send() &&
+                    !this.orgManager.checkOrgExists(parties.get(LC.INDEXOFORG.NHTB.ordinal())).send() &&
+                    !this.orgManager.checkOrgExists(parties.get(LC.INDEXOFORG.NHTT.ordinal())).send()
+            ) {
+                throw new Exception("Organization at index 0 or 1 or 2 does not exist.");
+            }
         }
+
+        validateAccountOrg(parties.get(0), credentials.getAddress());
+
+        if (content.numOfDocuments > content.contentHash.length) {
+            throw new Exception("The number of documents cannot greater than the length of content hash.");
+        }
+
+        if (content.prevHash != content.contentHash[0]) {
+            throw new Exception("Unlink to previous.");
+        }
+    }
+
+    private void validateAccountOrg(String org, String publicKey) throws Exception {
+        if (!this.lcManagement.whitelistOrgs(org).send()) {
+            throw new Exception("Organization does not whitelist.");
+        }
+
+        if (!this.lcManagement.verifyIdentity(publicKey, org).send()) {
+            throw new Exception("Account not belong to organization.");
+        }
+    }
+
+    private String getOrgByStage(StandardLC lc, int stage, int lctype) throws Exception {
+        List<String> parties = lc.getInvolvedParties().send();
+        String org = null;
+
+        if (lctype == LC.LCTYPE.STANDARD_LC.getValue()) {
+            if (stage == LC.EnumStage.XUAT_TRINH_TCD_BCT.getValue() || stage == LC.EnumStage.UPAS_NHXT_BTH.getValue()) {
+                org = parties.get(LC.INDEXOFORG.NHTB.ordinal());
+            } else {
+                org = parties.get(LC.INDEXOFORG.NHPH.ordinal());
+            }
+        } else if (lctype == LC.LCTYPE.UPAS_LC.getValue()) {
+            if (stage == LC.EnumStage.XUAT_TRINH_TCD_BCT.getValue() || stage == LC.EnumStage.UPAS_NHXT_BTH.getValue()) {
+                org = parties.get(LC.INDEXOFORG.NHTB.ordinal());
+            } else if (stage == LC.EnumStage.UPAS_NHTT_NHXT.getValue()) {
+                org = parties.get(LC.INDEXOFORG.NHTT.ordinal());
+            } else {
+                org = parties.get(LC.INDEXOFORG.NHPH.ordinal());
+            }
+        }
+
+        return org;
+    }
+
+    private boolean isValidPrevHash(String prevHash) {
+        return prevHash.length() == 66;
+    }
+
+    private boolean isValidContentHash(String[] contentHash) {
+        for (String hash: contentHash) {
+            if (hash.length() != 66) return false;
+        }
+
+        return true;
     }
 }
