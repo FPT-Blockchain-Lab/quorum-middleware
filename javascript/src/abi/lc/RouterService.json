@@ -150,9 +150,9 @@
                 "type": "address"
             },
             {
-                "internalType": "uint256",
-                "name": "_typeOf",
-                "type": "uint256"
+                "internalType": "enum LC_ENUM",
+                "name": "_lcType",
+                "type": "uint8"
             }
         ],
         "stateMutability": "view",

@@ -2,9 +2,9 @@ import BN from "bn.js";
 import Web3 from "web3";
 import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
 import { LCContractABIs } from "../abi/lc";
-import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, UPASLC, StandardLC } from "../bindings/lc";
+import { LCManagement, RouterService, LCFactory, LC as LCContract } from "../bindings/lc";
 import { OrgManager } from "../bindings/permission";
-import { DEFAULT_CONFIG } from "../config";
+import { DEFAULT_CONFIG, LC_ENUM } from "../config";
 import { StageContent, Stage, AmendStage } from "./interfaces";
 import { LC } from "./lc";
 import { Permission } from "./permission";
@@ -14,29 +14,26 @@ export class LCWrapper {
     private readonly web3: Web3;
     private readonly LCManagement: LCManagement;
     private readonly RouterService: RouterService;
-    private readonly StandardLCFactory: StandardLCFactory;
-    private readonly UPASLCFactory: UPASLCFactory;
+    private readonly LCFactory: LCFactory;
     private readonly OrgManager: OrgManager;
 
     constructor(web3: Web3, config = DEFAULT_CONFIG) {
         if (
             !config.lCContractAddresses.LCManagement ||
             !config.lCContractAddresses.RouterService ||
-            !config.lCContractAddresses.StandardLCFactory ||
-            !config.lCContractAddresses.UPASLCFactory ||
+            !config.lCContractAddresses.LCFactory ||
             !config.permissionContractAddresses.OrgManager
         ) {
             throw new Error(`required LCManagement RouterService StandardLCFactory UPASLCFactory OrgManager to be defined`);
         }
 
-        const { LCManagement, RouterService, StandardLCFactory, UPASLCFactory } = LC.loadContract(web3, config);
+        const { LCManagement, RouterService, LCFactory } = LC.loadContract(web3, config);
         const { OrgManager } = Permission.loadContract(web3, config);
 
         this.web3 = web3;
         this.LCManagement = LCManagement;
         this.RouterService = RouterService;
-        this.StandardLCFactory = StandardLCFactory;
-        this.UPASLCFactory = UPASLCFactory;
+        this.LCFactory = LCFactory;
         this.OrgManager = OrgManager;
     }
 
@@ -47,7 +44,7 @@ export class LCWrapper {
      * @param from executor
      * @returns
      */
-    async createStandardLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, from: string) {
+    async createLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, lcType: LC_ENUM, from: string, ) {
         // Check acknowledge signature
         if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
             throw new Error("Invalid acknowledge signature.");
@@ -83,9 +80,9 @@ export class LCWrapper {
         // Generate data to create LC
         const data = await this.generateDataForCreateLC(parties, _content);
 
-        const gas = await this.StandardLCFactory.methods.create(...data).estimateGas({ from });
+        const gas = await this.LCFactory.methods.create(...data, lcType).estimateGas({ from });
 
-        return this.StandardLCFactory.methods.create(...data).send({ from, gas });
+        return this.LCFactory.methods.create(...data, lcType).send({ from, gas });
     }
 
     /**
@@ -95,46 +92,46 @@ export class LCWrapper {
      * @param from executor
      * @returns
      */
-    async createUPASLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, from: string) {
-        // Check acknowledge signature
-        if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
-            throw new Error("Invalid acknowledge signature.");
-        }
+    // async createUPASLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, from: string) {
+    //     // Check acknowledge signature
+    //     if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
+    //         throw new Error("Invalid acknowledge signature.");
+    //     }
 
-        // Format approval content to create approval message hash
-        const approvalContent = {
-            rootHash: Utils.DEFAULT_ROOT_HASH,
-            prevHash: content.prevHash,
-            contentHash: content.contentHash,
-            url: content.url,
-            signedTime: content.signedTime,
-            acknowledgeSignature: content.acknowledgeSignature,
-        };
+    //     // Format approval content to create approval message hash
+    //     const approvalContent = {
+    //         rootHash: Utils.DEFAULT_ROOT_HASH,
+    //         prevHash: content.prevHash,
+    //         contentHash: content.contentHash,
+    //         url: content.url,
+    //         signedTime: content.signedTime,
+    //         acknowledgeSignature: content.acknowledgeSignature,
+    //     };
 
-        // Get approval signature
-        const approvalSignature = await this.approvalSignature(approvalContent, from);
+    //     // Get approval signature
+    //     const approvalSignature = await this.approvalSignature(approvalContent, from);
 
-        const _content = {
-            rootHash: Utils.DEFAULT_ROOT_HASH,
-            prevHash: content.prevHash,
-            contentHash: content.contentHash,
-            url: content.url,
-            signedTime: content.signedTime,
-            numOfDocuments: content.numOfDocuments,
-            acknowledgeSignature: content.acknowledgeSignature,
-            approvalSignature: approvalSignature,
-        };
+    //     const _content = {
+    //         rootHash: Utils.DEFAULT_ROOT_HASH,
+    //         prevHash: content.prevHash,
+    //         contentHash: content.contentHash,
+    //         url: content.url,
+    //         signedTime: content.signedTime,
+    //         numOfDocuments: content.numOfDocuments,
+    //         acknowledgeSignature: content.acknowledgeSignature,
+    //         approvalSignature: approvalSignature,
+    //     };
 
-        // Validate data
-        await this.validateData(LC.LCTYPE.UPAS_LC.toString(), parties, _content, from);
+    //     // Validate data
+    //     await this.validateData(LC.LCTYPE.UPAS_LC.toString(), parties, _content, from);
 
-        // Generate data to create LC
-        const data = await this.generateDataForCreateLC(parties, _content);
+    //     // Generate data to create LC
+    //     const data = await this.generateDataForCreateLC(parties, _content);
 
-        const gas = await this.UPASLCFactory.methods.create(...data).estimateGas({ from });
+    //     const gas = await this.LCFactory.methods.create(...data).estimateGas({ from });
 
-        return this.UPASLCFactory.methods.create(...data).send({ from, gas });
-    }
+    //     return this.LCFactory.methods.create(...data).send({ from, gas });
+    // }
 
     /**
      *
@@ -438,12 +435,12 @@ export class LCWrapper {
 
     /**
      * get LC stages (included general and root stage)
-     * @param standardLC instance of LC contract
+     * @param lc instance of LC contract
      * @returns LC stages
      */
-    private async _getLCStatus(standardLC: StandardLC) {
-        const rootSubStage = +(await standardLC.methods.numOfSubStage(1).call());
-        const lcStatus = await standardLC.methods.getStatus().call();
+    private async _getLCStatus(lcContract: LCContract) {
+        const rootSubStage = +(await lcContract.methods.numOfSubStage(1).call());
+        const lcStatus = await lcContract.methods.getStatus().call();
         let rootStages: Stage[] = [];
         for (let i = 1; i <= rootSubStage; i++) {
             rootStages = [...rootStages, { stage: 1, subStage: i }];
@@ -459,10 +456,13 @@ export class LCWrapper {
      * @returns instance of LC contract
      */
     async getLCContract(documentId: number | string | BN) {
-        const { _contract, _typeOf } = await this.RouterService.methods.getAddress(documentId).call();
+        const { _contract, _lcType } = await this.RouterService.methods.getAddress(documentId).call();
         if (/^0x0+$/.test(_contract)) throw new Error("DocumentId not found");
 
-        return { lcContract: new this.web3.eth.Contract(LCContractABIs.StandardLC as any[] as AbiItem[], _contract) as any as StandardLC, type: _typeOf };
+        return {
+            lcContract: new this.web3.eth.Contract(LCContractABIs.LC as any[] as AbiItem[], _contract) as any as LCContract,
+            type: LC_ENUM[_lcType as keyof typeof LC_ENUM],
+        };
     }
 
     /**
@@ -471,7 +471,7 @@ export class LCWrapper {
      * @param lcContract instance of LC contract
      * @returns array of LC status sort by root hash
      */
-    async getLCStatus(documentId: number | string | BN, lcContract: StandardLC) {
+    async getLCStatus(documentId: number | string | BN, lcContract: LCContract) {
         const stages = await this._getLCStatus(lcContract);
         const stageContents = await Promise.all(
             stages.map(async (stage) => {
@@ -659,7 +659,7 @@ export class LCWrapper {
      * @param typeOf type of LC contract
      * @returns content of stage
      */
-    async getStageInfo(lcContract: StandardLC, documentId: number | string | BN, stage: number, subStage: number, typeOf: string) {
+    async getStageInfo(lcContract: LCContract, documentId: number | string | BN, stage: number, subStage: number, typeOf: string) {
         let prevStage = stage,
             prevSubStage = subStage;
         const rootSubStage = +(await lcContract.methods.numOfSubStage(1).call());
@@ -694,7 +694,7 @@ export class LCWrapper {
      * @param subStage
      * @returns content of stage, number of stage and sub-stage amend
      */
-    async getAmendInfo(lcContract: StandardLC, documentId: number | string | BN, stage: number, subStage: number) {
+    async getAmendInfo(lcContract: LCContract, documentId: number | string | BN, stage: number, subStage: number) {
         const amendStage = stage;
         let amendSubStage = subStage;
         let prevStage = amendStage,
@@ -794,17 +794,22 @@ export class LCWrapper {
      * @param typeOf type of LC contract
      * @returns an org in involved parties
      */
-    private async checkOrgByStage(lcContract: StandardLC, stage: number, typeOf: string) {
+    private async checkOrgByStage(lcContract: LCContract, stage: number, lcType: LC_ENUM) {
         const parties = await lcContract.methods.getInvolvedParties().call();
         let org = "";
 
-        if (typeOf == LC.LCTYPE.STANDARD_LC.toString()) {
+        if (
+            lcType == LC_ENUM.STANDARD_LC ||
+            lcType == LC_ENUM.STANDARD_LC_IMPORT ||
+            lcType == LC_ENUM.STANDARD_LC_EXPORT ||
+            lcType == LC_ENUM.STANDARD_LC_DISCOUNT
+        ) {
             if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
                 org = parties[LC.INDEXOFORG.NHTB];
             } else {
                 org = parties[LC.INDEXOFORG.NHPH];
             }
-        } else if (typeOf == LC.LCTYPE.UPAS_LC.toString()) {
+        } else {
             if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
                 org = parties[LC.INDEXOFORG.NHTB];
             } else if (stage == LC.Stage.UPAS_NHTT_NHXT) {

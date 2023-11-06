@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
+import { LCManagement, RouterService, LCFactory, AmendRequest } from "../bindings/lc";
 import {
     AccountManager,
     NodeManager,
@@ -15,8 +15,7 @@ import {
 export interface LCContracts {
     LCManagement: LCManagement;
     RouterService: RouterService;
-    StandardLCFactory: StandardLCFactory;
-    UPASLCFactory: UPASLCFactory;
+    LCFactory: LCFactory;
     AmendRequest: AmendRequest;
 }
 

@@ -10,6 +10,11 @@
                 "internalType": "string[]",
                 "name": "_orgs",
                 "type": "string[]"
+            },
+            {
+                "internalType": "enum LC_ENUM",
+                "name": "_lcType",
+                "type": "uint8"
             }
         ],
         "stateMutability": "nonpayable",
@@ -489,6 +494,19 @@
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "lcType",
+        "outputs": [
+            {
+                "internalType": "enum LC_ENUM",
+                "name": "",
+                "type": "uint8"
             }
         ],
         "stateMutability": "view",

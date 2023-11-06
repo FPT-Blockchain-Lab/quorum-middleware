@@ -5,7 +5,7 @@ import { AbiItem, encodePacked, keccak256, Mixed } from "web3-utils";
 import { StageContent, AmendStage, LCContracts, SpecialRole } from "./interfaces";
 import { DEFAULT_CONFIG } from "../config";
 import { LCContractABIs } from "../abi/lc";
-import { LCManagement, RouterService, StandardLCFactory, UPASLCFactory, AmendRequest } from "../bindings/lc";
+import { LCManagement, RouterService, LCFactory, AmendRequest } from "../bindings/lc";
 
 /** LC protocol */
 export class LC {
@@ -18,14 +18,7 @@ export class LC {
             LCContractABIs.RouterService as any as AbiItem[],
             config.lCContractAddresses.RouterService
         ) as any as RouterService;
-        const StandardLCFactory = new web3.eth.Contract(
-            LCContractABIs.StandardLCFactory as any as AbiItem[],
-            config.lCContractAddresses.StandardLCFactory
-        ) as any as StandardLCFactory;
-        const UPASLCFactory = new web3.eth.Contract(
-            LCContractABIs.UPASLCFactory as any as AbiItem[],
-            config.lCContractAddresses.UPASLCFactory
-        ) as any as UPASLCFactory;
+        const LCFactory = new web3.eth.Contract(LCContractABIs.LCFactory as any as AbiItem[], config.lCContractAddresses.LCFactory) as any as LCFactory;
         const AmendRequest = new web3.eth.Contract(
             LCContractABIs.AmendRequest as any as AbiItem[],
             config.lCContractAddresses.AmendRequest
@@ -34,8 +27,7 @@ export class LC {
         return {
             LCManagement,
             RouterService,
-            StandardLCFactory,
-            UPASLCFactory,
+            LCFactory,
             AmendRequest,
         };
     }

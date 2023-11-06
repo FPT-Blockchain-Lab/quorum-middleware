@@ -303,6 +303,19 @@
     },
     {
         "inputs": [],
+        "name": "lcFactory",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "mode",
         "outputs": [
             {
@@ -393,6 +406,19 @@
         "inputs": [
             {
                 "internalType": "address",
+                "name": "_lcFactory",
+                "type": "address"
+            }
+        ],
+        "name": "setLCFactory",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
                 "name": "_mode",
                 "type": "address"
             }
@@ -431,45 +457,6 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "_standardFactory",
-                "type": "address"
-            }
-        ],
-        "name": "setStandardFactory",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_upasFactory",
-                "type": "address"
-            }
-        ],
-        "name": "setUPASFactory",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "standardFactory",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
                 "internalType": "bytes4",
                 "name": "interfaceId",
                 "type": "bytes4"
@@ -497,19 +484,6 @@
         "name": "unwhitelist",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "upasFactory",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {

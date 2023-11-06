@@ -4,7 +4,7 @@ import { Layout, Menu, Form, Input, Button } from "antd";
 import Web3 from "web3";
 import { CHAIN_ID, setupDefaultNetwork } from "./utils";
 import BN from "bn.js";
-import { LCWrapper, LC, Permission, Utils } from "quorum-middleware";
+import { LCWrapper, LC, Permission, Utils, LC_ENUM } from "quorum-middleware";
 const { Header, Content } = Layout;
 
 const labelCreateLCList = [
@@ -76,7 +76,7 @@ function App() {
 
   const getStageInfo = async (values) => {
     const routerService = LC.loadContract(
-      new Web3("http://1.54.89.229:32278")
+      new Web3("http://localhost:8545/")
     ).RouterService;
     // Generate documentId
     const documentId = Utils.keccak256Utf8(values.documentId);
@@ -185,10 +185,13 @@ function App() {
        */
 
       const wrapperContract = new LCWrapper(web3);
-      const tx = await wrapperContract.createStandardLC(
+
+      console.log(LC_ENUM)
+      const tx = await wrapperContract.createLC(
         parties,
         content,
-        account
+        LC_ENUM.STANDARD_LC,
+        account,
       );
 
       console.log(tx);

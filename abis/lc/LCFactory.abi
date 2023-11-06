@@ -20,6 +20,12 @@
         "inputs": [
             {
                 "indexed": true,
+                "internalType": "enum LC_ENUM",
+                "name": "lcType",
+                "type": "uint8"
+            },
+            {
+                "indexed": true,
                 "internalType": "uint256",
                 "name": "documentID",
                 "type": "uint256"
@@ -31,18 +37,18 @@
                 "type": "address"
             },
             {
-                "indexed": true,
+                "indexed": false,
                 "internalType": "address",
                 "name": "lcContractAddr",
                 "type": "address"
             }
         ],
-        "name": "NewUPASLC",
+        "name": "NewLC",
         "type": "event"
     },
     {
         "inputs": [],
-        "name": "UPAS_WRAPPER",
+        "name": "WRAPPER",
         "outputs": [
             {
                 "internalType": "contract IWrapper",
@@ -69,6 +75,11 @@
                 "internalType": "string[]",
                 "name": "_parties",
                 "type": "string[]"
+            },
+            {
+                "internalType": "enum LC_ENUM",
+                "name": "_lcType",
+                "type": "uint8"
             }
         ],
         "name": "amend",
@@ -135,6 +146,11 @@
                 "internalType": "struct IStageContract.Content",
                 "name": "_content",
                 "type": "tuple"
+            },
+            {
+                "internalType": "enum LC_ENUM",
+                "name": "_lcType",
+                "type": "uint8"
             }
         ],
         "name": "create",
