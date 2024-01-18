@@ -44,7 +44,7 @@ export class LCWrapper {
      * @param from executor
      * @returns
      */
-    async createLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, lcType: LC_ENUM, from: string, ) {
+    async createLC(parties: string[], content: Omit<StageContent, "approvalSignature" | "rootHash">, lcType: LC_ENUM, from: string) {
         // Check acknowledge signature
         if (!/^0x[0-9a-zA-Z]{130}$/.test(content.acknowledgeSignature)) {
             throw new Error("Invalid acknowledge signature.");
@@ -75,7 +75,7 @@ export class LCWrapper {
         };
 
         // Validate data
-        await this.validateData(LC.LCTYPE.STANDARD_LC.toString(), parties, _content, from);
+        await this.validateData(lcType, parties, _content, from);
 
         // Generate data to create LC
         const data = await this.generateDataForCreateLC(parties, _content);
@@ -592,8 +592,8 @@ export class LCWrapper {
      * @param from executor
      * @returns
      */
-    private async validateData(typeOf: string, parties: string[], content: StageContent, from: string) {
-        if (typeOf === LC.LCTYPE.STANDARD_LC.toString()) {
+    private async validateData(typeOf: LC_ENUM, parties: string[], content: StageContent, from: string) {
+        if (typeOf === LC_ENUM.STANDARD_LC) {
             if (parties.length != LC.NUMOFPARTIES.STANDARD_LC_PARTIES) {
                 throw new Error("The number of involved parties does not match. Expected 4.");
             }
@@ -605,7 +605,7 @@ export class LCWrapper {
             if (!orgs.every((org) => org)) {
                 throw new Error("Organization at index 0 or 1 does not exsist.");
             }
-        } else if (typeOf === LC.LCTYPE.UPAS_LC.toString()) {
+        } else if (typeOf === LC_ENUM.UPAS_LC) {
             if (parties.length != LC.NUMOFPARTIES.UPAS_LC_PARTIES) {
                 throw new Error("The number of involved parties does not match. Expected 5.");
             }
@@ -616,6 +616,12 @@ export class LCWrapper {
 
             if (!orgs.every((org) => org)) {
                 throw new Error("Organization at index 0 or 1 or 2 does not exsist.");
+            }
+        } else {
+            const org = await this.OrgManager.methods.checkOrgExists(parties[0].toString()).call();
+
+            if (!org) {
+                throw new Error("Organization at index 0 does not exsist.");
             }
         }
 
