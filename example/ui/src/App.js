@@ -42,6 +42,13 @@ function App() {
 	const [account, setAccount] = useState(undefined);
 	const [chainId, setChainId] = useState(undefined);
 
+	useEffect(() => {
+		window.ethereum.on("accountsChanged", (accounts) => {
+			setWeb3(window.ethereum);
+			setAccount(accounts[0]);
+		});
+	}, []);
+
 	const handleConnect = async () => {
 		try {
 			if (!window.ethereum) alert("Metamask is not installed!");
@@ -78,7 +85,9 @@ function App() {
 
 	const getStageInfo = async (values) => {
 		try {
-			const routerService = LC.loadContract(web3).RouterService;
+			const routerService = LC.loadContract(
+				new Web3(window.ethereum)
+			).RouterService;
 			// Generate documentId
 			const documentId = Utils.keccak256Utf8(values.documentId);
 
@@ -143,11 +152,9 @@ function App() {
 			const acknowledgeMessage = LC.generateAcknowledgeMessageHash(
 				contentHash.slice(1, numOfDocument + 1)
 			);
-			const acknowledgeSignature = await web3.eth.personal.sign(
-				acknowledgeMessage,
-				account,
-				""
-			);
+			const acknowledgeSignature = await new Web3(
+				window.ethereum
+			).eth.personal.sign(acknowledgeMessage, account, "");
 
 			const content = {
 				prevHash: documentId,
@@ -190,13 +197,13 @@ function App() {
         const wrapperContract = new LCWrapper(web3, customConfig);
        */
 
-			const wrapperContract = new LCWrapper(web3);
+			const wrapperContract = new LCWrapper(new Web3(window.ethereum));
 
 			console.log(LC_ENUM, parties);
 			const tx = await wrapperContract.createLC(
 				parties,
 				content,
-				LC_ENUM.STANDARD_LC,
+				LC_ENUM.STANDARD_LC_IMPORT,
 				account
 			);
 
@@ -237,13 +244,11 @@ function App() {
 			const acknowledgeMessage = LC.generateAcknowledgeMessageHash(
 				contentHash.slice(1, numOfDocument + 1)
 			);
-			const acknowledgeSignature = await web3.eth.personal.sign(
-				acknowledgeMessage,
-				account,
-				""
-			);
+			const acknowledgeSignature = await new Web3(
+				window.ethereum
+			).eth.personal.sign(acknowledgeMessage, account, "");
 
-			const wrapperContract = new LCWrapper(web3);
+			const wrapperContract = new LCWrapper(new Web3(window.ethereum));
 			const tx = await wrapperContract.approveLC(
 				documentId,
 				values.stage,
@@ -276,7 +281,7 @@ function App() {
 
 			// Generate documentId
 			const documentId = Utils.keccak256Utf8(values.documentId);
-			const wrapperContract = new LCWrapper(web3);
+			const wrapperContract = new LCWrapper(new Web3(window.ethereum));
 			const tx = await wrapperContract.closeLC(documentId, account);
 
 			console.log(tx);
@@ -317,14 +322,12 @@ function App() {
 			const acknowledgeMessage = LC.generateAcknowledgeMessageHash(
 				contentHash.slice(1, numOfDocuments + 1)
 			);
-			const acknowledgeSignature = await web3.eth.personal.sign(
-				acknowledgeMessage,
-				account,
-				""
-			);
+			const acknowledgeSignature = await new Web3(
+				window.ethereum
+			).eth.personal.sign(acknowledgeMessage, account, "");
 			// Only for example (acknowledge signature get from FIS backend)
 
-			const wrapperContract = new LCWrapper(web3);
+			const wrapperContract = new LCWrapper(new Web3(window.ethereum));
 			// MUST STORE nonce TO APPROVE AND FULLFILL AMEND LC
 			const tx = await wrapperContract.submitRootAmendment(
 				documentId,
@@ -359,7 +362,7 @@ function App() {
 			}
 
 			const documentId = Utils.keccak256Utf8(values.documentId);
-			const wrapperContract = new LCWrapper(web3);
+			const wrapperContract = new LCWrapper(new Web3(window.ethereum));
 			const tx = await wrapperContract.approveAmendment(
 				documentId,
 				account, // proposer address
@@ -386,7 +389,7 @@ function App() {
 			}
 
 			const documentId = Utils.keccak256Utf8(values.documentId);
-			const wrapperContract = new LCWrapper(web3);
+			const wrapperContract = new LCWrapper(new Web3(window.ethereum));
 
 			/**
 			 * Amend request should been approved by all organization in involved parties
@@ -418,7 +421,9 @@ function App() {
 				await setupDefaultNetwork();
 			}
 
-			const { PermissionsInterface } = new Permission.loadContract(web3);
+			const { PermissionsInterface } = new Permission.loadContract(
+				new Web3(window.ethereum)
+			);
 			console.log(PermissionsInterface);
 			await PermissionsInterface.methods
 				.assignAccountRole(values.accountId, values.orgId, values.roleId)

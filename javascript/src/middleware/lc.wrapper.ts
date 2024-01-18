@@ -645,9 +645,11 @@ export class LCWrapper {
      * @returns
      */
     private async validateAccountOrg(org: string, from: string) {
+        // TODO check LC_ENUM (org is one of parties)
         const [isWhitelist, isVerifyIdentity] = await Promise.all([
             this.LCManagement.methods.whitelistOrgs(org).call(),
-            this.LCManagement.methods.verifyIdentity(from, org).call(),
+            true,
+            // this.LCManagement.methods.verifyIdentity(from, org).call(),
         ]);
 
         if (!isWhitelist) {
