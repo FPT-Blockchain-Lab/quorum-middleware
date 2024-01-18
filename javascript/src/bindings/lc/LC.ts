@@ -120,6 +120,8 @@ export interface LC extends BaseContract {
 
     isClosed(): NonPayableTransactionObject<boolean>;
 
+    lcType(): NonPayableTransactionObject<string>;
+
     numOfSubStage(
       _stage: number | string | BN
     ): NonPayableTransactionObject<string>;

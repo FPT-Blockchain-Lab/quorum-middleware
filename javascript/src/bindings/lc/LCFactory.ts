@@ -21,29 +21,32 @@ export interface EventOptions {
   topics?: string[];
 }
 
-export type NewStandardLC = ContractEventLog<{
+export type NewLC = ContractEventLog<{
+  lcType: string;
   documentID: string;
   creator: string;
   lcContractAddr: string;
   0: string;
   1: string;
   2: string;
+  3: string;
 }>;
 
-export interface StandardLCFactory extends BaseContract {
+export interface LCFactory extends BaseContract {
   constructor(
     jsonInterface: any[],
     address?: string,
     options?: ContractOptions
-  ): StandardLCFactory;
-  clone(): StandardLCFactory;
+  ): LCFactory;
+  clone(): LCFactory;
   methods: {
-    STANDARD_WRAPPER(): NonPayableTransactionObject<string>;
+    WRAPPER(): NonPayableTransactionObject<string>;
 
     amend(
       _executor: string,
       _documentId: number | string | BN,
-      _parties: string[]
+      _parties: string[],
+      _lcType: number | string | BN
     ): NonPayableTransactionObject<string>;
 
     create(
@@ -57,7 +60,8 @@ export interface StandardLCFactory extends BaseContract {
         string,
         string | number[],
         string | number[]
-      ]
+      ],
+      _lcType: number | string | BN
     ): NonPayableTransactionObject<string>;
 
     getLCAddress(
@@ -69,19 +73,12 @@ export interface StandardLCFactory extends BaseContract {
     setLCManagement(_management: string): NonPayableTransactionObject<void>;
   };
   events: {
-    NewStandardLC(cb?: Callback<NewStandardLC>): EventEmitter;
-    NewStandardLC(
-      options?: EventOptions,
-      cb?: Callback<NewStandardLC>
-    ): EventEmitter;
+    NewLC(cb?: Callback<NewLC>): EventEmitter;
+    NewLC(options?: EventOptions, cb?: Callback<NewLC>): EventEmitter;
 
     allEvents(options?: EventOptions, cb?: Callback<EventLog>): EventEmitter;
   };
 
-  once(event: "NewStandardLC", cb: Callback<NewStandardLC>): void;
-  once(
-    event: "NewStandardLC",
-    options: EventOptions,
-    cb: Callback<NewStandardLC>
-  ): void;
+  once(event: "NewLC", cb: Callback<NewLC>): void;
+  once(event: "NewLC", options: EventOptions, cb: Callback<NewLC>): void;
 }

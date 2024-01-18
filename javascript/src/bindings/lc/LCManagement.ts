@@ -87,6 +87,8 @@ export interface LCManagement extends BaseContract {
 
     isVerifier(_account: string): NonPayableTransactionObject<boolean>;
 
+    lcFactory(): NonPayableTransactionObject<string>;
+
     mode(): NonPayableTransactionObject<string>;
 
     permission(): NonPayableTransactionObject<string>;
@@ -105,27 +107,19 @@ export interface LCManagement extends BaseContract {
 
     setAmendRequest(_amendRequest: string): NonPayableTransactionObject<void>;
 
+    setLCFactory(_lcFactory: string): NonPayableTransactionObject<void>;
+
     setMode(_mode: string): NonPayableTransactionObject<void>;
 
     setPermission(_permission: string): NonPayableTransactionObject<void>;
 
     setRouter(_router: string): NonPayableTransactionObject<void>;
 
-    setStandardFactory(
-      _standardFactory: string
-    ): NonPayableTransactionObject<void>;
-
-    setUPASFactory(_upasFactory: string): NonPayableTransactionObject<void>;
-
-    standardFactory(): NonPayableTransactionObject<string>;
-
     supportsInterface(
       interfaceId: string | number[]
     ): NonPayableTransactionObject<boolean>;
 
     unwhitelist(_orgs: string[]): NonPayableTransactionObject<void>;
-
-    upasFactory(): NonPayableTransactionObject<string>;
 
     verifyIdentity(
       _account: string,

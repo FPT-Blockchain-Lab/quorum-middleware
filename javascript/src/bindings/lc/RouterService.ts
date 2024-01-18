@@ -62,7 +62,7 @@ export interface RouterService extends BaseContract {
 
     getAddress(_documentId: number | string | BN): NonPayableTransactionObject<{
       _contract: string;
-      _typeOf: string;
+      _lcType: string;
       0: string;
       1: string;
     }>;

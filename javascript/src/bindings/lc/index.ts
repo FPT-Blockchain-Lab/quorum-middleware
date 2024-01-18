@@ -3,9 +3,6 @@
 /* eslint-disable */
 export type { AmendRequest } from "./AmendRequest";
 export type { LC } from "./LC";
+export type { LCFactory } from "./LCFactory";
 export type { LCManagement } from "./LCManagement";
 export type { RouterService } from "./RouterService";
-export type { StandardLC } from "./StandardLC";
-export type { StandardLCFactory } from "./StandardLCFactory";
-export type { UPASLC } from "./UPASLC";
-export type { UPASLCFactory } from "./UPASLCFactory";
