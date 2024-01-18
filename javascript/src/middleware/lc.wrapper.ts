@@ -82,7 +82,7 @@ export class LCWrapper {
 
         const gas = await this.LCFactory.methods.create(...data, lcType).estimateGas({ from });
 
-        return this.LCFactory.methods.create(...data, lcType).send({ from, gas });
+        return this.LCFactory.methods.create(...data, lcType).send({ from, maxPriorityFeePerGas: undefined, maxFeePerGas: undefined });
     }
 
     /**
@@ -222,9 +222,9 @@ export class LCWrapper {
             ],
         ];
 
-        const gas = await this.RouterService.methods.approve(...data).estimateGas({ from });
+        // const gas = await this.RouterService.methods.approve(...data).estimateGas({ from });
 
-        return this.RouterService.methods.approve(...data).send({ from, gas });
+        return this.RouterService.methods.approve(...data).send({ from, maxPriorityFeePerGas: undefined, maxFeePerGas: undefined });
     }
 
     /**
@@ -236,7 +236,7 @@ export class LCWrapper {
     async closeLC(documentId: number | string | BN, from: string) {
         const gas = await this.RouterService.methods.closeLC(documentId).estimateGas({ from });
 
-        return this.RouterService.methods.closeLC(documentId).send({ from, gas });
+        return this.RouterService.methods.closeLC(documentId).send({ from, maxPriorityFeePerGas: undefined, maxFeePerGas: undefined });
     }
 
     /**
@@ -350,7 +350,7 @@ export class LCWrapper {
         ];
         const gas = await this.RouterService.methods.submitAmendment(...data).estimateGas({ from });
 
-        return this.RouterService.methods.submitAmendment(...data).send({ from, gas });
+        return this.RouterService.methods.submitAmendment(...data).send({ from, maxPriorityFeePerGas: undefined, maxFeePerGas: undefined });
     }
 
     /**
@@ -394,7 +394,9 @@ export class LCWrapper {
 
         const gas = await this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).estimateGas({ from });
 
-        return this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).send({ from, gas });
+        return this.RouterService.methods
+            .approveAmendment(documentId, requestId, amendSig)
+            .send({ from, maxPriorityFeePerGas: undefined, maxFeePerGas: undefined });
     }
 
     /**
@@ -413,7 +415,7 @@ export class LCWrapper {
 
         const gas = await this.RouterService.methods.fulfillAmendment(documentId, requestId).estimateGas({ from });
 
-        return this.RouterService.methods.fulfillAmendment(documentId, requestId).send({ from, gas });
+        return this.RouterService.methods.fulfillAmendment(documentId, requestId).send({ from, maxPriorityFeePerGas: undefined, maxFeePerGas: undefined });
     }
 
     /**

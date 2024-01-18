@@ -16,6 +16,7 @@ import { PermissionContracts, Role } from "./interfaces";
 
 export class Permission {
     static loadContract(web3: Web3, config = DEFAULT_CONFIG): PermissionContracts {
+        console.log("🚀 ~ Permission ~ loadContract ~ web3:", web3);
         const AccountManager = new web3.eth.Contract(
             PermissionContractABIs.AccountManager as any[] as AbiItem[],
             config.permissionContractAddresses.AccountManager
