@@ -187,10 +187,10 @@ export class LCWrapper {
         const approvalSignature = await this.approvalSignature(approvalContent, from);
 
         // Get org by stage
-        const orgs = await this.checkOrgByStage(StandardLC, stage, _typeOf);
+        const org = await this.checkOrgByStage(StandardLC, stage, _typeOf);
 
         // Check is org whitelist and account belong to org
-        orgs.map((org) => this.validateAccountOrg(org, from));
+        await this.validateAccountOrg(org, from);
 
         const data: [
             number | string | BN,
@@ -595,24 +595,11 @@ export class LCWrapper {
      * @returns
      */
     private async validateData(typeOf: LC_ENUM, parties: string[], content: StageContent, from: string) {
-        // check number of parties
-        if (
-            typeOf === LC_ENUM.STANDARD_LC ||
-            typeOf === LC_ENUM.STANDARD_LC_DISCOUNT ||
-            typeOf === LC_ENUM.STANDARD_LC_EXPORT ||
-            typeOf === LC_ENUM.STANDARD_LC_IMPORT
-        ) {
+        if (typeOf === LC_ENUM.STANDARD_LC) {
             if (parties.length != LC.NUMOFPARTIES.STANDARD_LC_PARTIES) {
                 throw new Error("The number of involved parties does not match. Expected 4.");
             }
-        } else {
-            if (parties.length != LC.NUMOFPARTIES.UPAS_LC_PARTIES) {
-                throw new Error("The number of involved parties does not match. Expected 5.");
-            }
-        }
 
-        // check org exists
-        if (typeOf === LC_ENUM.STANDARD_LC) {
             const orgs = await Promise.all(
                 [LC.INDEXOFORG.NHPH, LC.INDEXOFORG.NHTB].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call())
             );
@@ -621,6 +608,10 @@ export class LCWrapper {
                 throw new Error("Organization at index 0 or 1 does not exsist.");
             }
         } else if (typeOf === LC_ENUM.UPAS_LC) {
+            if (parties.length != LC.NUMOFPARTIES.UPAS_LC_PARTIES) {
+                throw new Error("The number of involved parties does not match. Expected 5.");
+            }
+
             const orgs = await Promise.all(
                 [LC.INDEXOFORG.NHPH, LC.INDEXOFORG.NHTB, LC.INDEXOFORG.NHTT].map((i) => this.OrgManager.methods.checkOrgExists(parties[i].toString()).call())
             );
@@ -654,9 +645,11 @@ export class LCWrapper {
      * @returns
      */
     private async validateAccountOrg(org: string, from: string) {
+        // TODO check LC_ENUM (org is one of parties)
         const [isWhitelist, isVerifyIdentity] = await Promise.all([
             this.LCManagement.methods.whitelistOrgs(org).call(),
-            this.LCManagement.methods.verifyIdentity(from, org).call(),
+            true,
+            // this.LCManagement.methods.verifyIdentity(from, org).call(),
         ]);
 
         if (!isWhitelist) {
@@ -813,24 +806,27 @@ export class LCWrapper {
      */
     private async checkOrgByStage(lcContract: LCContract, stage: number, lcType: LC_ENUM) {
         const parties = await lcContract.methods.getInvolvedParties().call();
-        let org = [];
+        let org = "";
 
-        if (lcType == LC_ENUM.STANDARD_LC) {
+        if (
+            lcType == LC_ENUM.STANDARD_LC ||
+            lcType == LC_ENUM.STANDARD_LC_IMPORT ||
+            lcType == LC_ENUM.STANDARD_LC_EXPORT ||
+            lcType == LC_ENUM.STANDARD_LC_DISCOUNT
+        ) {
             if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
-                org = [parties[LC.INDEXOFORG.NHTB]];
+                org = parties[LC.INDEXOFORG.NHTB];
             } else {
-                org = [parties[LC.INDEXOFORG.NHPH]];
-            }
-        } else if ((lcType = LC_ENUM.UPAS_LC)) {
-            if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
-                org = [parties[LC.INDEXOFORG.NHTB]];
-            } else if (stage == LC.Stage.UPAS_NHTT_NHXT) {
-                org = [parties[LC.INDEXOFORG.NHTT]];
-            } else {
-                org = [parties[LC.INDEXOFORG.NHPH]];
+                org = parties[LC.INDEXOFORG.NHPH];
             }
         } else {
-            org = parties;
+            if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
+                org = parties[LC.INDEXOFORG.NHTB];
+            } else if (stage == LC.Stage.UPAS_NHTT_NHXT) {
+                org = parties[LC.INDEXOFORG.NHTT];
+            } else {
+                org = parties[LC.INDEXOFORG.NHPH];
+            }
         }
         return org;
     }
