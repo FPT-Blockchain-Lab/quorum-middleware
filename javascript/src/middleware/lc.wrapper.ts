@@ -24,7 +24,7 @@ export class LCWrapper {
             !config.lCContractAddresses.LCFactory ||
             !config.permissionContractAddresses.OrgManager
         ) {
-            throw new Error(`required LCManagement RouterService StandardLCFactory UPASLCFactory OrgManager to be defined`);
+            throw new Error(`required LCManagement RouterService LCFactory OrgManager to be defined`);
         }
 
         const { LCManagement, RouterService, LCFactory } = LC.loadContract(web3, config);
@@ -80,7 +80,7 @@ export class LCWrapper {
         // Generate data to create LC
         const data = await this.generateDataForCreateLC(parties, _content);
 
-        const gas = await this.LCFactory.methods.create(...data, lcType).estimateGas({ from });
+        // const gas = await this.LCFactory.methods.create(...data, lcType).estimateGas({ from });
 
         return this.LCFactory.methods.create(...data, lcType).send({ from, maxPriorityFeePerGas: undefined, maxFeePerGas: undefined });
     }
@@ -187,7 +187,7 @@ export class LCWrapper {
         const approvalSignature = await this.approvalSignature(approvalContent, from);
 
         // Get org by stage
-        const org = await this.checkOrgByStage(StandardLC, stage, _typeOf);
+        const org = await this.checkOrgByStage(StandardLC, stage, _typeOf, from);
 
         // Check is org whitelist and account belong to org
         // await this.validateAccountOrg(org, from);
@@ -595,6 +595,8 @@ export class LCWrapper {
      * @returns
      */
     private async validateData(typeOf: LC_ENUM, parties: string[], content: StageContent, from: string) {
+        let isValidOrg = false;
+
         if (typeOf === LC_ENUM.STANDARD_LC) {
             if (parties.length != LC.NUMOFPARTIES.STANDARD_LC_PARTIES) {
                 throw new Error("The number of involved parties does not match. Expected 4.");
@@ -607,6 +609,8 @@ export class LCWrapper {
             if (!orgs.every((org) => org)) {
                 throw new Error("Organization at index 0 or 1 does not exsist.");
             }
+
+            isValidOrg = await this.validateAccountOrg(parties[0], from);
         } else if (typeOf === LC_ENUM.UPAS_LC) {
             if (parties.length != LC.NUMOFPARTIES.UPAS_LC_PARTIES) {
                 throw new Error("The number of involved parties does not match. Expected 5.");
@@ -619,16 +623,23 @@ export class LCWrapper {
             if (!orgs.every((org) => org)) {
                 throw new Error("Organization at index 0 or 1 or 2 does not exsist.");
             }
+
+            isValidOrg = await this.validateAccountOrg(parties[0], from);
+        } else {
+            const orgs = await Promise.all(parties.map((party) => this.OrgManager.methods.checkOrgExists(party.toString()).call()));
+
+            if (!orgs.every((org) => org)) {
+                throw new Error("Expected at least one organization exists.");
+            }
+
+            const validOrgs = await Promise.all(parties.map((party) => this.validateAccountOrg(party, from)));
+
+            isValidOrg = validOrgs.every((validOrg) => validOrg);
         }
-        // else {
-        //     const org = await this.OrgManager.methods.checkOrgExists(parties[0].toString()).call();
 
-        //     if (!org) {
-        //         throw new Error("Organization at index 0 does not exsist.");
-        //     }
-        // }
-
-        // await this.validateAccountOrg(parties[0], from);
+        if (!isValidOrg) {
+            throw new Error("Organization not whitelist or Account not belong to organization");
+        }
 
         if (content.numOfDocuments > content.contentHash.length) {
             throw new Error("The number of documents cannot greater than the length of content hash.");
@@ -645,21 +656,13 @@ export class LCWrapper {
      * @param from executor
      * @returns
      */
-    private async validateAccountOrg(org: string, from: string, lcType?: number) {
-        // TODO check LC_ENUM (org is one of parties)
+    private async validateAccountOrg(org: string, from: string) {
         const [isWhitelist, isVerifyIdentity] = await Promise.all([
             this.LCManagement.methods.whitelistOrgs(org).call(),
-            true,
-            // this.LCManagement.methods.verifyIdentity(from, org).call(),
+            this.LCManagement.methods.verifyIdentity(from, org).call(),
         ]);
 
-        if (!isWhitelist) {
-            throw new Error("Organization does not whitelist.");
-        }
-
-        if (!isVerifyIdentity) {
-            throw new Error("Account not belong to organization.");
-        }
+        return isWhitelist && isVerifyIdentity;
     }
 
     /**
@@ -805,31 +808,33 @@ export class LCWrapper {
      * @param typeOf type of LC contract
      * @returns an org in involved parties
      */
-    private async checkOrgByStage(lcContract: LCContract, stage: number, lcType: LC_ENUM) {
+    private async checkOrgByStage(lcContract: LCContract, stage: number, lcType: LC_ENUM, from: string) {
         const parties = await lcContract.methods.getInvolvedParties().call();
-        let org = "";
+        let orgs = [];
 
-        if (
-            lcType == LC_ENUM.STANDARD_LC
-            // lcType == LC_ENUM.STANDARD_LC_IMPORT ||
-            // lcType == LC_ENUM.STANDARD_LC_EXPORT ||
-            // lcType == LC_ENUM.STANDARD_LC_DISCOUNT
-        ) {
+        if (lcType == LC_ENUM.STANDARD_LC) {
             if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
-                org = parties[LC.INDEXOFORG.NHTB];
+                orgs = [parties[LC.INDEXOFORG.NHTB]];
             } else {
-                org = parties[LC.INDEXOFORG.NHPH];
+                orgs = [parties[LC.INDEXOFORG.NHPH]];
+            }
+        } else if (LC_ENUM.UPAS_LC) {
+            if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
+                orgs = [parties[LC.INDEXOFORG.NHTB]];
+            } else if (stage == LC.Stage.UPAS_NHTT_NHXT) {
+                orgs = [parties[LC.INDEXOFORG.NHTT]];
+            } else {
+                orgs = [parties[LC.INDEXOFORG.NHPH]];
             }
         } else {
-            if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
-                org = parties[LC.INDEXOFORG.NHTB];
-            } else if (stage == LC.Stage.UPAS_NHTT_NHXT) {
-                org = parties[LC.INDEXOFORG.NHTT];
-            } else {
-                org = parties[LC.INDEXOFORG.NHPH];
-            }
+            orgs = parties;
         }
-        return org;
+
+        const validOrgs = await Promise.all(orgs.map((org) => this.validateAccountOrg(org, from)));
+
+        if (validOrgs.every((validOrg) => validOrg)) {
+            throw new Error("Organization not whitelist or Account not belong to organization");
+        }
     }
 
     /**
