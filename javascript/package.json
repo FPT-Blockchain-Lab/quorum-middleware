@@ -17,7 +17,8 @@
         "web3-core": "^1.8.1",
         "web3-eth-abi": "^1.8.1",
         "web3-eth-contract": "^1.8.1",
-        "web3-utils": "^1.8.1"
+        "web3-utils": "^1.8.1",
+        "@starknet-react/core": "^1.0.4"
     },
     "main": "dist/main.js",
     "types": "dist/main.d.ts",

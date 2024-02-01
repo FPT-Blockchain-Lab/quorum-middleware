@@ -190,7 +190,7 @@ export class LCWrapper {
         const org = await this.checkOrgByStage(StandardLC, stage, _typeOf);
 
         // Check is org whitelist and account belong to org
-        await this.validateAccountOrg(org, from);
+        // await this.validateAccountOrg(org, from);
 
         const data: [
             number | string | BN,
@@ -222,7 +222,7 @@ export class LCWrapper {
             ],
         ];
 
-        // const gas = await this.RouterService.methods.approve(...data).estimateGas({ from });
+        const gas = await this.RouterService.methods.approve(...data).estimateGas({ from });
 
         return this.RouterService.methods.approve(...data).send({ from, maxPriorityFeePerGas: undefined, maxFeePerGas: undefined });
     }
@@ -619,15 +619,16 @@ export class LCWrapper {
             if (!orgs.every((org) => org)) {
                 throw new Error("Organization at index 0 or 1 or 2 does not exsist.");
             }
-        } else {
-            const org = await this.OrgManager.methods.checkOrgExists(parties[0].toString()).call();
-
-            if (!org) {
-                throw new Error("Organization at index 0 does not exsist.");
-            }
         }
+        // else {
+        //     const org = await this.OrgManager.methods.checkOrgExists(parties[0].toString()).call();
 
-        await this.validateAccountOrg(parties[0], from);
+        //     if (!org) {
+        //         throw new Error("Organization at index 0 does not exsist.");
+        //     }
+        // }
+
+        // await this.validateAccountOrg(parties[0], from);
 
         if (content.numOfDocuments > content.contentHash.length) {
             throw new Error("The number of documents cannot greater than the length of content hash.");
@@ -644,7 +645,7 @@ export class LCWrapper {
      * @param from executor
      * @returns
      */
-    private async validateAccountOrg(org: string, from: string) {
+    private async validateAccountOrg(org: string, from: string, lcType?: number) {
         // TODO check LC_ENUM (org is one of parties)
         const [isWhitelist, isVerifyIdentity] = await Promise.all([
             this.LCManagement.methods.whitelistOrgs(org).call(),
@@ -809,10 +810,10 @@ export class LCWrapper {
         let org = "";
 
         if (
-            lcType == LC_ENUM.STANDARD_LC ||
-            lcType == LC_ENUM.STANDARD_LC_IMPORT ||
-            lcType == LC_ENUM.STANDARD_LC_EXPORT ||
-            lcType == LC_ENUM.STANDARD_LC_DISCOUNT
+            lcType == LC_ENUM.STANDARD_LC
+            // lcType == LC_ENUM.STANDARD_LC_IMPORT ||
+            // lcType == LC_ENUM.STANDARD_LC_EXPORT ||
+            // lcType == LC_ENUM.STANDARD_LC_DISCOUNT
         ) {
             if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
                 org = parties[LC.INDEXOFORG.NHTB];

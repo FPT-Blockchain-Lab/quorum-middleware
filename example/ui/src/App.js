@@ -11,20 +11,50 @@ const { Header, Content } = Layout;
 
 const labelCreateLCList = [
   "documentId",
+  "lcType",
   "signedTime",
   "numOfDocument",
-  "lcType",
+  "url",
+  "content1",
+  "content2",
+  "content3",
+  "content4",
+  "content5",
+  "content6",
+  "content7",
+  "content8",
+  "content9",
+  "content10",
   "issuanceBank",
   "advisingBank",
   "applicant",
   "beneficiary",
-  "url",
+  "partyList1",
+  "partyList2",
+  "partyList3",
+  "partyList4",
+  "partyList5",
+  "partyList6",
+  "partyList7",
+  "partyList8",
+  "partyList9",
+  "partyList10",
 ];
 
 const labelUpdateLCList = [
   "documentId",
   "stage",
   "subStage",
+  "content1",
+  "content2",
+  "content3",
+  "content4",
+  "content5",
+  "content6",
+  "content7",
+  "content8",
+  "content9",
+  "content10",
   "signedTime",
   "numOfDocument",
   "url",
@@ -126,13 +156,22 @@ function App() {
        */
       const contentHash = [
         documentId,
-        Utils.keccak256Utf8("Hash of LC 1"),
-        Utils.keccak256Utf8("Hash of LC 2"),
-        Utils.keccak256Utf8("Hash of LC 3"),
-        Utils.keccak256Utf8("Hash of LC information"),
-        Utils.keccak256Utf8("Hash of LC information"),
+        ...[
+          values.content1,
+          values.content2,
+          values.content3,
+          values.content4,
+          values.content5,
+          values.content6,
+          values.content7,
+          values.content8,
+          values.content9,
+          values.content10,
+        ]
+          .filter((value) => value)
+          .map((item) => Utils.keccak256Utf8(item)),
       ];
-
+      console.log("Content hash: ", contentHash);
       /**
        * example paries
         const parties = [
@@ -144,11 +183,27 @@ function App() {
        */
 
       const parties = [
-        values.issuanceBank,
-        values.advisingBank,
-        values.applicant,
-        values.beneficiary,
+        ...[
+          values.issuanceBank,
+          values.advisingBank,
+          values.applicant,
+          values.beneficiary,
+          values.partyList1,
+          values.partyList2,
+          values.partyList3,
+          values.partyList4,
+          values.partyList5,
+          values.partyList6,
+          values.partyList7,
+          values.partyList8,
+          values.partyList9,
+          values.partyList10,
+        ]
+          .filter((value) => value)
+          .map((item) => Utils.keccak256Utf8(item)),
       ];
+
+      console.log("Parties: ", parties);
 
       const acknowledgeMessage = LC.generateAcknowledgeMessageHash(
         contentHash.slice(1, numOfDocument + 1)
@@ -165,6 +220,7 @@ function App() {
         numOfDocuments: numOfDocument,
         acknowledgeSignature,
       };
+      console.log(content, parties);
 
       /**
        * Example for custom config
@@ -204,7 +260,7 @@ function App() {
       const tx = await wrapperContract.createLC(
         parties,
         content,
-        LC_ENUM.STANDARD_LC_IMPORT,
+        values.lcType,
         account
       );
 
@@ -226,18 +282,28 @@ function App() {
         await setupDefaultNetwork();
       }
 
+      // Generate documentId
+      const documentId = Utils.keccak256Utf8(values.documentId);
       /**
        * example content hash
        */
       const contentHash = [
-        Utils.keccak256Utf8("Hash of LC Document"),
-        Utils.keccak256Utf8("Hash of LC 1"),
-        Utils.keccak256Utf8("Hash of LC 2"),
-        Utils.keccak256Utf8("Hash of LC 3"),
-        Utils.keccak256Utf8("Hash of LC information"),
+        ...[
+          values.content1,
+          values.content2,
+          values.content3,
+          values.content4,
+          values.content5,
+          values.content6,
+          values.content7,
+          values.content8,
+          values.content9,
+          values.content10,
+        ]
+          .filter((value) => value)
+          .map((item) => Utils.keccak256Utf8(item)),
       ];
-      // Generate documentId
-      const documentId = Utils.keccak256Utf8(values.documentId);
+
       const signedTime = new BN(values.signedTime);
 
       const numOfDocument = +values.numOfDocument;
@@ -266,6 +332,7 @@ function App() {
       console.log(tx);
       alert("Update LC success");
     } catch (error) {
+      alert(error.message ?? error);
       console.error(error);
     }
   };
@@ -425,12 +492,19 @@ function App() {
       const { PermissionsInterface } = new Permission.loadContract(
         new Web3(window.ethereum)
       );
-      console.log(PermissionsInterface);
       await PermissionsInterface.methods
-        .assignAccountRole(values.accountId, values.orgId, values.roleId)
+        .assignAccountRole(
+          values.accountId,
+          Utils.keccak256Utf8(values.orgId),
+          values.roleId
+        )
         .estimateGas({ from: account });
       const tx = await PermissionsInterface.methods
-        .assignAccountRole(values.accountId, values.orgId, values.roleId)
+        .assignAccountRole(
+          values.accountId,
+          Utils.keccak256Utf8(values.orgId),
+          values.roleId
+        )
         .send({ from: account });
 
       console.log(tx);
@@ -448,7 +522,7 @@ function App() {
         name={label}
         rules={[
           {
-            required: true,
+            // required: true,
             message: `Please input your ${label}!`,
           },
         ]}
@@ -801,9 +875,9 @@ function App() {
             { key: "CreateLC", label: "Create LC" },
             { key: "ApproveLC", label: "Approve LC" },
             { key: "CloseLC", label: "Close LC" },
-            { key: "Amend", label: "Amend LC" },
-            { key: "ApproveAmend", label: "Approve Amend" },
-            { key: "FullfillAmend", label: "Fullfill Amend" },
+            // { key: "Amend", label: "Amend LC" },
+            // { key: "ApproveAmend", label: "Approve Amend" },
+            // { key: "FullfillAmend", label: "Fullfill Amend" },
             { key: "AddAccountToOrg", label: "Add account to org" },
             {
               key: "ConnectMetamask",

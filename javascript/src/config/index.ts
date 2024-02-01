@@ -35,10 +35,10 @@ export enum LC_ENUM {
 
 export const TESTNET_CONFIG: config = {
     lCContractAddresses: {
-        LCManagement: "0x0F9DB2bB429b0231789c0A81Ff831cC14C63B7bE",
-        RouterService: "0x8bD227a3CEf09106DD6fE02a84599e8a235a8773",
-        LCFactory: "0xEb10A2227d152713345B551bdd935A584DEE081e",
-        AmendRequest: "0x87a62C080a6c21cF6fB2733131cE0B66fD5E080B",
+        LCManagement: "0x5889E7A29720dff4F17Dcbe6C47C6c2C80045812",
+        RouterService: "0x0cE081Ea06a5A230d66e5Ee8b392a283921c24c0",
+        LCFactory: "0xC7Aecb95508561cA04726bBdf32E273A0b26E3B8",
+        AmendRequest: "0xf50d5B27cC8D2841DB9da7238bcf0671c6F24988",
     },
     permissionContractAddresses: {
         OrgManager: "0x415A81aadF45932e34b1b22899Af03705f8b1934",
@@ -57,10 +57,10 @@ export const TESTNET_CONFIG: config = {
 
 export const STAGING_CONFIG: config = {
     lCContractAddresses: {
-        LCManagement: "0x0F9DB2bB429b0231789c0A81Ff831cC14C63B7bE",
-        RouterService: "0x8bD227a3CEf09106DD6fE02a84599e8a235a8773",
-        LCFactory: "0xEb10A2227d152713345B551bdd935A584DEE081e",
-        AmendRequest: "0x87a62C080a6c21cF6fB2733131cE0B66fD5E080B",
+        LCManagement: "0x5889E7A29720dff4F17Dcbe6C47C6c2C80045812",
+        RouterService: "0x0cE081Ea06a5A230d66e5Ee8b392a283921c24c0",
+        LCFactory: "0xC7Aecb95508561cA04726bBdf32E273A0b26E3B8",
+        AmendRequest: "0xf50d5B27cC8D2841DB9da7238bcf0671c6F24988",
     },
     permissionContractAddresses: {
         OrgManager: "0x415A81aadF45932e34b1b22899Af03705f8b1934",
