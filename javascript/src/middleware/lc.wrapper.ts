@@ -80,7 +80,7 @@ export class LCWrapper {
         // Generate data to create LC
         const data = await this.generateDataForCreateLC(parties, _content);
 
-        // const gas = await this.LCFactory.methods.create(...data, lcType).estimateGas({ from });
+        const gas = await this.LCFactory.methods.create(...data, lcType).estimateGas({ from });
 
         return this.LCFactory.methods.create(...data, lcType).send({ from, maxPriorityFeePerGas: undefined, maxFeePerGas: undefined });
     }
@@ -186,8 +186,8 @@ export class LCWrapper {
         // Get approval signature
         const approvalSignature = await this.approvalSignature(approvalContent, from);
 
-        // Get org by stage
-        const org = await this.checkOrgByStage(StandardLC, stage, _typeOf, from);
+        // Check org by stage
+        await this.checkOrgByStage(StandardLC, stage, _typeOf, from);
 
         // Check is org whitelist and account belong to org
         // await this.validateAccountOrg(org, from);
@@ -628,13 +628,13 @@ export class LCWrapper {
         } else {
             const orgs = await Promise.all(parties.map((party) => this.OrgManager.methods.checkOrgExists(party.toString()).call()));
 
-            if (!orgs.every((org) => org)) {
+            if (!orgs.some((org) => org)) {
                 throw new Error("Expected at least one organization exists.");
             }
 
             const validOrgs = await Promise.all(parties.map((party) => this.validateAccountOrg(party, from)));
 
-            isValidOrg = validOrgs.every((validOrg) => validOrg);
+            isValidOrg = validOrgs.some((validOrg) => validOrg);
         }
 
         if (!isValidOrg) {
@@ -818,7 +818,7 @@ export class LCWrapper {
             } else {
                 orgs = [parties[LC.INDEXOFORG.NHPH]];
             }
-        } else if (LC_ENUM.UPAS_LC) {
+        } else if (lcType == LC_ENUM.UPAS_LC) {
             if (stage == LC.Stage.XUAT_TRINH_TCD_BCT || stage == LC.Stage.UPAS_NHXT_BTH) {
                 orgs = [parties[LC.INDEXOFORG.NHTB]];
             } else if (stage == LC.Stage.UPAS_NHTT_NHXT) {
@@ -832,7 +832,7 @@ export class LCWrapper {
 
         const validOrgs = await Promise.all(orgs.map((org) => this.validateAccountOrg(org, from)));
 
-        if (validOrgs.every((validOrg) => validOrg)) {
+        if (!validOrgs.some((validOrg) => validOrg)) {
             throw new Error("Organization not whitelist or Account not belong to organization");
         }
     }
