@@ -75,7 +75,7 @@ export class LCWrapper {
         };
 
         // Validate data
-        await this.validateData(lcType, parties, _content, from);
+        // await this.validateData(lcType, parties, _content, from);
 
         // Generate data to create LC
         const data = await this.generateDataForCreateLC(parties, _content);
