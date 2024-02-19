@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
-import { Layout, Menu, Form, Input, Button } from "antd";
+import { Layout, Menu, Form, Input, Button, Select } from "antd";
 import Web3 from "web3";
 import { CHAIN_ID, setupDefaultNetwork } from "./utils";
 import BN from "bn.js";
@@ -11,7 +11,7 @@ const { Header, Content } = Layout;
 
 const labelCreateLCList = [
   "documentId",
-  "lcType",
+  // "lcType",
   "signedTime",
   "numOfDocument",
   "url",
@@ -59,12 +59,14 @@ const labelUpdateLCList = [
   "numOfDocument",
   "url",
 ];
-
+const stageContent = ["documentId", "stage", "subStage"];
 const labelAmendLCList = ["documentId"];
 const labelApproveAmendLCList = ["documentId", "nonce"];
 const labelFullfillAmendLCList = ["documentId", "nonce"];
 const labelCloseLCList = ["documentId"];
 const addAccountToOrgList = ["accountId", "orgId", "roleId"];
+const grantRole = ["accountId"];
+const whitelistOrg = ["org"];
 
 function App() {
   const [lc, setLC] = useState(undefined);
@@ -124,7 +126,11 @@ function App() {
 
       console.log("documentId", documentId);
       const tx = await routerService.methods
-        .getStageContent(BigNumber.from(documentId).toString(), 1, 1)
+        .getStageContent(
+          BigNumber.from(documentId).toString(),
+          values.stage,
+          values.subStage
+        )
         .call();
       console.log(tx);
       setLC(tx);
@@ -151,9 +157,6 @@ function App() {
       const documentId = Utils.keccak256Utf8(values.documentId);
       const url = values.url;
 
-      /**
-       * example content hash
-       */
       const contentHash = [
         documentId,
         ...[
@@ -172,15 +175,6 @@ function App() {
           .map((item) => Utils.keccak256Utf8(item)),
       ];
       console.log("Content hash: ", contentHash);
-      /**
-       * example paries
-        const parties = [
-          "0x5bac6b7287fd56f459d23e62797ff954588ef68cc8dabdce6a0e319f2883ac1a",
-          "0x5bac6b7287fd56f459d23e62797ff954588ef68cc8dabdce6a0e319f2883ac1a",
-          "0x5bac6b7287fd56f459d23e62797ff954588ef68cc8dabdce6a0e319f2883ac1a",
-          "0x7286bc0ec3e95fdd8e7dcdd39efa6ef38828d7534212edd7b9e0261d71873bcb.0x07d3a835b7da54a87369f388a79a1d1e00d6d3261a7157023011a6534faf86d8.0x9771c9869f152cccb560e8c2622ff06d0714f1503f4b32b771fe42e595fad0ce.0x044a15937354c7c6f38f2a5f1ffdd9102ea1c4691cea9a5fc6aa63d18f77bd25",
-        ];
-       */
 
       const parties = [
         ...[
@@ -224,8 +218,8 @@ function App() {
 
       /**
        * Example for custom config
-       * 
-       * 
+       *
+       *
         const customConfig = {
           lCContractAddresses: {
             LCManagement: "0x795C2DeEf13e6D49dF73Ca194250c97511796255",
@@ -256,7 +250,6 @@ function App() {
 
       const wrapperContract = new LCWrapper(new Web3(window.ethereum));
 
-      console.log(LC_ENUM, parties);
       const tx = await wrapperContract.createLC(
         parties,
         content,
@@ -515,6 +508,60 @@ function App() {
     }
   };
 
+  const handleGrantRole = async (values) => {
+    try {
+      if (!web3 || !account) {
+        alert("Connect to Metamask!");
+        return;
+      }
+      if (chainId !== CHAIN_ID) {
+        await setupDefaultNetwork();
+      }
+
+      const { LCManagement } = new LC.loadContract(new Web3(window.ethereum));
+      await LCManagement.methods
+        .grantRole(values.role, values.accountId)
+        .estimateGas({ from: account });
+      const tx = await LCManagement.methods
+        .grantRole(values.role, values.accountId)
+        .send({ from: account });
+
+      console.log(tx);
+      alert("Grant role success!");
+    } catch (error) {
+      console.log(error);
+      error.message && alert(error.message);
+    }
+  };
+
+  const handleWhitelistOrg = async (values) => {
+    try {
+      if (!web3 || !account) {
+        alert("Connect to Metamask!");
+        return;
+      }
+      if (chainId !== CHAIN_ID) {
+        await setupDefaultNetwork();
+      }
+
+      const org = Utils.keccak256Utf8(values.org);
+
+      const { LCManagement } = new LC.loadContract(new Web3(window.ethereum));
+      await LCManagement.methods
+        .whitelist([org])
+        .estimateGas({ from: account });
+      const tx = await LCManagement.methods
+        .whitelist([org])
+        .send({ from: account });
+
+      console.log(tx);
+      alert("Whitelist org success!");
+    } catch (error) {
+      console.log(error);
+      error.message && alert(error.message);
+    }
+  };
+
   const FormItem = (label) => {
     return (
       <Form.Item
@@ -562,6 +609,37 @@ function App() {
         onFinishFailed={onFinishFailed}
         autoComplete="off"
       >
+        <Form.Item
+          label="lcType"
+          name="lcType"
+          rules={[
+            {
+              // required: true,
+              message: `Please input your role!`,
+            },
+          ]}
+        >
+          <Select>
+            <Select.Option value={LC_ENUM.STANDARD_LC.toString()}>
+              STANDARD_LC
+            </Select.Option>
+            <Select.Option value={LC_ENUM.UPAS_LC.toString()}>
+              UPAS_LC
+            </Select.Option>
+            <Select.Option value={LC_ENUM.UPAS_LC_IMPORT.toString()}>
+              UPAS_LC_IMPORT
+            </Select.Option>
+            <Select.Option value={LC_ENUM.STANDARD_LC_IMPORT.toString()}>
+              STANDARD_LC_IMPORT
+            </Select.Option>
+            <Select.Option value={LC_ENUM.STANDARD_LC_EXPORT.toString()}>
+              STANDARD_LC_EXPORT
+            </Select.Option>
+            <Select.Option value={LC_ENUM.STANDARD_LC_DISCOUNT.toString()}>
+              STANDARD_LC_DISCOUNT
+            </Select.Option>
+          </Select>
+        </Form.Item>
         {labelCreateLCList.map((idx, label) => FormItem(idx, label))}
         <Form.Item
           wrapperCol={{
@@ -627,7 +705,7 @@ function App() {
           onFinishFailed={onFinishFailed}
           autoComplete="off"
         >
-          {labelAmendLCList.map((idx, label) => FormItem(idx, label))}
+          {stageContent.map((idx, label) => FormItem(idx, label))}
           <Form.Item
             wrapperCol={{
               offset: 8,
@@ -847,6 +925,89 @@ function App() {
     );
   };
 
+  const WhitelistOrg = () => {
+    return (
+      <Form
+        name="basic"
+        labelCol={{
+          span: 4,
+        }}
+        wrapperCol={{
+          span: 16,
+        }}
+        initialValues={{
+          remember: true,
+        }}
+        onFinish={handleWhitelistOrg}
+        onFinishFailed={onFinishFailed}
+        autoComplete="off"
+      >
+        {whitelistOrg.map((idx, label) => FormItem(idx, label))}
+        <Form.Item
+          wrapperCol={{
+            offset: 8,
+            span: 16,
+          }}
+        >
+          <Button type="primary" htmlType="submit">
+            Whitelist
+          </Button>
+        </Form.Item>
+      </Form>
+    );
+  };
+
+  const GrantLCRole = () => {
+    return (
+      <Form
+        name="basic"
+        labelCol={{
+          span: 4,
+        }}
+        wrapperCol={{
+          span: 16,
+        }}
+        initialValues={{
+          remember: true,
+        }}
+        onFinish={handleGrantRole}
+        onFinishFailed={onFinishFailed}
+        autoComplete="off"
+      >
+        <Form.Item
+          label="role"
+          name="role"
+          rules={[
+            {
+              // required: true,
+              message: `Please input your role!`,
+            },
+          ]}
+        >
+          <Select>
+            <Select.Option value="0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09">
+              VERIFIER
+            </Select.Option>
+            <Select.Option value="0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929">
+              OPERATOR
+            </Select.Option>
+          </Select>
+        </Form.Item>
+        {grantRole.map((idx, label) => FormItem(idx, label))}
+        <Form.Item
+          wrapperCol={{
+            offset: 8,
+            span: 16,
+          }}
+        >
+          <Button type="primary" htmlType="submit">
+            Add
+          </Button>
+        </Form.Item>
+      </Form>
+    );
+  };
+
   // const ApproveModal = () => {
   //   return (
   //     <>
@@ -879,6 +1040,8 @@ function App() {
             // { key: "ApproveAmend", label: "Approve Amend" },
             // { key: "FullfillAmend", label: "Fullfill Amend" },
             { key: "AddAccountToOrg", label: "Add account to org" },
+            { key: "WhitelistOrg", label: "Whitelist Org" },
+            { key: "GrantLCRole", label: "Grant LC Role" },
             {
               key: "ConnectMetamask",
               label: !account ? "ConnectMetamask" : account,
@@ -917,6 +1080,10 @@ function App() {
               FullfillAmendForm()
             ) : keyMenu === "AddAccountToOrg" ? (
               AddAccountToOrgForm()
+            ) : keyMenu === "GrantLCRole" ? (
+              GrantLCRole()
+            ) : keyMenu === "WhitelistOrg" ? (
+              WhitelistOrg()
             ) : (
               <>Nothing to show</>
             )}
