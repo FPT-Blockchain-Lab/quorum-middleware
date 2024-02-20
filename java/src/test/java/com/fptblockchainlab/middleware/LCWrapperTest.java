@@ -1,29 +1,29 @@
 package com.fptblockchainlab.middleware;
 
 
-import com.fptblockchainlab.bindings.lc.LCManagement;
-import com.fptblockchainlab.bindings.lc.RouterService;
-import com.fptblockchainlab.bindings.permission.OrgManager;
-import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.web3j.crypto.Credentials;
-import org.web3j.protocol.core.RemoteFunctionCall;
-import org.web3j.utils.Numeric;
+// import com.fptblockchainlab.bindings.lc.LCManagement;
+// import com.fptblockchainlab.bindings.lc.RouterService;
+// import com.fptblockchainlab.bindings.permission.OrgManager;
+// import org.junit.Test;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.runner.RunWith;
+// import org.mockito.InjectMocks;
+// import org.mockito.Mock;
+// import org.mockito.MockitoAnnotations;
+// import org.mockito.junit.MockitoJUnitRunner;
+// import org.web3j.crypto.Credentials;
+// import org.web3j.protocol.core.RemoteFunctionCall;
+// import org.web3j.utils.Numeric;
 
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.stream.Collectors;
+// import java.math.BigInteger;
+// import java.util.Arrays;
+// import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+// import static org.junit.jupiter.api.Assertions.*;
+// import static org.mockito.Mockito.mock;
+// import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+// @RunWith(MockitoJUnitRunner.class)
 public class LCWrapperTest {
 //    @Mock
 //    StandardLCFactory mockStandardLCFactory;
