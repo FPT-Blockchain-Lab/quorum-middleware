@@ -17,6 +17,7 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.abi.datatypes.generated.Uint8;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.RemoteFunctionCall;
@@ -33,7 +34,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the 
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 1.4.2.
+ * <p>Generated with web3j version 1.5.0.
  */
 @SuppressWarnings("rawtypes")
 public class RouterService extends Contract {
@@ -128,7 +129,7 @@ public class RouterService extends Contract {
     public RemoteFunctionCall<Tuple2<String, BigInteger>> getAddress(BigInteger _documentId) {
         final Function function = new Function(FUNC_GETADDRESS, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId)), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Uint256>() {}));
+                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Uint8>() {}));
         return new RemoteFunctionCall<Tuple2<String, BigInteger>>(function,
                 new Callable<Tuple2<String, BigInteger>>() {
                     @Override

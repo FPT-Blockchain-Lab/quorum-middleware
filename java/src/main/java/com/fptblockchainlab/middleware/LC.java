@@ -1,6 +1,5 @@
 package com.fptblockchainlab.middleware;
 
-import com.fptblockchainlab.bindings.lc.StandardLC;
 import lombok.Getter;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeEncoder;
@@ -111,8 +110,13 @@ public class LC {
     }
 
     public enum LCTYPE {
-        STANDARD_LC(1),
-        UPAS_LC(2);
+        STANDARD_LC(0),
+        UPAS_LC(1),
+
+        UPAS_LC_IMPORT(2),
+        STANDARD_LC_IMPORT(3),
+        STANDARD_LC_EXPORT(4),
+        STANDARD_LC_DISCOUNT(5);
 
         @Getter
         private final int value;
@@ -154,7 +158,7 @@ public class LC {
         }
     }
 
-    public static List<LC.Stage> getLcStatus(StandardLC lc) throws Exception {
+    public static List<LC.Stage> getLcStatus(com.fptblockchainlab.bindings.lc.LC lc) throws Exception {
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();
         List<BigInteger> lcStatus = lc.getStatus().send();
         List<LC.Stage> rootStages = new ArrayList<>();

@@ -101,17 +101,17 @@ public interface IMiddleware {
      * @return
      * @throws Exception
      */
-    TransactionReceipt createStandardLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception;
+    TransactionReceipt createLC(List<String> parties, LC.Content content, Credentials credentials, LC.LCTYPE lctype) throws Exception;
 
-    /**
-     *
-     * @param parties
-     * @param content
-     * @param credentials
-     * @return
-     * @throws Exception
-     */
-    TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception;
+//    /**
+//     *
+//     * @param parties
+//     * @param content
+//     * @param credentials
+//     * @return
+//     * @throws Exception
+//     */
+//    TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception;
 
     /**
      *

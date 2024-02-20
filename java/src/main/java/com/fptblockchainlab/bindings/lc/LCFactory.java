@@ -1,7 +1,6 @@
 package com.fptblockchainlab.bindings.lc;
 
 import io.reactivex.Flowable;
-import io.reactivex.functions.Function;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,10 +15,12 @@ import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicBytes;
 import org.web3j.abi.datatypes.DynamicStruct;
 import org.web3j.abi.datatypes.Event;
+import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.abi.datatypes.generated.Uint8;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
@@ -39,13 +40,13 @@ import org.web3j.tx.gas.ContractGasProvider;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the 
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 1.4.2.
+ * <p>Generated with web3j version 1.5.0.
  */
 @SuppressWarnings("rawtypes")
-public class UPASLCFactory extends Contract {
+public class LCFactory extends Contract {
     public static final String BINARY = "Bin file was not provided";
 
-    public static final String FUNC_UPAS_WRAPPER = "UPAS_WRAPPER";
+    public static final String FUNC_WRAPPER = "WRAPPER";
 
     public static final String FUNC_AMEND = "amend";
 
@@ -57,95 +58,98 @@ public class UPASLCFactory extends Contract {
 
     public static final String FUNC_SETLCMANAGEMENT = "setLCManagement";
 
-    public static final Event NEWUPASLC_EVENT = new Event("NewUPASLC", 
-            Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>(true) {}, new TypeReference<Address>(true) {}, new TypeReference<Address>(true) {}));
+    public static final Event NEWLC_EVENT = new Event("NewLC", 
+            Arrays.<TypeReference<?>>asList(new TypeReference<Uint8>(true) {}, new TypeReference<Uint256>(true) {}, new TypeReference<Address>(true) {}, new TypeReference<Address>() {}));
     ;
 
     @Deprecated
-    protected UPASLCFactory(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
+    protected LCFactory(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
         super(BINARY, contractAddress, web3j, credentials, gasPrice, gasLimit);
     }
 
-    protected UPASLCFactory(String contractAddress, Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider) {
+    protected LCFactory(String contractAddress, Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider) {
         super(BINARY, contractAddress, web3j, credentials, contractGasProvider);
     }
 
     @Deprecated
-    protected UPASLCFactory(String contractAddress, Web3j web3j, TransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit) {
+    protected LCFactory(String contractAddress, Web3j web3j, TransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit) {
         super(BINARY, contractAddress, web3j, transactionManager, gasPrice, gasLimit);
     }
 
-    protected UPASLCFactory(String contractAddress, Web3j web3j, TransactionManager transactionManager, ContractGasProvider contractGasProvider) {
+    protected LCFactory(String contractAddress, Web3j web3j, TransactionManager transactionManager, ContractGasProvider contractGasProvider) {
         super(BINARY, contractAddress, web3j, transactionManager, contractGasProvider);
     }
 
-    public static List<NewUPASLCEventResponse> getNewUPASLCEvents(TransactionReceipt transactionReceipt) {
-        List<Contract.EventValuesWithLog> valueList = staticExtractEventParametersWithLog(NEWUPASLC_EVENT, transactionReceipt);
-        ArrayList<NewUPASLCEventResponse> responses = new ArrayList<NewUPASLCEventResponse>(valueList.size());
+    public static List<NewLCEventResponse> getNewLCEvents(TransactionReceipt transactionReceipt) {
+        List<Contract.EventValuesWithLog> valueList = staticExtractEventParametersWithLog(NEWLC_EVENT, transactionReceipt);
+        ArrayList<NewLCEventResponse> responses = new ArrayList<NewLCEventResponse>(valueList.size());
         for (Contract.EventValuesWithLog eventValues : valueList) {
-            NewUPASLCEventResponse typedResponse = new NewUPASLCEventResponse();
+            NewLCEventResponse typedResponse = new NewLCEventResponse();
             typedResponse.log = eventValues.getLog();
-            typedResponse.documentID = (BigInteger) eventValues.getIndexedValues().get(0).getValue();
-            typedResponse.creator = (String) eventValues.getIndexedValues().get(1).getValue();
-            typedResponse.lcContractAddr = (String) eventValues.getIndexedValues().get(2).getValue();
+            typedResponse.lcType = (BigInteger) eventValues.getIndexedValues().get(0).getValue();
+            typedResponse.documentID = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
+            typedResponse.creator = (String) eventValues.getIndexedValues().get(2).getValue();
+            typedResponse.lcContractAddr = (String) eventValues.getNonIndexedValues().get(0).getValue();
             responses.add(typedResponse);
         }
         return responses;
     }
 
-    public Flowable<NewUPASLCEventResponse> newUPASLCEventFlowable(EthFilter filter) {
-        return web3j.ethLogFlowable(filter).map(new Function<Log, NewUPASLCEventResponse>() {
-            @Override
-            public NewUPASLCEventResponse apply(Log log) {
-                Contract.EventValuesWithLog eventValues = extractEventParametersWithLog(NEWUPASLC_EVENT, log);
-                NewUPASLCEventResponse typedResponse = new NewUPASLCEventResponse();
-                typedResponse.log = log;
-                typedResponse.documentID = (BigInteger) eventValues.getIndexedValues().get(0).getValue();
-                typedResponse.creator = (String) eventValues.getIndexedValues().get(1).getValue();
-                typedResponse.lcContractAddr = (String) eventValues.getIndexedValues().get(2).getValue();
-                return typedResponse;
-            }
-        });
+    public static NewLCEventResponse getNewLCEventFromLog(Log log) {
+        Contract.EventValuesWithLog eventValues = staticExtractEventParametersWithLog(NEWLC_EVENT, log);
+        NewLCEventResponse typedResponse = new NewLCEventResponse();
+        typedResponse.log = log;
+        typedResponse.lcType = (BigInteger) eventValues.getIndexedValues().get(0).getValue();
+        typedResponse.documentID = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
+        typedResponse.creator = (String) eventValues.getIndexedValues().get(2).getValue();
+        typedResponse.lcContractAddr = (String) eventValues.getNonIndexedValues().get(0).getValue();
+        return typedResponse;
     }
 
-    public Flowable<NewUPASLCEventResponse> newUPASLCEventFlowable(DefaultBlockParameter startBlock, DefaultBlockParameter endBlock) {
+    public Flowable<NewLCEventResponse> newLCEventFlowable(EthFilter filter) {
+        return web3j.ethLogFlowable(filter).map(log -> getNewLCEventFromLog(log));
+    }
+
+    public Flowable<NewLCEventResponse> newLCEventFlowable(DefaultBlockParameter startBlock, DefaultBlockParameter endBlock) {
         EthFilter filter = new EthFilter(startBlock, endBlock, getContractAddress());
-        filter.addSingleTopic(EventEncoder.encode(NEWUPASLC_EVENT));
-        return newUPASLCEventFlowable(filter);
+        filter.addSingleTopic(EventEncoder.encode(NEWLC_EVENT));
+        return newLCEventFlowable(filter);
     }
 
-    public RemoteFunctionCall<String> UPAS_WRAPPER() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_UPAS_WRAPPER, 
+    public RemoteFunctionCall<String> WRAPPER() {
+        final Function function = new Function(FUNC_WRAPPER, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> amend(String _executor, BigInteger _documentId, List<String> _parties) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+    public RemoteFunctionCall<TransactionReceipt> amend(String _executor, BigInteger _documentId, List<String> _parties, BigInteger _lcType) {
+        final Function function = new Function(
                 FUNC_AMEND, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _executor), 
                 new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
                 new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.Utf8String>(
                         org.web3j.abi.datatypes.Utf8String.class,
-                        org.web3j.abi.Utils.typeMap(_parties, org.web3j.abi.datatypes.Utf8String.class))), 
+                        org.web3j.abi.Utils.typeMap(_parties, org.web3j.abi.datatypes.Utf8String.class)), 
+                new org.web3j.abi.datatypes.generated.Uint8(_lcType)), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> create(List<String> _parties, Content _content) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+    public RemoteFunctionCall<TransactionReceipt> create(List<String> _parties, Content _content, BigInteger _lcType) {
+        final Function function = new Function(
                 FUNC_CREATE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.Utf8String>(
                         org.web3j.abi.datatypes.Utf8String.class,
                         org.web3j.abi.Utils.typeMap(_parties, org.web3j.abi.datatypes.Utf8String.class)), 
-                _content), 
+                _content, 
+                new org.web3j.abi.datatypes.generated.Uint8(_lcType)), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
     public RemoteFunctionCall<List> getLCAddress(BigInteger _documentId) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETLCADDRESS, 
+        final Function function = new Function(FUNC_GETLCADDRESS, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<Address>>() {}));
         return new RemoteFunctionCall<List>(function,
@@ -160,14 +164,14 @@ public class UPASLCFactory extends Contract {
     }
 
     public RemoteFunctionCall<String> management() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_MANAGEMENT, 
+        final Function function = new Function(FUNC_MANAGEMENT, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> setLCManagement(String _management) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_SETLCMANAGEMENT, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _management)), 
                 Collections.<TypeReference<?>>emptyList());
@@ -175,21 +179,21 @@ public class UPASLCFactory extends Contract {
     }
 
     @Deprecated
-    public static UPASLCFactory load(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
-        return new UPASLCFactory(contractAddress, web3j, credentials, gasPrice, gasLimit);
+    public static LCFactory load(String contractAddress, Web3j web3j, Credentials credentials, BigInteger gasPrice, BigInteger gasLimit) {
+        return new LCFactory(contractAddress, web3j, credentials, gasPrice, gasLimit);
     }
 
     @Deprecated
-    public static UPASLCFactory load(String contractAddress, Web3j web3j, TransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit) {
-        return new UPASLCFactory(contractAddress, web3j, transactionManager, gasPrice, gasLimit);
+    public static LCFactory load(String contractAddress, Web3j web3j, TransactionManager transactionManager, BigInteger gasPrice, BigInteger gasLimit) {
+        return new LCFactory(contractAddress, web3j, transactionManager, gasPrice, gasLimit);
     }
 
-    public static UPASLCFactory load(String contractAddress, Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider) {
-        return new UPASLCFactory(contractAddress, web3j, credentials, contractGasProvider);
+    public static LCFactory load(String contractAddress, Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider) {
+        return new LCFactory(contractAddress, web3j, credentials, contractGasProvider);
     }
 
-    public static UPASLCFactory load(String contractAddress, Web3j web3j, TransactionManager transactionManager, ContractGasProvider contractGasProvider) {
-        return new UPASLCFactory(contractAddress, web3j, transactionManager, contractGasProvider);
+    public static LCFactory load(String contractAddress, Web3j web3j, TransactionManager transactionManager, ContractGasProvider contractGasProvider) {
+        return new LCFactory(contractAddress, web3j, transactionManager, contractGasProvider);
     }
 
     public static class Content extends DynamicStruct {
@@ -243,7 +247,9 @@ public class UPASLCFactory extends Contract {
         }
     }
 
-    public static class NewUPASLCEventResponse extends BaseEventResponse {
+    public static class NewLCEventResponse extends BaseEventResponse {
+        public BigInteger lcType;
+
         public BigInteger documentID;
 
         public String creator;

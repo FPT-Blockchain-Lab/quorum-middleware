@@ -1,9 +1,8 @@
 package com.fptblockchainlab.middleware;
 
+import com.fptblockchainlab.bindings.lc.LCFactory;
 import com.fptblockchainlab.bindings.lc.LCManagement;
 import com.fptblockchainlab.bindings.lc.RouterService;
-import com.fptblockchainlab.bindings.lc.StandardLCFactory;
-import com.fptblockchainlab.bindings.lc.UPASLCFactory;
 import com.fptblockchainlab.bindings.permission.AccountManager;
 import com.fptblockchainlab.bindings.permission.OrgManager;
 import com.fptblockchainlab.bindings.permission.PermissionsInterface;
@@ -60,13 +59,12 @@ public class MiddlewareImpl implements IMiddleware {
                 DEFAULT_POLLING_ATTEMPTS_PER_TX_HASH
         );
         this.transactionManager = new FastRawTransactionManager(quorum, credentials, config.getChainId(), transactionReceiptProcessor);
-        if (config.getLcManagmentAddress().isPresent() && config.getStandardLCFactoryAddress().isPresent() && config.getUpaslcFactoryAddress().isPresent() && config.getRouterServiceAddress().isPresent() && config.getOrgMgrAddress().isPresent()) {
+        if (config.getLcManagmentAddress().isPresent() && config.getLcFactoryAddress().isPresent() && config.getRouterServiceAddress().isPresent() && config.getOrgMgrAddress().isPresent()) {
             LCManagement lcManagement = LCManagement.load(config.getLcManagmentAddress().get(), quorum, this.transactionManager , contractGasProvider);
-            StandardLCFactory standardLCFactory = StandardLCFactory.load(config.getStandardLCFactoryAddress().get(), quorum, this.transactionManager , contractGasProvider);
-            UPASLCFactory upaslcFactory = UPASLCFactory.load(config.getUpaslcFactoryAddress().get(), quorum, this.transactionManager , contractGasProvider);
+            LCFactory lcFactory = LCFactory.load(config.getLcFactoryAddress().get(), quorum, this.transactionManager , contractGasProvider);
             RouterService routerService = RouterService.load(config.getRouterServiceAddress().get(), quorum, this.transactionManager , contractGasProvider);
             OrgManager orgManager = OrgManager.load(config.getOrgMgrAddress().get(), quorum, this.transactionManager, contractGasProvider);
-            this.lcWrapper = new LCWrapper(quorum, standardLCFactory, upaslcFactory, routerService, lcManagement, orgManager);
+            this.lcWrapper = new LCWrapper(quorum, lcFactory, routerService, lcManagement, orgManager);
         }
 
         if (config.getAccountMgrAddress().isPresent() && config.getOrgMgrAddress().isPresent() && config.getRoleMgrAddress().isPresent() && config.getInterfaceAddress().isPresent() && config.getUltimateParentOrg().isPresent()) {
@@ -139,14 +137,14 @@ public class MiddlewareImpl implements IMiddleware {
     }
 
     @Override
-    public TransactionReceipt createStandardLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
-        return this.lcWrapper.createStandardLC(parties, content, credentials);
+    public TransactionReceipt createLC(List<String> parties, LC.Content content, Credentials credentials, LC.LCTYPE lctype) throws Exception {
+        return this.lcWrapper.createLC(parties, content, credentials, lctype);
     }
 
-    @Override
-    public TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
-        return this.lcWrapper.createUPASLC(parties, content, credentials);
-    }
+//    @Override
+//    public TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
+//        return this.lcWrapper.createUPASLC(parties, content, credentials);
+//    }
 
     @Override
     public TransactionReceipt approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception {

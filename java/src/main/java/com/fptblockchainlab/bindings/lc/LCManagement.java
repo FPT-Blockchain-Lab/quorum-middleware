@@ -1,7 +1,6 @@
 package com.fptblockchainlab.bindings.lc;
 
 import io.reactivex.Flowable;
-import io.reactivex.functions.Function;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +11,7 @@ import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.Event;
+import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Uint256;
@@ -34,7 +34,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the 
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 1.4.2.
+ * <p>Generated with web3j version 1.5.0.
  */
 @SuppressWarnings("rawtypes")
 public class LCManagement extends Contract {
@@ -62,6 +62,8 @@ public class LCManagement extends Contract {
 
     public static final String FUNC_ISVERIFIER = "isVerifier";
 
+    public static final String FUNC_LCFACTORY = "lcFactory";
+
     public static final String FUNC_MODE = "mode";
 
     public static final String FUNC_PERMISSION = "permission";
@@ -74,23 +76,17 @@ public class LCManagement extends Contract {
 
     public static final String FUNC_SETAMENDREQUEST = "setAmendRequest";
 
+    public static final String FUNC_SETLCFACTORY = "setLCFactory";
+
     public static final String FUNC_SETMODE = "setMode";
 
     public static final String FUNC_SETPERMISSION = "setPermission";
 
     public static final String FUNC_SETROUTER = "setRouter";
 
-    public static final String FUNC_SETSTANDARDFACTORY = "setStandardFactory";
-
-    public static final String FUNC_SETUPASFACTORY = "setUPASFactory";
-
-    public static final String FUNC_STANDARDFACTORY = "standardFactory";
-
     public static final String FUNC_SUPPORTSINTERFACE = "supportsInterface";
 
     public static final String FUNC_UNWHITELIST = "unwhitelist";
-
-    public static final String FUNC_UPASFACTORY = "upasFactory";
 
     public static final String FUNC_VERIFYIDENTITY = "verifyIdentity";
 
@@ -142,19 +138,18 @@ public class LCManagement extends Contract {
         return responses;
     }
 
+    public static RoleAdminChangedEventResponse getRoleAdminChangedEventFromLog(Log log) {
+        Contract.EventValuesWithLog eventValues = staticExtractEventParametersWithLog(ROLEADMINCHANGED_EVENT, log);
+        RoleAdminChangedEventResponse typedResponse = new RoleAdminChangedEventResponse();
+        typedResponse.log = log;
+        typedResponse.role = (byte[]) eventValues.getIndexedValues().get(0).getValue();
+        typedResponse.previousAdminRole = (byte[]) eventValues.getIndexedValues().get(1).getValue();
+        typedResponse.newAdminRole = (byte[]) eventValues.getIndexedValues().get(2).getValue();
+        return typedResponse;
+    }
+
     public Flowable<RoleAdminChangedEventResponse> roleAdminChangedEventFlowable(EthFilter filter) {
-        return web3j.ethLogFlowable(filter).map(new Function<Log, RoleAdminChangedEventResponse>() {
-            @Override
-            public RoleAdminChangedEventResponse apply(Log log) {
-                Contract.EventValuesWithLog eventValues = extractEventParametersWithLog(ROLEADMINCHANGED_EVENT, log);
-                RoleAdminChangedEventResponse typedResponse = new RoleAdminChangedEventResponse();
-                typedResponse.log = log;
-                typedResponse.role = (byte[]) eventValues.getIndexedValues().get(0).getValue();
-                typedResponse.previousAdminRole = (byte[]) eventValues.getIndexedValues().get(1).getValue();
-                typedResponse.newAdminRole = (byte[]) eventValues.getIndexedValues().get(2).getValue();
-                return typedResponse;
-            }
-        });
+        return web3j.ethLogFlowable(filter).map(log -> getRoleAdminChangedEventFromLog(log));
     }
 
     public Flowable<RoleAdminChangedEventResponse> roleAdminChangedEventFlowable(DefaultBlockParameter startBlock, DefaultBlockParameter endBlock) {
@@ -177,19 +172,18 @@ public class LCManagement extends Contract {
         return responses;
     }
 
+    public static RoleGrantedEventResponse getRoleGrantedEventFromLog(Log log) {
+        Contract.EventValuesWithLog eventValues = staticExtractEventParametersWithLog(ROLEGRANTED_EVENT, log);
+        RoleGrantedEventResponse typedResponse = new RoleGrantedEventResponse();
+        typedResponse.log = log;
+        typedResponse.role = (byte[]) eventValues.getIndexedValues().get(0).getValue();
+        typedResponse.account = (String) eventValues.getIndexedValues().get(1).getValue();
+        typedResponse.sender = (String) eventValues.getIndexedValues().get(2).getValue();
+        return typedResponse;
+    }
+
     public Flowable<RoleGrantedEventResponse> roleGrantedEventFlowable(EthFilter filter) {
-        return web3j.ethLogFlowable(filter).map(new Function<Log, RoleGrantedEventResponse>() {
-            @Override
-            public RoleGrantedEventResponse apply(Log log) {
-                Contract.EventValuesWithLog eventValues = extractEventParametersWithLog(ROLEGRANTED_EVENT, log);
-                RoleGrantedEventResponse typedResponse = new RoleGrantedEventResponse();
-                typedResponse.log = log;
-                typedResponse.role = (byte[]) eventValues.getIndexedValues().get(0).getValue();
-                typedResponse.account = (String) eventValues.getIndexedValues().get(1).getValue();
-                typedResponse.sender = (String) eventValues.getIndexedValues().get(2).getValue();
-                return typedResponse;
-            }
-        });
+        return web3j.ethLogFlowable(filter).map(log -> getRoleGrantedEventFromLog(log));
     }
 
     public Flowable<RoleGrantedEventResponse> roleGrantedEventFlowable(DefaultBlockParameter startBlock, DefaultBlockParameter endBlock) {
@@ -212,19 +206,18 @@ public class LCManagement extends Contract {
         return responses;
     }
 
+    public static RoleRevokedEventResponse getRoleRevokedEventFromLog(Log log) {
+        Contract.EventValuesWithLog eventValues = staticExtractEventParametersWithLog(ROLEREVOKED_EVENT, log);
+        RoleRevokedEventResponse typedResponse = new RoleRevokedEventResponse();
+        typedResponse.log = log;
+        typedResponse.role = (byte[]) eventValues.getIndexedValues().get(0).getValue();
+        typedResponse.account = (String) eventValues.getIndexedValues().get(1).getValue();
+        typedResponse.sender = (String) eventValues.getIndexedValues().get(2).getValue();
+        return typedResponse;
+    }
+
     public Flowable<RoleRevokedEventResponse> roleRevokedEventFlowable(EthFilter filter) {
-        return web3j.ethLogFlowable(filter).map(new Function<Log, RoleRevokedEventResponse>() {
-            @Override
-            public RoleRevokedEventResponse apply(Log log) {
-                Contract.EventValuesWithLog eventValues = extractEventParametersWithLog(ROLEREVOKED_EVENT, log);
-                RoleRevokedEventResponse typedResponse = new RoleRevokedEventResponse();
-                typedResponse.log = log;
-                typedResponse.role = (byte[]) eventValues.getIndexedValues().get(0).getValue();
-                typedResponse.account = (String) eventValues.getIndexedValues().get(1).getValue();
-                typedResponse.sender = (String) eventValues.getIndexedValues().get(2).getValue();
-                return typedResponse;
-            }
-        });
+        return web3j.ethLogFlowable(filter).map(log -> getRoleRevokedEventFromLog(log));
     }
 
     public Flowable<RoleRevokedEventResponse> roleRevokedEventFlowable(DefaultBlockParameter startBlock, DefaultBlockParameter endBlock) {
@@ -234,28 +227,28 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<byte[]> DEFAULT_ADMIN_ROLE() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_DEFAULT_ADMIN_ROLE, 
+        final Function function = new Function(FUNC_DEFAULT_ADMIN_ROLE, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>() {}));
         return executeRemoteCallSingleValueReturn(function, byte[].class);
     }
 
     public RemoteFunctionCall<String> amendRequest() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_AMENDREQUEST, 
+        final Function function = new Function(FUNC_AMENDREQUEST, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<byte[]> getRoleAdmin(byte[] role) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETROLEADMIN, 
+        final Function function = new Function(FUNC_GETROLEADMIN, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>() {}));
         return executeRemoteCallSingleValueReturn(function, byte[].class);
     }
 
     public RemoteFunctionCall<String> getRoleMember(byte[] role, BigInteger index) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETROLEMEMBER, 
+        final Function function = new Function(FUNC_GETROLEMEMBER, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role), 
                 new org.web3j.abi.datatypes.generated.Uint256(index)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
@@ -263,14 +256,14 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<BigInteger> getRoleMemberCount(byte[] role) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETROLEMEMBERCOUNT, 
+        final Function function = new Function(FUNC_GETROLEMEMBERCOUNT, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> grantRole(byte[] role, String account) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_GRANTROLE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role), 
                 new org.web3j.abi.datatypes.Address(160, account)), 
@@ -279,7 +272,7 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<Boolean> hasRole(byte[] role, String account) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_HASROLE, 
+        final Function function = new Function(FUNC_HASROLE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role), 
                 new org.web3j.abi.datatypes.Address(160, account)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
@@ -287,49 +280,56 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<Boolean> isAdmin(String _account) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_ISADMIN, 
+        final Function function = new Function(FUNC_ISADMIN, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _account)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
     public RemoteFunctionCall<Boolean> isAuthorized(String _caller) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_ISAUTHORIZED, 
+        final Function function = new Function(FUNC_ISAUTHORIZED, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _caller)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
     public RemoteFunctionCall<Boolean> isOperator(String _account) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_ISOPERATOR, 
+        final Function function = new Function(FUNC_ISOPERATOR, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _account)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
     public RemoteFunctionCall<Boolean> isVerifier(String _account) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_ISVERIFIER, 
+        final Function function = new Function(FUNC_ISVERIFIER, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _account)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
+    public RemoteFunctionCall<String> lcFactory() {
+        final Function function = new Function(FUNC_LCFACTORY, 
+                Arrays.<Type>asList(), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
+        return executeRemoteCallSingleValueReturn(function, String.class);
+    }
+
     public RemoteFunctionCall<String> mode() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_MODE, 
+        final Function function = new Function(FUNC_MODE, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<String> permission() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_PERMISSION, 
+        final Function function = new Function(FUNC_PERMISSION, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> renounceRole(byte[] role, String account) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_RENOUNCEROLE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role), 
                 new org.web3j.abi.datatypes.Address(160, account)), 
@@ -338,7 +338,7 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<TransactionReceipt> revokeRole(byte[] role, String account) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_REVOKEROLE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(role), 
                 new org.web3j.abi.datatypes.Address(160, account)), 
@@ -347,22 +347,30 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<String> router() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_ROUTER, 
+        final Function function = new Function(FUNC_ROUTER, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> setAmendRequest(String _amendRequest) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_SETAMENDREQUEST, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _amendRequest)), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
+    public RemoteFunctionCall<TransactionReceipt> setLCFactory(String _lcFactory) {
+        final Function function = new Function(
+                FUNC_SETLCFACTORY, 
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _lcFactory)), 
+                Collections.<TypeReference<?>>emptyList());
+        return executeRemoteCallTransaction(function);
+    }
+
     public RemoteFunctionCall<TransactionReceipt> setMode(String _mode) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_SETMODE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _mode)), 
                 Collections.<TypeReference<?>>emptyList());
@@ -370,7 +378,7 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<TransactionReceipt> setPermission(String _permission) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_SETPERMISSION, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _permission)), 
                 Collections.<TypeReference<?>>emptyList());
@@ -378,45 +386,22 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<TransactionReceipt> setRouter(String _router) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_SETROUTER, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _router)), 
                 Collections.<TypeReference<?>>emptyList());
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteFunctionCall<TransactionReceipt> setStandardFactory(String _standardFactory) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
-                FUNC_SETSTANDARDFACTORY, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _standardFactory)), 
-                Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallTransaction(function);
-    }
-
-    public RemoteFunctionCall<TransactionReceipt> setUPASFactory(String _upasFactory) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
-                FUNC_SETUPASFACTORY, 
-                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _upasFactory)), 
-                Collections.<TypeReference<?>>emptyList());
-        return executeRemoteCallTransaction(function);
-    }
-
-    public RemoteFunctionCall<String> standardFactory() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_STANDARDFACTORY, 
-                Arrays.<Type>asList(), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
-        return executeRemoteCallSingleValueReturn(function, String.class);
-    }
-
     public RemoteFunctionCall<Boolean> supportsInterface(byte[] interfaceId) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_SUPPORTSINTERFACE, 
+        final Function function = new Function(FUNC_SUPPORTSINTERFACE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes4(interfaceId)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> unwhitelist(List<String> _orgs) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_UNWHITELIST, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.Utf8String>(
                         org.web3j.abi.datatypes.Utf8String.class,
@@ -425,15 +410,8 @@ public class LCManagement extends Contract {
         return executeRemoteCallTransaction(function);
     }
 
-    public RemoteFunctionCall<String> upasFactory() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_UPASFACTORY, 
-                Arrays.<Type>asList(), 
-                Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
-        return executeRemoteCallSingleValueReturn(function, String.class);
-    }
-
     public RemoteFunctionCall<Boolean> verifyIdentity(String _account, String _org) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_VERIFYIDENTITY, 
+        final Function function = new Function(FUNC_VERIFYIDENTITY, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _account), 
                 new org.web3j.abi.datatypes.Utf8String(_org)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
@@ -441,7 +419,7 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<TransactionReceipt> whitelist(List<String> _orgs) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_WHITELIST, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.Utf8String>(
                         org.web3j.abi.datatypes.Utf8String.class,
@@ -451,7 +429,7 @@ public class LCManagement extends Contract {
     }
 
     public RemoteFunctionCall<Boolean> whitelistOrgs(String _org) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_WHITELISTORGS, 
+        final Function function = new Function(FUNC_WHITELISTORGS, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Utf8String(_org)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);

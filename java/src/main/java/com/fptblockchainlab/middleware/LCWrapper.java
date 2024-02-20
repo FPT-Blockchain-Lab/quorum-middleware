@@ -28,15 +28,13 @@ public class LCWrapper {
     private final Quorum quorum;
     private final ReadonlyTransactionManager readonlyTransactionManager;
     private final ContractGasProvider contractGasProvider;
-    private final StandardLCFactory standardLCFactory;
-    private final UPASLCFactory upaslcFactory;
+    private final LCFactory lcFactory;
     private final RouterService routerService;
     private final LCManagement lcManagement;
     private final OrgManager orgManager;
 
     public LCWrapper(Quorum quorum,
-                     StandardLCFactory standardLCFactory,
-                     UPASLCFactory upaslcFactory,
+                     LCFactory lcFactory,
                      RouterService routerService,
                      LCManagement lcManagement,
                      OrgManager orgManager
@@ -45,13 +43,12 @@ public class LCWrapper {
         this.readonlyTransactionManager = new ReadonlyTransactionManager(quorum, "0x0000000000000000000000000000000000000000");
         this.contractGasProvider = new DefaultGasProvider();
         this.routerService = routerService;
-        this.upaslcFactory = upaslcFactory;
-        this.standardLCFactory = standardLCFactory;
+        this.lcFactory = lcFactory;
         this.lcManagement = lcManagement;
         this.orgManager = orgManager;
     }
 
-    public TransactionReceipt createStandardLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
+    public TransactionReceipt createLC(List<String> parties, LC.Content content, Credentials credentials, LC.LCTYPE lctype) throws Exception {
         if (!isValidPrevHash(content.prevHash)) throw new Exception("Invalid previous hash.");
         if (!isValidContentHash(content.contentHash)) throw new Exception("Invalid content hash.");
         if (!isValid("^0x[0-9a-zA-Z]{130}", content.acknowledge)) throw new Exception("Invalid acknowledge signature.");
@@ -70,9 +67,9 @@ public class LCWrapper {
                 credentials
         );
 
-        validateData(LC.LCTYPE.STANDARD_LC, parties, content, credentials);
+        validateData(lctype, parties, content, credentials);
 
-        StandardLCFactory.Content lcContent = new StandardLCFactory.Content(
+        LCFactory.Content lcContent = new LCFactory.Content(
             Numeric.hexStringToByteArray(LC.DEFAULT_ROOT_HASH),
             content.signedTime,
             Numeric.hexStringToByteArray(content.prevHash),
@@ -83,43 +80,43 @@ public class LCWrapper {
             content.signature.getBytes()
         );
 
-        return this.standardLCFactory.create(parties, lcContent).send();
+        return this.lcFactory.create(parties, lcContent, BigInteger.valueOf(lctype.getValue())).send();
     }
 
-    public TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
-        if (!isValidPrevHash(content.prevHash)) throw new Exception("Invalid previous hash.");
-        if (!isValidContentHash(content.contentHash)) throw new Exception("Invalid content hash.");
-        if (!isValid("^0x[0-9a-zA-Z]{130}", content.acknowledge)) throw new Exception("Invalid acknowledge signature.");
-
-        content.signature = getApprovalSignature(
-                new LC.Content(
-                        LC.DEFAULT_ROOT_HASH,
-                        content.signedTime,
-                        content.prevHash,
-                        0,
-                        content.contentHash,
-                        content.url,
-                        content.acknowledge,
-                        ""
-                ),
-                credentials
-        );
-
-        validateData(LC.LCTYPE.UPAS_LC, parties, content, credentials);
-
-        UPASLCFactory.Content lcContent = new UPASLCFactory.Content(
-                Numeric.hexStringToByteArray(LC.DEFAULT_ROOT_HASH),
-                content.signedTime,
-                Numeric.hexStringToByteArray(content.prevHash),
-                BigInteger.valueOf(content.numOfDocuments),
-                Arrays.stream(content.contentHash).map(Numeric::hexStringToByteArray).collect(Collectors.toList()),
-                content.url,
-                content.acknowledge.getBytes(),
-                content.signature.getBytes()
-        );
-
-        return this.upaslcFactory.create(parties, lcContent).send();
-    }
+//    public TransactionReceipt createUPASLC(List<String> parties, LC.Content content, Credentials credentials) throws Exception {
+//        if (!isValidPrevHash(content.prevHash)) throw new Exception("Invalid previous hash.");
+//        if (!isValidContentHash(content.contentHash)) throw new Exception("Invalid content hash.");
+//        if (!isValid("^0x[0-9a-zA-Z]{130}", content.acknowledge)) throw new Exception("Invalid acknowledge signature.");
+//
+//        content.signature = getApprovalSignature(
+//                new LC.Content(
+//                        LC.DEFAULT_ROOT_HASH,
+//                        content.signedTime,
+//                        content.prevHash,
+//                        0,
+//                        content.contentHash,
+//                        content.url,
+//                        content.acknowledge,
+//                        ""
+//                ),
+//                credentials
+//        );
+//
+//        validateData(LC.LCTYPE.UPAS_LC, parties, content, credentials);
+//
+//        UPASLCFactory.Content lcContent = new UPASLCFactory.Content(
+//                Numeric.hexStringToByteArray(LC.DEFAULT_ROOT_HASH),
+//                content.signedTime,
+//                Numeric.hexStringToByteArray(content.prevHash),
+//                BigInteger.valueOf(content.numOfDocuments),
+//                Arrays.stream(content.contentHash).map(Numeric::hexStringToByteArray).collect(Collectors.toList()),
+//                content.url,
+//                content.acknowledge.getBytes(),
+//                content.signature.getBytes()
+//        );
+//
+//        return this.upaslcFactory.create(parties, lcContent).send();
+//    }
 
     public TransactionReceipt approveLC(BigInteger documentId, LC.Stage stage, LC.Content content, Credentials credentials) throws Exception {
         if (!isValidContentHash(content.contentHash)) throw new Exception("Invalid content hash.");
@@ -132,7 +129,7 @@ public class LCWrapper {
             }
         }
 
-        Tuple2<StandardLC, BigInteger> lc = getLCContract(documentId);
+        Tuple2<com.fptblockchainlab.bindings.lc.LC, BigInteger> lc = getLCContract(documentId);
         RouterService.Content stageInfo = getStageInfo(lc.component1(), documentId, stage);
         String prevHash = LC.generateStageHash(
                 new LC.Content(
@@ -184,7 +181,7 @@ public class LCWrapper {
     }
 
     public TransactionReceipt submitAmendment(BigInteger documentId, LC.Stage stage, LC.Content content, List<LC.Stage> migrateStages, Credentials credentials) throws Exception {
-        Tuple2<StandardLC, BigInteger> lc = getLCContract(documentId);
+        Tuple2<com.fptblockchainlab.bindings.lc.LC, BigInteger> lc = getLCContract(documentId);
         Tuple3<RouterService.Content, BigInteger, BigInteger> amendStageContent = getAmendInfo(lc.component1(), documentId, stage);
         RouterService.Content amendStageInfo = amendStageContent.component1();
         BigInteger amendStage = amendStageContent.component2();
@@ -314,7 +311,7 @@ public class LCWrapper {
      * @throws Exception
      */
     public TransactionReceipt submitRootAmendment(BigInteger documentId, LC.Content content, Credentials credentials) throws Exception {
-        Tuple2<StandardLC, BigInteger> lc = getLCContract(documentId);
+        Tuple2<com.fptblockchainlab.bindings.lc.LC, BigInteger> lc = getLCContract(documentId);
         BigInteger rootSubStage = lc.component1().numOfSubStage(BigInteger.ONE).send();
         List<LC.Stage> migrateStages = this.getMigrateStages(documentId, lc.component1());
 
@@ -332,7 +329,7 @@ public class LCWrapper {
         if (stage.stage.intValue() == LC.EnumStage.PHAT_HANH_LC.getValue()) {
             throw new Exception("Not allowed to submit root stage.");
         }
-        Tuple2<StandardLC, BigInteger> lc = getLCContract(documentId);
+        Tuple2<com.fptblockchainlab.bindings.lc.LC, BigInteger> lc = getLCContract(documentId);
         List<LC.Stage> lcStatus = this.getMigrateStages(documentId, lc.component1());
         List<LC.Stage> migrateStages = lcStatus.stream().filter(
                 item -> !(item.subStage.equals(stage.subStage) && item.stage.equals(stage.stage)
@@ -347,7 +344,7 @@ public class LCWrapper {
      * @return
      * @throws Exception
      */
-    private List<LC.Stage> getMigrateStages(BigInteger documentId, StandardLC lc) throws Exception {
+    private List<LC.Stage> getMigrateStages(BigInteger documentId, com.fptblockchainlab.bindings.lc.LC lc) throws Exception {
         List<LC.Stage> stages = LC.getLcStatus(lc);
         Map<LC.Stage, byte[]> generalStageContents = new HashMap<>();
 
@@ -454,12 +451,12 @@ public class LCWrapper {
      * @return instance of LC contract
      * @throws Exception
      */
-    private Tuple2<StandardLC, BigInteger> getLCContract(BigInteger documentId) throws Exception {
+    private Tuple2<com.fptblockchainlab.bindings.lc.LC, BigInteger> getLCContract(BigInteger documentId) throws Exception {
         Tuple2<String, BigInteger> result = this.routerService.getAddress(documentId).send();
-        return new Tuple2<>(StandardLC.load(result.component1(), this.quorum, this.readonlyTransactionManager, contractGasProvider), result.component2());
+        return new Tuple2<>(com.fptblockchainlab.bindings.lc.LC.load(result.component1(), this.quorum, this.readonlyTransactionManager, contractGasProvider), result.component2());
     }
 
-    private Tuple3<RouterService.Content, BigInteger, BigInteger> getAmendInfo(StandardLC lc, BigInteger documentId, LC.Stage stage) throws Exception {
+    private Tuple3<RouterService.Content, BigInteger, BigInteger> getAmendInfo(com.fptblockchainlab.bindings.lc.LC lc, BigInteger documentId, LC.Stage stage) throws Exception {
         BigInteger amendStage = stage.stage, amendSubStage = stage.subStage, prevStage = amendStage, prevSubStage = amendSubStage;
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.ONE).send();
 
@@ -485,7 +482,7 @@ public class LCWrapper {
      * @return LC content
      * @throws Exception
      */
-    private RouterService.Content getStageInfo(StandardLC lc, BigInteger documentId, LC.Stage stage) throws Exception {
+    private RouterService.Content getStageInfo(com.fptblockchainlab.bindings.lc.LC lc, BigInteger documentId, LC.Stage stage) throws Exception {
         BigInteger prevStage = stage.stage, prevSubStage = stage.subStage;
         BigInteger rootSubStage = lc.numOfSubStage(BigInteger.valueOf(1)).send();
 
@@ -567,6 +564,8 @@ public class LCWrapper {
             ) {
                 throw new Exception("Organization at index 0 or 1 or 2 does not exist.");
             }
+        } else {
+
         }
 
         validateAccountOrg(parties.get(0), credentials.getAddress());
@@ -590,7 +589,7 @@ public class LCWrapper {
         }
     }
 
-    private String getOrgByStage(StandardLC lc, int stage, int lctype) throws Exception {
+    private String getOrgByStage(com.fptblockchainlab.bindings.lc.LC lc, int stage, int lctype) throws Exception {
         List<String> parties = lc.getInvolvedParties().send();
         String org = null;
 

@@ -16,8 +16,7 @@ public class Config {
     private Optional<String> roleMgrAddress;
     private Optional<String> interfaceAddress;
     private Optional<String> lcManagmentAddress;
-    private Optional<String> standardLCFactoryAddress;
-    private Optional<String> upaslcFactoryAddress;
+    private Optional<String> lcFactoryAddress;
     private Optional<String> routerServiceAddress;
     private Optional<String> ultimateParentOrg; // level 1
 }

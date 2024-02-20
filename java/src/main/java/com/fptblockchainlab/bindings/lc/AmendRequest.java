@@ -1,7 +1,6 @@
 package com.fptblockchainlab.bindings.lc;
 
 import io.reactivex.Flowable;
-import io.reactivex.functions.Function;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +15,7 @@ import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicBytes;
 import org.web3j.abi.datatypes.DynamicStruct;
 import org.web3j.abi.datatypes.Event;
+import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Bytes32;
@@ -39,7 +39,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the 
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 1.4.2.
+ * <p>Generated with web3j version 1.5.0.
  */
 @SuppressWarnings("rawtypes")
 public class AmendRequest extends Contract {
@@ -105,19 +105,18 @@ public class AmendRequest extends Contract {
         return responses;
     }
 
+    public static ApprovedAmendmentEventResponse getApprovedAmendmentEventFromLog(Log log) {
+        Contract.EventValuesWithLog eventValues = staticExtractEventParametersWithLog(APPROVEDAMENDMENT_EVENT, log);
+        ApprovedAmendmentEventResponse typedResponse = new ApprovedAmendmentEventResponse();
+        typedResponse.log = log;
+        typedResponse.documentId = (BigInteger) eventValues.getIndexedValues().get(0).getValue();
+        typedResponse.requestId = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
+        typedResponse.approver = (String) eventValues.getIndexedValues().get(2).getValue();
+        return typedResponse;
+    }
+
     public Flowable<ApprovedAmendmentEventResponse> approvedAmendmentEventFlowable(EthFilter filter) {
-        return web3j.ethLogFlowable(filter).map(new Function<Log, ApprovedAmendmentEventResponse>() {
-            @Override
-            public ApprovedAmendmentEventResponse apply(Log log) {
-                Contract.EventValuesWithLog eventValues = extractEventParametersWithLog(APPROVEDAMENDMENT_EVENT, log);
-                ApprovedAmendmentEventResponse typedResponse = new ApprovedAmendmentEventResponse();
-                typedResponse.log = log;
-                typedResponse.documentId = (BigInteger) eventValues.getIndexedValues().get(0).getValue();
-                typedResponse.requestId = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
-                typedResponse.approver = (String) eventValues.getIndexedValues().get(2).getValue();
-                return typedResponse;
-            }
-        });
+        return web3j.ethLogFlowable(filter).map(log -> getApprovedAmendmentEventFromLog(log));
     }
 
     public Flowable<ApprovedAmendmentEventResponse> approvedAmendmentEventFlowable(DefaultBlockParameter startBlock, DefaultBlockParameter endBlock) {
@@ -141,20 +140,19 @@ public class AmendRequest extends Contract {
         return responses;
     }
 
+    public static SubmittedAmendmentEventResponse getSubmittedAmendmentEventFromLog(Log log) {
+        Contract.EventValuesWithLog eventValues = staticExtractEventParametersWithLog(SUBMITTEDAMENDMENT_EVENT, log);
+        SubmittedAmendmentEventResponse typedResponse = new SubmittedAmendmentEventResponse();
+        typedResponse.log = log;
+        typedResponse.proposer = (String) eventValues.getIndexedValues().get(0).getValue();
+        typedResponse.documentId = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
+        typedResponse.nonce = (BigInteger) eventValues.getIndexedValues().get(2).getValue();
+        typedResponse.requestId = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
+        return typedResponse;
+    }
+
     public Flowable<SubmittedAmendmentEventResponse> submittedAmendmentEventFlowable(EthFilter filter) {
-        return web3j.ethLogFlowable(filter).map(new Function<Log, SubmittedAmendmentEventResponse>() {
-            @Override
-            public SubmittedAmendmentEventResponse apply(Log log) {
-                Contract.EventValuesWithLog eventValues = extractEventParametersWithLog(SUBMITTEDAMENDMENT_EVENT, log);
-                SubmittedAmendmentEventResponse typedResponse = new SubmittedAmendmentEventResponse();
-                typedResponse.log = log;
-                typedResponse.proposer = (String) eventValues.getIndexedValues().get(0).getValue();
-                typedResponse.documentId = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
-                typedResponse.nonce = (BigInteger) eventValues.getIndexedValues().get(2).getValue();
-                typedResponse.requestId = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
-                return typedResponse;
-            }
-        });
+        return web3j.ethLogFlowable(filter).map(log -> getSubmittedAmendmentEventFromLog(log));
     }
 
     public Flowable<SubmittedAmendmentEventResponse> submittedAmendmentEventFlowable(DefaultBlockParameter startBlock, DefaultBlockParameter endBlock) {
@@ -164,7 +162,7 @@ public class AmendRequest extends Contract {
     }
 
     public RemoteFunctionCall<TransactionReceipt> approve(BigInteger _documentId, BigInteger _requestId, String _approver, byte[] _signature) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_APPROVE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_requestId), 
@@ -175,7 +173,7 @@ public class AmendRequest extends Contract {
     }
 
     public RemoteFunctionCall<TransactionReceipt> fulfilled(BigInteger _documentId, BigInteger _requestId) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_FULFILLED, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_requestId)), 
@@ -184,7 +182,7 @@ public class AmendRequest extends Contract {
     }
 
     public RemoteFunctionCall<Request> getAmendRequest(BigInteger _documentId, BigInteger _requestId) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETAMENDREQUEST, 
+        final Function function = new Function(FUNC_GETAMENDREQUEST, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_requestId)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Request>() {}));
@@ -192,7 +190,7 @@ public class AmendRequest extends Contract {
     }
 
     public RemoteFunctionCall<Boolean> isApproved(BigInteger _documentId, BigInteger _requestId) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_ISAPPROVED, 
+        final Function function = new Function(FUNC_ISAPPROVED, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_requestId)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
@@ -200,7 +198,7 @@ public class AmendRequest extends Contract {
     }
 
     public RemoteFunctionCall<Boolean> isFulfilled(BigInteger _documentId, BigInteger _requestId) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_ISFULFILLED, 
+        final Function function = new Function(FUNC_ISFULFILLED, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_requestId)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
@@ -208,7 +206,7 @@ public class AmendRequest extends Contract {
     }
 
     public RemoteFunctionCall<Boolean> isProposer(BigInteger _documentId, BigInteger _requestId, String _executor) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_ISPROPOSER, 
+        final Function function = new Function(FUNC_ISPROPOSER, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
                 new org.web3j.abi.datatypes.generated.Uint256(_requestId), 
                 new org.web3j.abi.datatypes.Address(160, _executor)), 
@@ -217,21 +215,21 @@ public class AmendRequest extends Contract {
     }
 
     public RemoteFunctionCall<String> management() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_MANAGEMENT, 
+        final Function function = new Function(FUNC_MANAGEMENT, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<BigInteger> nonces(String param0) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_NONCES, 
+        final Function function = new Function(FUNC_NONCES, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, param0)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> setLCManagement(String _management) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_SETLCMANAGEMENT, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _management)), 
                 Collections.<TypeReference<?>>emptyList());
@@ -239,7 +237,7 @@ public class AmendRequest extends Contract {
     }
 
     public RemoteFunctionCall<TransactionReceipt> submit(BigInteger _documentId, String _proposer, List<byte[]> _migratingStages, AmendStage _amendStage, byte[] _signature) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_SUBMIT, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_documentId), 
                 new org.web3j.abi.datatypes.Address(160, _proposer), 

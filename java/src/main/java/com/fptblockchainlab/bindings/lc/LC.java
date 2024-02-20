@@ -1,7 +1,6 @@
 package com.fptblockchainlab.bindings.lc;
 
 import io.reactivex.Flowable;
-import io.reactivex.functions.Function;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,11 +16,13 @@ import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicBytes;
 import org.web3j.abi.datatypes.DynamicStruct;
 import org.web3j.abi.datatypes.Event;
+import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.StaticStruct;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.abi.datatypes.generated.Uint8;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
@@ -42,7 +43,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  * or the org.web3j.codegen.SolidityFunctionWrapperGenerator in the 
  * <a href="https://github.com/web3j/web3j/tree/master/codegen">codegen module</a> to update.
  *
- * <p>Generated with web3j version 1.4.2.
+ * <p>Generated with web3j version 1.5.0.
  */
 @SuppressWarnings("rawtypes")
 public class LC extends Contract {
@@ -81,6 +82,8 @@ public class LC extends Contract {
     public static final String FUNC_HASHTOSTAGE = "hashToStage";
 
     public static final String FUNC_ISCLOSED = "isClosed";
+
+    public static final String FUNC_LCTYPE = "lcType";
 
     public static final String FUNC_NUMOFSUBSTAGE = "numOfSubStage";
 
@@ -125,22 +128,21 @@ public class LC extends Contract {
         return responses;
     }
 
+    public static ApprovedEventResponse getApprovedEventFromLog(Log log) {
+        Contract.EventValuesWithLog eventValues = staticExtractEventParametersWithLog(APPROVED_EVENT, log);
+        ApprovedEventResponse typedResponse = new ApprovedEventResponse();
+        typedResponse.log = log;
+        typedResponse.caller = (String) eventValues.getIndexedValues().get(0).getValue();
+        typedResponse.documentID = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
+        typedResponse.stage = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
+        typedResponse.subStage = (BigInteger) eventValues.getNonIndexedValues().get(1).getValue();
+        typedResponse.approvedTime = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
+        typedResponse.organization = (String) eventValues.getNonIndexedValues().get(3).getValue();
+        return typedResponse;
+    }
+
     public Flowable<ApprovedEventResponse> approvedEventFlowable(EthFilter filter) {
-        return web3j.ethLogFlowable(filter).map(new Function<Log, ApprovedEventResponse>() {
-            @Override
-            public ApprovedEventResponse apply(Log log) {
-                Contract.EventValuesWithLog eventValues = extractEventParametersWithLog(APPROVED_EVENT, log);
-                ApprovedEventResponse typedResponse = new ApprovedEventResponse();
-                typedResponse.log = log;
-                typedResponse.caller = (String) eventValues.getIndexedValues().get(0).getValue();
-                typedResponse.documentID = (BigInteger) eventValues.getIndexedValues().get(1).getValue();
-                typedResponse.stage = (BigInteger) eventValues.getNonIndexedValues().get(0).getValue();
-                typedResponse.subStage = (BigInteger) eventValues.getNonIndexedValues().get(1).getValue();
-                typedResponse.approvedTime = (BigInteger) eventValues.getNonIndexedValues().get(2).getValue();
-                typedResponse.organization = (String) eventValues.getNonIndexedValues().get(3).getValue();
-                return typedResponse;
-            }
-        });
+        return web3j.ethLogFlowable(filter).map(log -> getApprovedEventFromLog(log));
     }
 
     public Flowable<ApprovedEventResponse> approvedEventFlowable(DefaultBlockParameter startBlock, DefaultBlockParameter endBlock) {
@@ -150,7 +152,7 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<Tuple2<BigInteger, BigInteger>> _hashToStage(byte[] param0) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC__HASHTOSTAGE, 
+        final Function function = new Function(FUNC__HASHTOSTAGE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(param0)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}, new TypeReference<Uint256>() {}));
         return new RemoteFunctionCall<Tuple2<BigInteger, BigInteger>>(function,
@@ -166,14 +168,14 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<String> _owner() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC__OWNER, 
+        final Function function = new Function(FUNC__OWNER, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> amend() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_AMEND, 
                 Arrays.<Type>asList(), 
                 Collections.<TypeReference<?>>emptyList());
@@ -181,14 +183,14 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<Boolean> amended() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_AMENDED, 
+        final Function function = new Function(FUNC_AMENDED, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> approve(String _caller, BigInteger _stage, BigInteger _subStage, Content _content) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_APPROVE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _caller), 
                 new org.web3j.abi.datatypes.generated.Uint256(_stage), 
@@ -199,7 +201,7 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<String> checkProposer(String _proposer, BigInteger _stage) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_CHECKPROPOSER, 
+        final Function function = new Function(FUNC_CHECKPROPOSER, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(160, _proposer), 
                 new org.web3j.abi.datatypes.generated.Uint256(_stage)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Utf8String>() {}));
@@ -207,7 +209,7 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<TransactionReceipt> close() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_CLOSE, 
                 Arrays.<Type>asList(), 
                 Collections.<TypeReference<?>>emptyList());
@@ -215,14 +217,14 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<String> factory() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_FACTORY, 
+        final Function function = new Function(FUNC_FACTORY, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}));
         return executeRemoteCallSingleValueReturn(function, String.class);
     }
 
     public RemoteFunctionCall<Content> getContent(BigInteger _stage, BigInteger _subStage) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETCONTENT, 
+        final Function function = new Function(FUNC_GETCONTENT, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_stage), 
                 new org.web3j.abi.datatypes.generated.Uint256(_subStage)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Content>() {}));
@@ -230,14 +232,14 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<BigInteger> getCounter() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETCOUNTER, 
+        final Function function = new Function(FUNC_GETCOUNTER, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
     public RemoteFunctionCall<List> getInvolvedParties() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETINVOLVEDPARTIES, 
+        final Function function = new Function(FUNC_GETINVOLVEDPARTIES, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<Utf8String>>() {}));
         return new RemoteFunctionCall<List>(function,
@@ -252,7 +254,7 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<Tuple2<List<Stage>, List<Pack>>> getMigrateInfo(List<byte[]> _hashes) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETMIGRATEINFO, 
+        final Function function = new Function(FUNC_GETMIGRATEINFO, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.DynamicArray<org.web3j.abi.datatypes.generated.Bytes32>(
                         org.web3j.abi.datatypes.generated.Bytes32.class,
                         org.web3j.abi.Utils.typeMap(_hashes, org.web3j.abi.datatypes.generated.Bytes32.class))), 
@@ -270,14 +272,14 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<byte[]> getRootHash() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETROOTHASH, 
+        final Function function = new Function(FUNC_GETROOTHASH, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bytes32>() {}));
         return executeRemoteCallSingleValueReturn(function, byte[].class);
     }
 
     public RemoteFunctionCall<List> getRootList() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETROOTLIST, 
+        final Function function = new Function(FUNC_GETROOTLIST, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<Bytes32>>() {}));
         return new RemoteFunctionCall<List>(function,
@@ -292,7 +294,7 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<List> getStatus() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_GETSTATUS, 
+        final Function function = new Function(FUNC_GETSTATUS, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<Uint256>>() {}));
         return new RemoteFunctionCall<List>(function,
@@ -307,28 +309,35 @@ public class LC extends Contract {
     }
 
     public RemoteFunctionCall<Stage> hashToStage(byte[] _hash) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_HASHTOSTAGE, 
+        final Function function = new Function(FUNC_HASHTOSTAGE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Bytes32(_hash)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Stage>() {}));
         return executeRemoteCallSingleValueReturn(function, Stage.class);
     }
 
     public RemoteFunctionCall<Boolean> isClosed() {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_ISCLOSED, 
+        final Function function = new Function(FUNC_ISCLOSED, 
                 Arrays.<Type>asList(), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Bool>() {}));
         return executeRemoteCallSingleValueReturn(function, Boolean.class);
     }
 
+    public RemoteFunctionCall<BigInteger> lcType() {
+        final Function function = new Function(FUNC_LCTYPE, 
+                Arrays.<Type>asList(), 
+                Arrays.<TypeReference<?>>asList(new TypeReference<Uint8>() {}));
+        return executeRemoteCallSingleValueReturn(function, BigInteger.class);
+    }
+
     public RemoteFunctionCall<BigInteger> numOfSubStage(BigInteger _stage) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(FUNC_NUMOFSUBSTAGE, 
+        final Function function = new Function(FUNC_NUMOFSUBSTAGE, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_stage)), 
                 Arrays.<TypeReference<?>>asList(new TypeReference<Uint256>() {}));
         return executeRemoteCallSingleValueReturn(function, BigInteger.class);
     }
 
     public RemoteFunctionCall<TransactionReceipt> setCounter(BigInteger _newValue) {
-        final org.web3j.abi.datatypes.Function function = new org.web3j.abi.datatypes.Function(
+        final Function function = new Function(
                 FUNC_SETCOUNTER, 
                 Arrays.<Type>asList(new org.web3j.abi.datatypes.generated.Uint256(_newValue)), 
                 Collections.<TypeReference<?>>emptyList());
