@@ -82,14 +82,14 @@ export interface RouterService extends BaseContract {
     ): NonPayableTransactionObject<
       [
         string,
-        string,
         string[],
         [
           string,
           string,
           [string, string, string, string, string[], string, string, string]
         ],
-        [string, string, string, string, string, string],
+        string[],
+        string,
         boolean
       ]
     >;

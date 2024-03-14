@@ -93,6 +93,8 @@ export interface LC extends BaseContract {
 
     getInvolvedParties(): NonPayableTransactionObject<string[]>;
 
+    getListOrgApproved(): NonPayableTransactionObject<string[]>;
+
     getMigrateInfo(
       _hashes: (string | number[])[]
     ): NonPayableTransactionObject<{
@@ -126,9 +128,15 @@ export interface LC extends BaseContract {
       _stage: number | string | BN
     ): NonPayableTransactionObject<string>;
 
+    orgApproved(arg0: string): NonPayableTransactionObject<boolean>;
+
     setCounter(
       _newValue: number | string | BN
     ): NonPayableTransactionObject<void>;
+
+    stageOrgApproved(
+      arg0: number | string | BN
+    ): NonPayableTransactionObject<string>;
   };
   events: {
     Approved(cb?: Callback<Approved>): EventEmitter;

@@ -141,10 +141,10 @@ export namespace LC {
     }
 
     // Enum type of LC contract
-    export enum LCTYPE {
-        STANDARD_LC = 1, // lc thường
-        UPAS_LC = 2, // lc upas
-    }
+    // export enum LCTYPE {
+    //     STANDARD_LC = 1, // lc thường
+    //     UPAS_LC = 2, // lc upas
+    // }
 
     // Enum the number of involved parties of each LC type
     export enum NUMOFPARTIES {

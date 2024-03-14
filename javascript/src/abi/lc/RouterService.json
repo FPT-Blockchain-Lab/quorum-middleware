@@ -200,11 +200,6 @@
             {
                 "components": [
                     {
-                        "internalType": "uint256",
-                        "name": "typeOf",
-                        "type": "uint256"
-                    },
-                    {
                         "internalType": "address",
                         "name": "proposer",
                         "type": "address"
@@ -279,41 +274,14 @@
                         "type": "tuple"
                     },
                     {
-                        "components": [
-                            {
-                                "internalType": "string",
-                                "name": "issuingBank",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "advisingBank",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "reimbursingBank",
-                                "type": "string"
-                            },
-                            {
-                                "internalType": "bytes",
-                                "name": "issuingBankSig",
-                                "type": "bytes"
-                            },
-                            {
-                                "internalType": "bytes",
-                                "name": "advisingBankSig",
-                                "type": "bytes"
-                            },
-                            {
-                                "internalType": "bytes",
-                                "name": "reimbursingBankSig",
-                                "type": "bytes"
-                            }
-                        ],
-                        "internalType": "struct IAmendRequest.Confirmation",
-                        "name": "confirmed",
-                        "type": "tuple"
+                        "internalType": "string[]",
+                        "name": "orgApproved",
+                        "type": "string[]"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "approvedSig",
+                        "type": "uint256"
                     },
                     {
                         "internalType": "bool",
