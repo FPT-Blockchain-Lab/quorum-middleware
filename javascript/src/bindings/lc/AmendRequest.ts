@@ -66,14 +66,14 @@ export interface AmendRequest extends BaseContract {
     ): NonPayableTransactionObject<
       [
         string,
-        string,
         string[],
         [
           string,
           string,
           [string, string, string, string, string[], string, string, string]
         ],
-        [string, string, string, string, string, string],
+        string[],
+        string,
         boolean
       ]
     >;
@@ -97,6 +97,12 @@ export interface AmendRequest extends BaseContract {
     management(): NonPayableTransactionObject<string>;
 
     nonces(arg0: string): NonPayableTransactionObject<string>;
+
+    orgApprovedSig(
+      arg0: number | string | BN,
+      arg1: number | string | BN,
+      arg2: number | string | BN
+    ): NonPayableTransactionObject<string>;
 
     setLCManagement(_management: string): NonPayableTransactionObject<void>;
 

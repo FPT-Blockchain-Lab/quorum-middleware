@@ -373,11 +373,11 @@ export class LCWrapper {
         if (!amendmentRequest) throw new Error("Amend request not found.");
         if (isApproved) throw new Error("Amend request has been approved.");
 
-        const content = Object.assign({}, amendmentRequest[3][2]);
+        const content = Object.assign({}, amendmentRequest[2][2]);
         // Format amendmentRequest
         const amendStage = {
-            stage: parseInt(amendmentRequest[3][0], 10),
-            subStage: parseInt(amendmentRequest[3][1], 10),
+            stage: parseInt(amendmentRequest[2][0], 10),
+            subStage: parseInt(amendmentRequest[2][1], 10),
             content: {
                 rootHash: content[0],
                 prevHash: content[2],
@@ -390,7 +390,7 @@ export class LCWrapper {
             },
         };
         // Get amend signature
-        const amendSig = await this.amendSingature(amendmentRequest[2], amendStage, from);
+        const amendSig = await this.amendSingature(amendmentRequest[1], amendStage, from);
 
         const gas = await this.RouterService.methods.approveAmendment(documentId, requestId, amendSig).estimateGas({ from });
 
